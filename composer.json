@@ -18,7 +18,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Slakbal\\TenancyFoundation\\": "src/"
+            "Slakbal\\TenancyFoundation\\": "src/",
+            "Slakbal\\TenancyFoundation\\Database\\Seeders\\": "database/seeders/"
         },
         "files": [
             "src/Support/helpers.php"

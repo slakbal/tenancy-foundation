@@ -15,3 +15,8 @@ test('plugins expose stable ids', function () {
     expect(AdminPlugin::make()->getId())->toBe('tenancy-foundation-admin')
         ->and(TenantPlugin::make()->getId())->toBe('tenancy-foundation-tenant');
 });
+
+test('role seeders are autoloadable', function () {
+    expect(class_exists(Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder::class))->toBeTrue()
+        ->and(class_exists(Slakbal\TenancyFoundation\Database\Seeders\TenantRolePermissionsSeeder::class))->toBeTrue();
+});
