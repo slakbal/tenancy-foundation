@@ -1,10 +1,10 @@
 <?php
 
+use Filament\Facades\Filament;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
-use Filament\Facades\Filament;
 use Spatie\Permission\Models\Permission;
 
 beforeEach(function () {

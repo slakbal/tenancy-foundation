@@ -17,7 +17,7 @@ class SyncTenantPermissionsContext
             $user = Filament::auth()->user();
 
             if ($user instanceof (config('tenancy-foundation.models.user'))) {
-                //Switching tenants drops the cached permissions relation so direct permissions do not leak across tenants
+                // Switching tenants drops the cached permissions relation so direct permissions do not leak across tenants
                 $user->unsetRelation('roles')->unsetRelation('permissions');
             }
         }

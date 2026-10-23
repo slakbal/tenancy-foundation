@@ -2,14 +2,14 @@
 
 namespace Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users;
 
+use Filament\Schemas\Schema;
+use Filament\Tables\Table;
 use Slakbal\TenancyFoundation\Filament\Components\Resources\Users\UserResource as BaseUserResource;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Pages\CreateUser;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Pages\EditUser;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Pages\ListUsers;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Schemas\UserForm;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Tables\UsersTable;
-use Filament\Schemas\Schema;
-use Filament\Tables\Table;
 
 class UserResource extends BaseUserResource
 {

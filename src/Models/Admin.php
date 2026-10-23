@@ -19,7 +19,7 @@ use Spatie\Permission\Traits\HasRoles;
 #[Fillable(['first_name', 'last_name', 'email', 'password'])]
 class Admin extends Authenticatable implements FilamentUser
 {
-    use HasFactory, CanImpersonate, HasRoles, HasUlidKey, HasUserAttributes, IsAdminUser, Notifiable, SoftDeletes;
+    use CanImpersonate, HasFactory, HasRoles, HasUlidKey, HasUserAttributes, IsAdminUser, Notifiable, SoftDeletes;
 
     protected string $guard_name = AuthGuard::ADMIN->value;
 

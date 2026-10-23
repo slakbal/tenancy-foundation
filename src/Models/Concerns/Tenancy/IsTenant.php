@@ -2,8 +2,8 @@
 
 namespace Slakbal\TenancyFoundation\Models\Concerns\Tenancy;
 
-use Slakbal\TenancyFoundation\Models\TenantUser;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Slakbal\TenancyFoundation\Models\TenantUser;
 
 // Base Class e.g. Tenant model should implement: HasName, HasCurrentTenantLabel contracts
 trait IsTenant

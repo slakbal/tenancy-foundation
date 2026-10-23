@@ -2,10 +2,10 @@
 
 namespace Slakbal\TenancyFoundation\Database\Seeders;
 
+use Illuminate\Database\Seeder;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Enums\FilamentPanel;
-use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 

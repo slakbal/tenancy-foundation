@@ -1,13 +1,13 @@
 <?php
 
+use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Gate;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
 use Slakbal\TenancyFoundation\Policies\Tenant\TenantPolicy;
 use Slakbal\TenancyFoundation\Policies\Tenant\UserPolicy;
-use Filament\Facades\Filament;
-use Illuminate\Support\Facades\Gate;
 use Spatie\Permission\Models\Permission;
 
 beforeEach(function () {

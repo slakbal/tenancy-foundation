@@ -2,9 +2,9 @@
 
 namespace Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Pages;
 
-use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
+use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
 
 class ListUsers extends ListRecords
 {

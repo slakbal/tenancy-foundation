@@ -2,10 +2,6 @@
 
 namespace Slakbal\TenancyFoundation\Filament\Components\Resources\Users;
 
-use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\EmailColumn;
-use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\LastLoginColumns;
-use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\NameColumn;
-use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\TimestampColumns;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -18,6 +14,10 @@ use Filament\Actions\RestoreBulkAction;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\EmailColumn;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\LastLoginColumns;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\NameColumn;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\TimestampColumns;
 
 class UsersTable
 {

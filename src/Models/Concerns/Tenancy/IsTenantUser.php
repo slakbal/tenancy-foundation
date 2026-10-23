@@ -2,12 +2,12 @@
 
 namespace Slakbal\TenancyFoundation\Models\Concerns\Tenancy;
 
-use Slakbal\TenancyFoundation\Enums\AuthGuard;
-use Slakbal\TenancyFoundation\Models\TenantUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
+use Slakbal\TenancyFoundation\Enums\AuthGuard;
+use Slakbal\TenancyFoundation\Models\TenantUser;
 
 // Base Class e.g. User model should implement: HasTenants, HasDefaultTenant contracts
 

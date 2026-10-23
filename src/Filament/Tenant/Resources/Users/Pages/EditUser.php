@@ -2,11 +2,11 @@
 
 namespace Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Pages;
 
-use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
 use Filament\Resources\Pages\EditRecord;
+use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
 
 class EditUser extends EditRecord
 {

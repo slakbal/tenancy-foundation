@@ -2,12 +2,12 @@
 
 namespace Slakbal\TenancyFoundation\Filament\Components\Tables\Actions;
 
-use Slakbal\TenancyFoundation\Enums\FilamentPanel;
-use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
-use Illuminate\Database\Eloquent\Model;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Support\Exceptions\Halt;
+use Illuminate\Database\Eloquent\Model;
+use Slakbal\TenancyFoundation\Enums\FilamentPanel;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use STS\FilamentImpersonate\Actions\Impersonate;
 
 class ImpersonateUserAction

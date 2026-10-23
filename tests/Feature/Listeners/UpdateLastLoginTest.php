@@ -1,10 +1,10 @@
 <?php
 
+use Illuminate\Auth\Events\Login;
+use Illuminate\Support\Facades\Event;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Listeners\UpdateLastLogin;
 use Slakbal\TenancyFoundation\Models\User;
-use Illuminate\Auth\Events\Login;
-use Illuminate\Support\Facades\Event;
 
 test('logging in records the login time and ip without touching updated_at or firing model events', function () {
     $user = User::factory()->create(['updated_at' => now()->subDays(10)]);

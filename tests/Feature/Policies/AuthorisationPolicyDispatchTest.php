@@ -1,12 +1,12 @@
 <?php
 
+use Filament\Facades\Filament;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
-use Filament\Facades\Filament;
 use Spatie\Permission\Models\Permission;
 
 test('UserPolicy (tenant) bulk restoreAny/forceDeleteAny resolve via the shared base exactly as the old explicit methods did', function () {

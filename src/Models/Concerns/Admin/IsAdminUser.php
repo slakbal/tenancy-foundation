@@ -2,8 +2,8 @@
 
 namespace Slakbal\TenancyFoundation\Models\Concerns\Admin;
 
-use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Filament\Panel;
+use Slakbal\TenancyFoundation\Enums\AuthGuard;
 
 trait IsAdminUser
 {

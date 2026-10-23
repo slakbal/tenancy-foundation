@@ -13,6 +13,7 @@ use Filament\Schemas\SchemasServiceProvider;
 use Filament\Support\SupportServiceProvider;
 use Filament\Tables\TablesServiceProvider;
 use Filament\Widgets\WidgetsServiceProvider;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Slakbal\TenancyFoundation\Models\Admin;
@@ -22,7 +23,6 @@ use Slakbal\TenancyFoundation\Tests\Concerns\InteractsWithTenancy;
 use Slakbal\TenancyFoundation\Tests\Support\AdminPanelProvider;
 use Slakbal\TenancyFoundation\Tests\Support\TenantPanelProvider;
 use Spatie\Permission\PermissionServiceProvider;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 abstract class TestCase extends Orchestra
 {

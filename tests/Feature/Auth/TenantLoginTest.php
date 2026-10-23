@@ -1,10 +1,10 @@
 <?php
 
-use Slakbal\TenancyFoundation\Enums\AuthGuard;
-use Slakbal\TenancyFoundation\Models\User;
 use Filament\Auth\Pages\Login;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
+use Slakbal\TenancyFoundation\Enums\AuthGuard;
+use Slakbal\TenancyFoundation\Models\User;
 
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('app'));

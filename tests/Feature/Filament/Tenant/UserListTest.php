@@ -1,12 +1,12 @@
 <?php
 
+use Filament\Facades\Filament;
+use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Pages\ListUsers;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
-use Filament\Facades\Filament;
-use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 
 beforeEach(function () {
