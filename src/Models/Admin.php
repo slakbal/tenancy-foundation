@@ -13,13 +13,12 @@ use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Models\Concerns\Admin\CanImpersonate;
 use Slakbal\TenancyFoundation\Models\Concerns\Admin\IsAdminUser;
 use Slakbal\TenancyFoundation\Models\Concerns\HasUlidKey;
-use Slakbal\TenancyFoundation\Models\Concerns\HasUserAttributes;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['first_name', 'last_name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password'])]
 class Admin extends Authenticatable implements FilamentUser
 {
-    use CanImpersonate, HasFactory, HasRoles, HasUlidKey, HasUserAttributes, IsAdminUser, Notifiable, SoftDeletes;
+    use CanImpersonate, HasFactory, HasRoles, HasUlidKey, IsAdminUser, Notifiable, SoftDeletes;
 
     protected string $guard_name = AuthGuard::ADMIN->value;
 

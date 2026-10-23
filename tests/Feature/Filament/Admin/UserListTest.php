@@ -50,8 +50,8 @@ test('searching the users table by name or email finds matching users', function
     Permission::findOrCreate(AdminPermissions::USER_VIEW_ANY->value, AuthGuard::ADMIN->value);
     $admin->givePermissionTo(AdminPermissions::USER_VIEW_ANY);
 
-    $match = User::factory()->create(['first_name' => 'Zephyrine', 'last_name' => 'Quill', 'email' => 'zq@example.com']);
-    $other = User::factory()->create(['first_name' => 'Bob', 'last_name' => 'Smith', 'email' => 'bob@example.com']);
+    $match = User::factory()->create(['name' => 'Zephyrine Quill', 'email' => 'zq@example.com']);
+    $other = User::factory()->create(['name' => 'Bob Smith', 'email' => 'bob@example.com']);
 
     $this->actingAs($admin, AuthGuard::ADMIN->value);
 

@@ -6,6 +6,7 @@ use Filament\Auth\Pages\Register;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Str;
 
 class RegisterUser extends Register
 {
@@ -13,28 +14,25 @@ class RegisterUser extends Register
     {
         return $schema
             ->components([
-                $this->getFirstNameFormComponent(),
-                $this->getLastNameFormComponent(),
+                ...$this->getNameFormComponents(),
                 $this->getEmailFormComponent(),
                 $this->getPasswordFormComponent(),
                 $this->getPasswordConfirmationFormComponent(),
             ]);
     }
 
-    protected function getFirstNameFormComponent(): Component
+    /**
+     * @return array<int, Component>
+     */
+    protected function getNameFormComponents(): array
     {
-        return TextInput::make('first_name')
-            ->label(__('First name'))
-            ->required()
-            ->maxLength(100)
-            ->autofocus();
-    }
-
-    protected function getLastNameFormComponent(): Component
-    {
-        return TextInput::make('last_name')
-            ->label(__('Last name'))
-            ->required()
-            ->maxLength(100);
+        return collect(config('tenancy-foundation.user_name_attributes'))
+            ->values()
+            ->map(fn (string $attribute, int $index): Component => TextInput::make($attribute)
+                ->label(__(Str::of($attribute)->replace('_', ' ')->ucfirst()->toString()))
+                ->required()
+                ->maxLength(100)
+                ->autofocus($index === 0))
+            ->all();
     }
 }

@@ -19,6 +19,21 @@ class AdminFactory extends Factory
     protected static ?string $password;
 
     /**
+     * @return array<string, string>
+     */
+    protected function nameAttributes(): array
+    {
+        return collect(config('tenancy-foundation.user_name_attributes'))
+            ->mapWithKeys(fn (string $attribute): array => [$attribute => match ($attribute) {
+                'first_name' => fake()->firstName(),
+                'last_name' => fake()->lastName(),
+                'name' => fake()->name(),
+                default => fake()->word(),
+            }])
+            ->all();
+    }
+
+    /**
      * Define the model's default state.
      *
      * @return array<string, mixed>
@@ -26,8 +41,7 @@ class AdminFactory extends Factory
     public function definition(): array
     {
         return [
-            'first_name' => fake()->firstName(),
-            'last_name' => fake()->lastName(),
+            ...$this->nameAttributes(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),

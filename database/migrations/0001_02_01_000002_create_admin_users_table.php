@@ -11,8 +11,10 @@ return new class extends Migration
         Schema::create('admins', function (Blueprint $table) {
             $table->id();
             $table->ulid('ulid')->unique();
-            $table->string('first_name');
-            $table->string('last_name');
+            foreach (config('tenancy-foundation.user_name_attributes') as $attribute) {
+                $table->string($attribute);
+            }
+
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');

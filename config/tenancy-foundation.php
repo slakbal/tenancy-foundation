@@ -16,6 +16,8 @@ return [
         'role' => Role::class,
     ],
 
+    'user_name_attributes' => ['name'],
+
     'admin_permissions_team_id' => 1,
 
     'redirects' => [

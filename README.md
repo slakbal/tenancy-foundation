@@ -60,9 +60,13 @@ The install command publishes `config/tenancy-foundation.php`, optionally publis
 - **Resources/pages**: `usingUserResource()`, `usingRegisterUserPage()`, `usingRegisterTenantPage()`, `usingEditTenantProfilePage()` on the plugins.
 - **Translations**: JSON sentence keys, loaded from the package `lang/en.json`; override in the app's `lang/en.json`.
 
+## Name attributes
+
+The package has no hard-coded name columns. `config('tenancy-foundation.user_name_attributes')` drives the admins migration, the `users` stub, factories, the register form and the name table column. Declare `#[Fillable]` and any `name` accessor on your own `User`/`Admin` models.
+
 ## Required `users` columns
 
-`ulid`, `first_name`, `last_name`, `email`, `password`, `email_verified_at`, `last_login_at`, `last_login_ip`, `remember_token`, timestamps, soft deletes. See `stubs/create_users_table.php.stub`.
+`ulid`, the name columns listed in `user_name_attributes` (default `name`; e.g. `['first_name', 'last_name']`), `email`, `password`, `email_verified_at`, `last_login_at`, `last_login_ip`, `remember_token`, timestamps, soft deletes. See `stubs/create_users_table.php.stub`.
 
 ## Testing
 

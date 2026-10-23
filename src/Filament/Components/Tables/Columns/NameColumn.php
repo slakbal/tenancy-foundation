@@ -8,11 +8,14 @@ class NameColumn
 {
     public static function make(string $name): TextColumn
     {
+        $attributes = config('tenancy-foundation.user_name_attributes');
+
         return TextColumn::make($name)
-            ->sortable(['first_name', 'last_name'])
-            ->searchable(query: function ($query, $search) {
-                $query->orWhere('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%");
+            ->sortable($attributes)
+            ->searchable(query: function ($query, $search) use ($attributes) {
+                foreach ($attributes as $attribute) {
+                    $query->orWhere($attribute, 'like', "%{$search}%");
+                }
             });
     }
 }

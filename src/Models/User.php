@@ -14,15 +14,14 @@ use Illuminate\Notifications\Notifiable;
 use Slakbal\TenancyFoundation\Database\Factories\UserFactory;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Models\Concerns\HasUlidKey;
-use Slakbal\TenancyFoundation\Models\Concerns\HasUserAttributes;
 use Slakbal\TenancyFoundation\Models\Concerns\Tenancy\IsTenantUser;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['first_name', 'last_name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser, HasDefaultTenant, HasTenants
 {
-    use HasFactory, HasRoles, HasUlidKey, HasUserAttributes, IsTenantUser, Notifiable, SoftDeletes;
+    use HasFactory, HasRoles, HasUlidKey, IsTenantUser, Notifiable, SoftDeletes;
 
     protected string $guard_name = AuthGuard::TENANT->value;
 
