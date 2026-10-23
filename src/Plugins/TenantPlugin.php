@@ -7,6 +7,7 @@ use Filament\Panel;
 use Illuminate\Support\Facades\Gate;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Filament\Pages\EditTenantProfile;
+use Slakbal\TenancyFoundation\Filament\Pages\EmailVerificationPrompt;
 use Slakbal\TenancyFoundation\Filament\Pages\RegisterTenant;
 use Slakbal\TenancyFoundation\Filament\Pages\RegisterUser;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
@@ -71,7 +72,7 @@ class TenantPlugin implements Plugin
             ->tenantProfile($this->editTenantProfilePage)
             ->tenantMiddleware([SyncTenantPermissionsContext::class], isPersistent: true)
             ->registration($this->registerUserPage)
-            ->emailVerification()
+            ->emailVerification(EmailVerificationPrompt::class)
             ->middleware([EnsureUserHasTenant::class])
             ->resources([$this->userResource]);
     }

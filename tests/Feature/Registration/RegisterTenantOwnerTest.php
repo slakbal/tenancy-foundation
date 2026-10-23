@@ -13,6 +13,7 @@ use Slakbal\TenancyFoundation\Actions\CreateTenant;
 use Slakbal\TenancyFoundation\Actions\RegisterTenantOwner;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Events\TenantRegistered;
+use Slakbal\TenancyFoundation\Filament\Pages\EmailVerificationPrompt;
 use Slakbal\TenancyFoundation\Filament\Pages\RegisterUser;
 use Slakbal\TenancyFoundation\Http\Responses\RegistrationResponse;
 use Slakbal\TenancyFoundation\Models\Tenant;
@@ -241,4 +242,12 @@ test('the register page is wider than the default simple page', function () {
 test('every email sent during registration is queued', function () {
     expect(is_subclass_of(WelcomeToTenant::class, ShouldQueue::class))->toBeTrue()
         ->and(is_subclass_of(VerifyEmail::class, ShouldQueue::class))->toBeTrue();
+});
+
+test('the verification prompt tells the user to refresh once verified', function () {
+    $user = User::factory()->unverified()->create();
+    $this->actingAs($user);
+
+    Livewire::test(EmailVerificationPrompt::class)
+        ->assertSee('refresh this page');
 });
