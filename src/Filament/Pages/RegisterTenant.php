@@ -2,43 +2,29 @@
 
 namespace Slakbal\TenancyFoundation\Filament\Pages;
 
-use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Tenancy\RegisterTenant as BaseRegisterTenant;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Schema;
 use Filament\Support\Exceptions\Halt;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Slakbal\TenancyFoundation\Actions\CreateTenant;
+use Slakbal\TenancyFoundation\Filament\Components\Schemas\TenantDetailsSchema;
 use Throwable;
 
 class RegisterTenant extends BaseRegisterTenant
 {
     public function form(Schema $schema): Schema
     {
-        return $schema
-            ->components([
-                TextInput::make('name')
-                    ->label(__('Tenant name'))
-                    ->required()
-                    ->maxLength(255)
-                    ->live(onBlur: true)
-                    ->afterStateUpdated(function (string $operation, $state, $set) {
-                        // Automatically slugify the subdomain input from the name if empty
-                        $set('subdomain', Str::slug($state));
-                    })
-                    ->autofocus(),
+        return $schema->components($this->getTenantFormComponents());
+    }
 
-                TextInput::make('subdomain')
-                    ->label(__('Subdomain'))
-                    ->required()
-                    ->alphaDash()
-                    ->maxLength(63)
-                    ->unique(config('tenancy-foundation.models.tenant'), 'subdomain')
-                    ->prefix('https://')
-                    ->suffix('.'.config('tenancy-foundation.domain'))
-                    ->rules(['not_in:www,admin,app,api,mail,dev,test']), // Reserve core subdomains
-            ]);
+    /**
+     * @return array<int, Component>
+     */
+    protected function getTenantFormComponents(): array
+    {
+        return TenantDetailsSchema::components();
     }
 
     /**
@@ -66,25 +52,14 @@ class RegisterTenant extends BaseRegisterTenant
     protected function handleRegistration(array $data): Model
     {
         try {
-            return DB::transaction(function () use ($data): Model {
-                $tenant = config('tenancy-foundation.models.tenant')::create($data);
-
-                $tenant->members()->attach(auth()->id(), [
-                    'is_owner' => true,
-                    'is_default_tenant' => true,
-                ]);
-
-                return $tenant;
-            });
+            return app(CreateTenant::class)->handle($data, auth()->user());
         } catch (Throwable $exception) {
-            // Show a notification banner to the user
             Notification::make()
                 ->title(__('Registration failed'))
                 ->body(__('An error occurred while creating your account. Please try again.'))
                 ->danger()
                 ->send();
 
-            // Halts execution safely, keeps form inputs intact, and enables retry
             throw new Halt;
         }
     }

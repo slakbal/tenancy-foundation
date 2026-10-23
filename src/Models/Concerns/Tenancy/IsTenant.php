@@ -15,7 +15,7 @@ trait IsTenant
 
     public function getCurrentTenantLabel(): string
     {
-        return 'Active';
+        return __('Active');
     }
 
     public function members(): BelongsToMany

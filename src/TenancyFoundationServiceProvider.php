@@ -8,8 +8,10 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Slakbal\TenancyFoundation\Console\InstallCommand;
+use Slakbal\TenancyFoundation\Events\TenantRegistered;
 use Slakbal\TenancyFoundation\Http\Responses\LogoutResponse;
 use Slakbal\TenancyFoundation\Http\Responses\RegistrationResponse;
+use Slakbal\TenancyFoundation\Listeners\SendWelcomeNotification;
 use Slakbal\TenancyFoundation\Listeners\UpdateLastLogin;
 
 class TenancyFoundationServiceProvider extends ServiceProvider
@@ -49,6 +51,8 @@ class TenancyFoundationServiceProvider extends ServiceProvider
 
         $this->app->bind(LogoutResponseContract::class, LogoutResponse::class);
         $this->app->bind(RegistrationResponseContract::class, RegistrationResponse::class);
+
+        Event::listen(TenantRegistered::class, SendWelcomeNotification::class);
 
         if (config('tenancy-foundation.register_last_login_listener')) {
             Event::listen(Login::class, UpdateLastLogin::class);

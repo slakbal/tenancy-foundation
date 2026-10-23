@@ -71,6 +71,7 @@ class TenantPlugin implements Plugin
             ->tenantProfile($this->editTenantProfilePage)
             ->tenantMiddleware([SyncTenantPermissionsContext::class], isPersistent: true)
             ->registration($this->registerUserPage)
+            ->emailVerification()
             ->middleware([EnsureUserHasTenant::class])
             ->resources([$this->userResource]);
     }

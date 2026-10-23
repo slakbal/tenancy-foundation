@@ -53,6 +53,16 @@ The install command publishes `config/tenancy-foundation.php`, optionally publis
 - `UpdateLastLogin` listener on `Login` (disable with `register_last_login_listener`).
 - Filament defaults (`config/filament-defaults.php`, toggle with `enabled`).
 
+## Registration
+
+The tenant panel exposes `/register`, a two-step wizard: tenant name and subdomain, then the owner account (`user_name_attributes`, email, password). `RegisterTenantOwner` creates the user, the tenant, the owner membership and the owner role in one transaction; Filament then sends the standard verification email and redirects to the verification prompt, and to the tenant domain once verified. `CreateTenant` is reused by the `RegisterTenant` page for signed-in users without a tenant.
+
+- Override the form: extend `RegisterUser` (and `RegisterTenant` for signed-in users without a tenant) and override `getTenantFormComponents()` and/or `getUserFormComponents()`; extra attributes must be fillable on the models. The page width is the `$maxWidth` property. Register the page with `TenantPlugin::make()->usingRegisterUserPage(...)` / `usingRegisterTenantPage(...)`.
+- `TenantRegistered` (tenant, owner) is dispatched after the registration commits. `tenancy-foundation.notifications.welcome` (default `WelcomeToTenant`, `null` disables it) is mailed to the owner by a listener; point it at your own notification class to customise.
+- Reserved subdomains: `tenancy-foundation.reserved_subdomains`.
+- Replace the business logic by binding your own subclass of `RegisterTenantOwner` or `CreateTenant` in the container.
+- Email verification is enabled by the tenant plugin; the base `User` implements `MustVerifyEmail`.
+
 ## Customising
 
 - **Models**: extend and set in `config('tenancy-foundation.models')`. Factories (`Model::factory()`) resolve the configured model.
