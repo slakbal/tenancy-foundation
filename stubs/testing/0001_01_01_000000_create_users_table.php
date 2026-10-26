@@ -10,21 +10,12 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->ulid('ulid')->unique();
-            foreach (config('tenancy-foundation.user_name_attributes') as $attribute) {
-                $table->string($attribute)->index();
-            }
-
+            $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->timestamp('last_login_at')->nullable()->index();
-            $table->string('last_login_ip')->nullable();
             $table->rememberToken();
             $table->timestamps();
-            $table->softDeletes();
-
-            $table->index('created_at');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

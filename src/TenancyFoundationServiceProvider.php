@@ -62,10 +62,6 @@ class TenancyFoundationServiceProvider extends ServiceProvider
             $this->commands([InstallCommand::class]);
 
             $this->publishes([
-                __DIR__.'/../stubs/create_users_table.php.stub' => database_path('migrations/0001_01_01_000000_create_users_table.php'),
-            ], 'tenancy-foundation-users-migration');
-
-            $this->publishes([
                 __DIR__.'/../config/tenancy-foundation.php' => config_path('tenancy-foundation.php'),
             ], 'tenancy-foundation-config');
 
