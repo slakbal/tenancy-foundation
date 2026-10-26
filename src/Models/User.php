@@ -22,6 +22,7 @@ use Spatie\Permission\Traits\HasRoles;
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser, HasDefaultTenant, HasTenants, MustVerifyEmail
 {
+    /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, HasUlidKey, IsTenantUser, Notifiable, SoftDeletes;
 
     protected string $guard_name = AuthGuard::TENANT->value;
