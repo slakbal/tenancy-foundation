@@ -43,17 +43,11 @@ class AdminRolePermissionsSeeder extends Seeder
             guardName: $guard,
         );
         $supportRole->syncPermissions(
-            $permissions->filter(
-                fn (Permission $permission): bool => in_array(
-                    $permission->name,
-                    [
-                        AdminPermissions::USER_VIEW_ANY->value,
-                        AdminPermissions::USER_VIEW->value,
-                        AdminPermissions::IMPERSONATE_USER->value,
-                    ],
-                    true,
-                )
-            )
+            $permissions->whereIn('name', [
+                AdminPermissions::USER_VIEW_ANY->value,
+                AdminPermissions::USER_VIEW->value,
+                AdminPermissions::IMPERSONATE_USER->value,
+            ])
         );
     }
 }

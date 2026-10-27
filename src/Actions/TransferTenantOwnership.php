@@ -49,9 +49,7 @@ readonly class TransferTenantOwnership
             $owners->each(fn (Model $previousOwner) => $this->assignTenantRole->handle($previousOwner, $tenant, TenantRoles::ADMIN, TenantRoles::OWNER));
             $this->assignTenantRole->handle($newOwner, $tenant, TenantRoles::OWNER);
 
-            foreach (array_filter([$actor, $newOwner]) as $user) {
-                $user->unsetRelation('tenants')->unsetRelation('ownedTenants')->unsetRelation('memberTenants');
-            }
+            collect([$actor, $newOwner])->filter()->each->unsetRelations();
         });
     }
 }

@@ -4,6 +4,7 @@ namespace Slakbal\TenancyFoundation\Support;
 
 use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 
 class SoleOwnerGuard
 {
@@ -16,7 +17,7 @@ class SoleOwnerGuard
             return null;
         }
 
-        $model = is_array($arguments) ? ($arguments[0] ?? null) : $arguments;
+        $model = Arr::first(Arr::wrap($arguments));
 
         $isSoleOwner = $model instanceof Model
             && method_exists($model, 'isSoleOwnerOfAnyTenant')

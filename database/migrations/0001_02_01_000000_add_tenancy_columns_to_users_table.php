@@ -46,7 +46,7 @@ return new class extends Migration
 
         if ($addsUlid) {
             DB::table('users')->whereNull('ulid')->orderBy('id')->each(
-                fn (object $user) => DB::table('users')->where('id', $user->id)->update(['ulid' => strtolower((string) Str::ulid())])
+                fn (object $user) => DB::table('users')->where('id', $user->id)->update(['ulid' => Str::lower((string) Str::ulid())])
             );
 
             Schema::table('users', function (Blueprint $table) {

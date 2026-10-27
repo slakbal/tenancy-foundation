@@ -13,9 +13,7 @@ class NameColumn
         return TextColumn::make($name)
             ->sortable($attributes)
             ->searchable(query: function ($query, $search) use ($attributes) {
-                foreach ($attributes as $attribute) {
-                    $query->orWhere($attribute, 'like', "%{$search}%");
-                }
+                collect($attributes)->each(fn (string $attribute) => $query->orWhere($attribute, 'like', "%{$search}%"));
             });
     }
 }

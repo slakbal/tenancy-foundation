@@ -81,7 +81,7 @@ trait IsTenantUser
 
     public function isSoleOwnerOfAnyTenant(): bool
     {
-        if (array_key_exists('is_sole_owner', $this->attributes)) {
+        if ($this->hasAttribute('is_sole_owner')) {
             return (bool) $this->attributes['is_sole_owner'];
         }
 

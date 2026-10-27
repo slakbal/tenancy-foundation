@@ -57,8 +57,6 @@ class TenantRolePermissionsSeeder extends Seeder
             ->all();
 
         $roleClass::findOrCreate(name: TenantRoles::VIEW_ONLY->value, guardName: $guard)
-            ->syncPermissions($permissions->filter(
-                fn (Permission $permission): bool => in_array($permission->name, $viewOnly, true),
-            ));
+            ->syncPermissions($permissions->whereIn('name', $viewOnly));
     }
 }
