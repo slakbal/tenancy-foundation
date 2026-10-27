@@ -43,6 +43,7 @@ class TenantsTable
                 ->sortable(),
             TextColumn::make('owners.email')
                 ->label(__('Owner'))
+                ->searchable()
                 ->wrap(),
             TextColumn::make('members_count')
                 ->label(__('Members'))
