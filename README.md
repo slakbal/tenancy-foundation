@@ -98,7 +98,7 @@ The package migrations load automatically and run after Laravel's default `users
 | Migration | Effect |
 |---|---|
 | `add_tenancy_columns_to_users_table` | Adds the missing tenancy columns to `users` (see [Users table](#users-table)) |
-| `create_tenants_table` | The `tenants` table and the `tenant_user` membership pivot (`is_owner`, `is_default_tenant`) |
+| `create_tenants_table` | The `tenants` table (including `billing_email`, `cancelled_at` and `scheduled_for_deletion_at`) and the `tenant_user` membership pivot (`is_owner`, `is_default_tenant`) |
 | `create_admin_users_table` | The `admins` table |
 
 ### 6. Register the panel plugins

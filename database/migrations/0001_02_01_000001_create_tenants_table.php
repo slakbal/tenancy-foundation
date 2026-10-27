@@ -13,6 +13,9 @@ return new class extends Migration
             $table->ulid('ulid')->unique();
             $table->string('name');
             $table->string('subdomain')->unique();
+            $table->string('billing_email')->nullable();
+            $table->timestamp('cancelled_at')->nullable();
+            $table->timestamp('scheduled_for_deletion_at')->nullable()->index();
             $table->timestamps();
         });
 
