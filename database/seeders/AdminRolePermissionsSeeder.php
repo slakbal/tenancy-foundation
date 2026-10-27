@@ -44,6 +44,8 @@ class AdminRolePermissionsSeeder extends Seeder
         );
         $supportRole->syncPermissions(
             $permissions->whereIn('name', [
+                AdminPermissions::TENANT_VIEW_ANY->value,
+                AdminPermissions::TENANT_VIEW->value,
                 AdminPermissions::USER_VIEW_ANY->value,
                 AdminPermissions::USER_VIEW->value,
                 AdminPermissions::IMPERSONATE_USER->value,

@@ -7,6 +7,7 @@ use Filament\Panel;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Gate;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\TenantResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Support\PolicyResolver;
 use Slakbal\TenancyFoundation\Support\SoleOwnerGuard;
@@ -14,6 +15,8 @@ use Slakbal\TenancyFoundation\Support\SoleOwnerGuard;
 class AdminPlugin implements Plugin
 {
     protected string $userResource = UserResource::class;
+
+    protected string $tenantResource = TenantResource::class;
 
     public static function make(): static
     {
@@ -32,9 +35,16 @@ class AdminPlugin implements Plugin
         return $this;
     }
 
+    public function usingTenantResource(string $resource): static
+    {
+        $this->tenantResource = $resource;
+
+        return $this;
+    }
+
     public function register(Panel $panel): void
     {
-        $panel->resources([$this->userResource]);
+        $panel->resources([$this->userResource, $this->tenantResource]);
     }
 
     public function boot(Panel $panel): void

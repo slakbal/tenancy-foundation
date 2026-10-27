@@ -4,7 +4,9 @@ namespace Slakbal\TenancyFoundation\Models\Concerns\Tenancy;
 
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Slakbal\TenancyFoundation\Enums\TenantStatus;
 use Slakbal\TenancyFoundation\Models\TenantUser;
 
 // Base Class e.g. Tenant model should implement: HasName, HasCurrentTenantLabel contracts
@@ -16,6 +18,11 @@ trait IsTenant
             'cancelled_at' => 'datetime',
             'scheduled_for_deletion_at' => 'datetime',
         ]);
+    }
+
+    protected function status(): Attribute
+    {
+        return Attribute::get(fn (): TenantStatus => $this->isCancelled() ? TenantStatus::CANCELLED : TenantStatus::ACTIVE);
     }
 
     public function isCancelled(): bool
@@ -48,6 +55,11 @@ trait IsTenant
     public function getCurrentTenantLabel(): string
     {
         return __('Active');
+    }
+
+    public function owners(): BelongsToMany
+    {
+        return $this->members()->wherePivot('is_owner', true);
     }
 
     public function members(): BelongsToMany

@@ -1,0 +1,57 @@
+<?php
+
+namespace Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants;
+
+use BackedEnum;
+use Filament\Resources\Resource;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Table;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ListTenants;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Tables\TenantsTable;
+use UnitEnum;
+
+class TenantResource extends Resource
+{
+    protected static ?string $slug = 'tenants';
+
+    protected static ?int $navigationSort = 2;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
+
+    public static function getModel(): string
+    {
+        return config('tenancy-foundation.models.tenant');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('Tenant');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Tenants');
+    }
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return __('Tenants');
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function table(Table $table): Table
+    {
+        return TenantsTable::configure($table);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => ListTenants::route('/'),
+        ];
+    }
+}

@@ -218,6 +218,7 @@ The package owns the generic lifecycle; your application owns the cancel screen 
 | Login blocking: a user whose tenants are all cancelled cannot sign in, cancelled tenants leave the switcher and default tenant, requests to a cancelled tenant go to another active tenant | package (`IsTenantUser`, `EnsureTenantIsNotCancelled`) |
 | `DeleteTenant` action and the `DeleteDueTenants` job, scheduled daily at `cancellation.deletion_time` (switch off with `cancellation.schedule_deletion`) | package |
 | What `DeleteTenant` removes | memberships, users who belong to no other tenant (force deleted), the tenant's role and permission assignments, the tenant |
+| Admin panel **Tenants** list (status, owner, members, cancelled and deletion dates, filters) with cancel and reactivate actions, `ReactivateTenant` action and `TenantReactivated` event. Permissions `tenant.view_any`, `tenant.view`, `tenant.cancel`, `tenant.reactivate` (re-run `AdminRolePermissionsSeeder`; swap the resource with `AdminPlugin::usingTenantResource()`) | package |
 | Cancel screen, password confirmation, and deleting **your own** models (subscriptions, invitations, addresses, ...) | application |
 
 `DeleteTenant` dispatches `TenantDeleting` inside its transaction before anything is removed. Listen to it in the application to delete the models only the application knows about; if a listener throws, nothing is deleted and the tenant is retried on the next run.

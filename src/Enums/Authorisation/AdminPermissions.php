@@ -16,6 +16,12 @@ enum AdminPermissions: string
     case ADMIN_USER_RESTORE = 'admin_user.restore';
     case ADMIN_USER_FORCE_DELETE = 'admin_user.force_delete';
 
+    // Tenants
+    case TENANT_VIEW_ANY = 'tenant.view_any';
+    case TENANT_VIEW = 'tenant.view';
+    case TENANT_CANCEL = 'tenant.cancel';
+    case TENANT_REACTIVATE = 'tenant.reactivate';
+
     // Tenant Users
     case USER_VIEW_ANY = 'user.view_any';
     case USER_VIEW = 'user.view';
