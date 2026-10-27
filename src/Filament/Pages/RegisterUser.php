@@ -100,8 +100,8 @@ class RegisterUser extends Register
     protected function handleRegistration(#[SensitiveParameter] array $data): Model
     {
         return app(RegisterTenantOwner::class)->handle(
-            Arr::get($data, 'tenant', []), //all tenant information
-            Arr::except($data, 'tenant'), //all user informations
+            Arr::get($data, 'tenant', []), // all tenant information
+            Arr::except($data, 'tenant'), // all user informations
         );
     }
 }

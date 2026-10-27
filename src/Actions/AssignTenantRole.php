@@ -15,7 +15,7 @@ readonly class AssignTenantRole
         $previousTeamId = $registrar->getPermissionsTeamId();
 
         try {
-            
+            $registrar->setPermissionsTeamId(null);
             $registrar->getRoleClass()::findOrCreate($role->value, AuthGuard::TENANT->value);
 
             $registrar->setPermissionsTeamId($tenant->getKey());

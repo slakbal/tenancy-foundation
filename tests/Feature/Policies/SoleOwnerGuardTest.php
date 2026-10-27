@@ -1,8 +1,8 @@
 <?php
 
 use Filament\Facades\Filament;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Support\Facades\DB;
 use Slakbal\TenancyFoundation\Actions\AssignTenantRole;
 use Slakbal\TenancyFoundation\Actions\CreateTenant;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;

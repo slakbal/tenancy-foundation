@@ -1,8 +1,8 @@
 <?php
 
 use Filament\Facades\Filament;
-use Slakbal\TenancyFoundation\Actions\TransferTenantOwnership;
 use Slakbal\TenancyFoundation\Actions\CreateTenant;
+use Slakbal\TenancyFoundation\Actions\TransferTenantOwnership;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;

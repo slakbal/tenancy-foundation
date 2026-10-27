@@ -3,8 +3,8 @@
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
-use Slakbal\TenancyFoundation\Actions\TransferTenantOwnership;
 use Slakbal\TenancyFoundation\Actions\CreateTenant;
+use Slakbal\TenancyFoundation\Actions\TransferTenantOwnership;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Pages\EditUser;

@@ -1,7 +1,6 @@
 <?php
 
 use Filament\Facades\Filament;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Auth\Access\AuthorizationException;
 use Slakbal\TenancyFoundation\Actions\CreateTenant;
 use Slakbal\TenancyFoundation\Actions\TransferTenantOwnership;

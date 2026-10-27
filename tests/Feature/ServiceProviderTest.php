@@ -1,5 +1,7 @@
 <?php
 
+use Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder;
+use Slakbal\TenancyFoundation\Database\Seeders\TenantRolePermissionsSeeder;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
 use Slakbal\TenancyFoundation\Plugins\AdminPlugin;
@@ -17,6 +19,6 @@ test('plugins expose stable ids', function () {
 });
 
 test('role seeders are autoloadable', function () {
-    expect(class_exists(Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder::class))->toBeTrue()
-        ->and(class_exists(Slakbal\TenancyFoundation\Database\Seeders\TenantRolePermissionsSeeder::class))->toBeTrue();
+    expect(class_exists(AdminRolePermissionsSeeder::class))->toBeTrue()
+        ->and(class_exists(TenantRolePermissionsSeeder::class))->toBeTrue();
 });

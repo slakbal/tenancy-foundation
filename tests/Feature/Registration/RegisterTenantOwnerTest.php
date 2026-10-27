@@ -17,8 +17,8 @@ use Slakbal\TenancyFoundation\Filament\Pages\EmailVerificationPrompt;
 use Slakbal\TenancyFoundation\Filament\Pages\RegisterUser;
 use Slakbal\TenancyFoundation\Http\Responses\RegistrationResponse;
 use Slakbal\TenancyFoundation\Models\Tenant;
-use Slakbal\TenancyFoundation\Notifications\WelcomeToTenant;
 use Slakbal\TenancyFoundation\Models\User;
+use Slakbal\TenancyFoundation\Notifications\WelcomeToTenant;
 use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function () {
