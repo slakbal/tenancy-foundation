@@ -24,7 +24,7 @@ class RegistrationResponse implements RegistrationResponseContract
 
             return redirect()->away($tenant
                 ? appDomainScheme().$tenant->subdomain.'.'.config('tenancy-foundation.domain')
-                : config('app.url').'/'.ltrim(config('tenancy-foundation.redirects.tenant_registration_path'), '/'));
+                : $panel->getTenantRegistrationUrl());
         }
 
         $route = config('tenancy-foundation.redirects.logout_route');

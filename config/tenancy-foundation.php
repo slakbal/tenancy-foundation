@@ -29,7 +29,6 @@ return [
 
     'redirects' => [
         'logout_route' => null,
-        'tenant_registration_path' => 'new',
     ],
 
     'register_auth_defaults' => true,
