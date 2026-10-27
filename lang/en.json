@@ -45,5 +45,9 @@
     "Ownership of this tenant is transferred to this user. You will no longer be the owner.": "Ownership of this tenant is transferred to this user. You will no longer be the owner.",
     ":name is now the owner of this tenant.": ":name is now the owner of this tenant.",
     "Ownership of the selected tenant is transferred to this user. The previous owner stays a member.": "Ownership of the selected tenant is transferred to this user. The previous owner stays a member.",
-    ":name is now the owner of :tenant.": ":name is now the owner of :tenant."
+    ":name is now the owner of :tenant.": ":name is now the owner of :tenant.",
+    "Tenant details": "Tenant details",
+    "The name and web address of your tenant.": "The name and web address of your tenant.",
+    "Copy URL": "Copy URL",
+    "Copied": "Copied"
 }
