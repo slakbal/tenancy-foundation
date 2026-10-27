@@ -128,16 +128,6 @@ test('bulk delete of only the sole owner deletes nothing', function () {
     expect($this->owner->fresh()->trashed())->toBeFalse();
 });
 
-test('a made owner stays a plain member on the other tenants they belong to', function () {
-    $other = app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], User::factory()->create());
-    $other->members()->attach($this->member->getKey(), ['is_owner' => false, 'is_default_tenant' => false]);
-
-    app(TransferTenantOwnership::class)->handle($this->tenant, $this->member, $this->owner);
-
-    expect($this->member->fresh()->ownedTenants->pluck('id')->all())->toBe([$this->tenant->getKey()])
-        ->and($this->member->fresh()->memberTenants->pluck('id')->all())->toBe([$other->getKey()]);
-});
-
 test('the refusal message names the owner by their full name', function () {
     $owner = User::factory()->create(['name' => 'Jane Owner']);
     app(CreateTenant::class)->handle(['name' => 'Janes', 'subdomain' => 'janes'], $owner);

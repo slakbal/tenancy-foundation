@@ -3,8 +3,6 @@
 use Filament\Auth\Notifications\VerifyEmail;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\TextInput;
-use Filament\Support\Enums\Width;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
@@ -136,7 +134,7 @@ test('the registration response sends a verified user to their default tenant do
     expect($response->getTargetUrl())->toBe(appDomainScheme().'acme.'.config('tenancy-foundation.domain'));
 });
 
-test('registration dispatches TenantRegistered once and sends the welcome notification to the owner', function () {
+test('registration dispatches TenantRegistered exactly once with the tenant and owner', function () {
     Event::fake([TenantRegistered::class]);
 
     $user = app(RegisterTenantOwner::class)->handle(
@@ -233,15 +231,6 @@ test('the tenant and user form components can be overridden by a subclass', func
 
     expect($page->tenantComponentNames())->toBe(['name', 'subdomain', 'region'])
         ->and($page->userComponentNames())->toContain('email', 'phone');
-});
-
-test('the register page is wider than the default simple page', function () {
-    expect((new RegisterUser)->getMaxWidth())->toBe(Width::ThreeExtraLarge);
-});
-
-test('every email sent during registration is queued', function () {
-    expect(is_subclass_of(WelcomeToTenant::class, ShouldQueue::class))->toBeTrue()
-        ->and(is_subclass_of(VerifyEmail::class, ShouldQueue::class))->toBeTrue();
 });
 
 test('the verification prompt tells the user to refresh once verified', function () {

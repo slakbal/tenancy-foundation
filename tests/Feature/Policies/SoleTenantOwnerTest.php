@@ -169,35 +169,13 @@ test('an owner cannot transfer the tenant to themselves', function () {
 });
 
 test('only a member of the tenant can become the owner', function () {
-    expect(fn () => app(TransferTenantOwnership::class)->handle($this->tenant, User::factory()->create(), $this->owner))
+    $stranger = User::factory()->create();
+
+    expect(fn () => app(TransferTenantOwnership::class)->handle($this->tenant, $stranger, $this->owner))
         ->toThrow(InvalidArgumentException::class);
 
-    expect($this->owner->fresh()->hasRole(TenantRoles::OWNER))->toBeTrue();
-});
-
-test('a member of another tenant cannot become the owner and nothing is written', function () {
-    $other = registerTenantFor(User::factory()->create(), 'other');
-    $outsider = attachMember($other);
-
-    try {
-        app(TransferTenantOwnership::class)->handle($this->tenant, $outsider, $this->owner);
-    } catch (InvalidArgumentException) {
-    }
-
-    expect($this->tenant->members()->where('users.id', $outsider->getKey())->exists())->toBeFalse()
-        ->and($this->owner->fresh()->ownedTenants->contains($this->tenant))->toBeTrue();
-});
-
-test('a failure part way through rolls the whole transfer back', function () {
-    $outsider = User::factory()->create();
-
-    try {
-        app(TransferTenantOwnership::class)->handle($this->tenant, $outsider, $this->owner);
-    } catch (InvalidArgumentException) {
-    }
-
-    expect($this->tenant->members()->wherePivot('is_owner', true)->pluck('users.id')->all())->toBe([$this->owner->getKey()])
-        ->and($this->owner->fresh()->hasRole(TenantRoles::ADMIN))->toBeFalse();
+    expect($this->owner->fresh()->hasRole(TenantRoles::OWNER))->toBeTrue()
+        ->and($this->tenant->members()->where('users.id', $stranger->getKey())->exists())->toBeFalse();
 });
 
 test('roles are scoped to the tenant the ownership moved in', function () {

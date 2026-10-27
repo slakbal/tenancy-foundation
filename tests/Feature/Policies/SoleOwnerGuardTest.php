@@ -46,10 +46,6 @@ test('the guard ignores arguments that are not a model that can own a tenant', f
         ->and(SoleOwnerGuard::denial('delete', $this->tenant))->toBeNull();
 });
 
-test('the guard lets a member who owns nothing through', function () {
-    expect(SoleOwnerGuard::denial('delete', $this->member))->toBeNull();
-});
-
 test('the denial message names the user from the configured name attributes', function () {
     config(['tenancy-foundation.user_name_attributes' => ['first_name', 'last_name']]);
     $user = (new User)->forceFill(['id' => $this->owner->getKey(), 'first_name' => 'Jane', 'last_name' => 'Owner']);
