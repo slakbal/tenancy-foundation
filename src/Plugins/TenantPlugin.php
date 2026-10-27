@@ -12,6 +12,7 @@ use Slakbal\TenancyFoundation\Filament\Pages\EmailVerificationPrompt;
 use Slakbal\TenancyFoundation\Filament\Pages\RegisterTenant;
 use Slakbal\TenancyFoundation\Filament\Pages\RegisterUser;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
+use Slakbal\TenancyFoundation\Http\Middleware\EnsureTenantIsNotCancelled;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureUserHasTenant;
 use Slakbal\TenancyFoundation\Http\Middleware\SyncTenantPermissionsContext;
 use Slakbal\TenancyFoundation\Support\PolicyResolver;
@@ -72,7 +73,7 @@ class TenantPlugin implements Plugin
             ->tenantDomain('{tenant:subdomain}.'.config('tenancy-foundation.domain'))
             ->tenantRegistration($this->registerTenantPage)
             ->tenantProfile($this->editTenantProfilePage)
-            ->tenantMiddleware([SyncTenantPermissionsContext::class], isPersistent: true)
+            ->tenantMiddleware([SyncTenantPermissionsContext::class, EnsureTenantIsNotCancelled::class], isPersistent: true)
             ->registration($this->registerUserPage)
             ->emailVerification(EmailVerificationPrompt::class)
             ->middleware([EnsureUserHasTenant::class])

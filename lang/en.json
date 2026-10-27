@@ -49,5 +49,10 @@
     "Tenant details": "Tenant details",
     "The name and web address of your tenant.": "The name and web address of your tenant.",
     "Copy URL": "Copy URL",
-    "Copied": "Copied"
+    "Copied": "Copied",
+    "Your :tenant account has been cancelled": "Your :tenant account has been cancelled",
+    "Your account :tenant has been cancelled and is marked for deletion.": "Your account :tenant has been cancelled and is marked for deletion.",
+    "It will be deleted on :date, :days days from the cancellation.": "It will be deleted on :date, :days days from the cancellation.",
+    "All data will be completely deleted and cannot be recovered.": "All data will be completely deleted and cannot be recovered.",
+    "This account has been cancelled.": "This account has been cancelled."
 }

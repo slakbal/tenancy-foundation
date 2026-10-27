@@ -206,6 +206,32 @@ Required columns: `ulid`, the name columns in `user_name_attributes`, `email`, `
 
 `add_tenancy_columns_to_users_table` adds whichever of `ulid` (backfilled for existing rows), the name attributes, `last_login_at`, `last_login_ip`, `deleted_at` and the `created_at` index are missing, in their original column order (MySQL and MariaDB only). It is a no-op for columns that already exist. A non-default name attribute is added as a nullable column; dropping the default `name` column is left to your application.
 
+## Cancelling and deleting a tenant
+
+The package owns the generic lifecycle; your application owns the cancel screen and the cleanup of its own data.
+
+| Piece | Where |
+|---|---|
+| `cancelled_at` and `scheduled_for_deletion_at` columns, `isCancelled()`, `isDueForDeletion()`, `active()` and `dueForDeletion()` scopes | package (`IsTenant`, migration) |
+| `CancelTenant` action: stamps `cancelled_at`, schedules deletion at the end of the day `cancellation.grace_days` later, dispatches `TenantCancelled` | package |
+| `AccountCancelled` mail to every owner (queued, `notifications.cancelled`, `null` disables it) | package |
+| Login blocking: a user whose tenants are all cancelled cannot sign in, cancelled tenants leave the switcher and default tenant, requests to a cancelled tenant go to another active tenant | package (`IsTenantUser`, `EnsureTenantIsNotCancelled`) |
+| `DeleteTenant` action and the `DeleteDueTenants` job, scheduled daily at `cancellation.deletion_time` (switch off with `cancellation.schedule_deletion`) | package |
+| What `DeleteTenant` removes | memberships, users who belong to no other tenant (force deleted), the tenant's role and permission assignments, the tenant |
+| Cancel screen, password confirmation, and deleting **your own** models (subscriptions, invitations, addresses, ...) | application |
+
+`DeleteTenant` dispatches `TenantDeleting` inside its transaction before anything is removed. Listen to it in the application to delete the models only the application knows about; if a listener throws, nothing is deleted and the tenant is retried on the next run.
+
+```php
+// app/Listeners/DeleteTenantData.php (discovered automatically)
+public function handle(TenantDeleting $event): void
+{
+    Invitation::query()->where('tenant_id', $event->tenant->getKey())->delete();
+}
+```
+
+Set the grace period with `TENANT_CANCELLATION_GRACE_DAYS` (default 30). The scheduler (`schedule:run`) and a queue worker must be running in production.
+
 ## Troubleshooting
 
 | Symptom | Cause |

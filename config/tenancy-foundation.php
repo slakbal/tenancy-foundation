@@ -4,6 +4,7 @@ use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\Role;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
+use Slakbal\TenancyFoundation\Notifications\AccountCancelled;
 use Slakbal\TenancyFoundation\Notifications\WelcomeToTenant;
 
 return [
@@ -25,6 +26,13 @@ return [
 
     'notifications' => [
         'welcome' => WelcomeToTenant::class,
+        'cancelled' => AccountCancelled::class,
+    ],
+
+    'cancellation' => [
+        'grace_days' => env('TENANT_CANCELLATION_GRACE_DAYS', 30),
+        'schedule_deletion' => true,
+        'deletion_time' => '01:00',
     ],
 
     'redirects' => [

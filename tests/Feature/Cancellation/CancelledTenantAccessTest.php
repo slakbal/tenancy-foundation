@@ -1,0 +1,154 @@
+<?php
+
+use Filament\Auth\Pages\Login;
+use Filament\Facades\Filament;
+use Illuminate\Http\Request;
+use Livewire\Livewire;
+use Slakbal\TenancyFoundation\Actions\CreateTenant;
+use Slakbal\TenancyFoundation\Enums\AuthGuard;
+use Slakbal\TenancyFoundation\Http\Middleware\EnsureTenantIsNotCancelled;
+use Slakbal\TenancyFoundation\Models\Tenant;
+use Slakbal\TenancyFoundation\Models\User;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+
+function userWithTenants(array $cancelled, ?array $default = null): User
+{
+    $user = User::factory()->create();
+
+    foreach ($cancelled as $subdomain => $isCancelled) {
+        $tenant = Tenant::factory()->create(['subdomain' => $subdomain, 'cancelled_at' => $isCancelled ? now() : null]);
+        $tenant->members()->attach($user, ['is_owner' => true, 'is_default_tenant' => $subdomain === ($default[0] ?? array_key_first($cancelled))]);
+    }
+
+    return $user->fresh();
+}
+
+beforeEach(function () {
+    Filament::setCurrentPanel(Filament::getPanel('app'));
+    Filament::bootCurrentPanel();
+});
+
+test('a user whose only tenant is cancelled cannot access the tenant panel', function () {
+    $user = userWithTenants(['gone' => true]);
+
+    expect($user->hasOnlyCancelledTenants())->toBeTrue()
+        ->and($user->canAccessPanel(Filament::getPanel('app')))->toBeFalse();
+});
+
+test('a user with at least one active tenant can still access the panel', function () {
+    $user = userWithTenants(['gone' => true, 'live' => false]);
+
+    expect($user->hasOnlyCancelledTenants())->toBeFalse()
+        ->and($user->canAccessPanel(Filament::getPanel('app')))->toBeTrue();
+});
+
+test('a user without any tenant is not treated as cancelled', function () {
+    expect(User::factory()->create()->hasOnlyCancelledTenants())->toBeFalse();
+});
+
+test('cancelled tenants are left out of the tenant switcher', function () {
+    $user = userWithTenants(['gone' => true, 'live' => false]);
+
+    expect($user->getTenants(Filament::getPanel('app'))->pluck('subdomain')->all())->toBe(['live']);
+});
+
+test('the default tenant skips a cancelled default and falls back to an active one', function () {
+    $user = userWithTenants(['gone' => true, 'live' => false], ['gone']);
+
+    expect($user->getDefaultTenant(Filament::getPanel('app'))->subdomain)->toBe('live');
+});
+
+test('the default tenant is null when everything is cancelled', function () {
+    $user = userWithTenants(['gone' => true, 'gone2' => true]);
+
+    expect($user->getDefaultTenant(Filament::getPanel('app')))->toBeNull();
+});
+
+test('an active default tenant is still preferred', function () {
+    $user = userWithTenants(['first' => false, 'second' => false], ['second']);
+
+    expect($user->getDefaultTenant(Filament::getPanel('app'))->subdomain)->toBe('second');
+});
+
+test('a request to a cancelled tenant is sent to another active tenant of the user', function () {
+    $user = userWithTenants(['gone' => true, 'live' => false]);
+    $gone = Tenant::query()->where('subdomain', 'gone')->first();
+
+    $this->actingAsTenantUser($user, $gone);
+
+    $this->get($this->tenantUrl($gone))
+        ->assertRedirect(Filament::getUrl(Tenant::query()->where('subdomain', 'live')->first()));
+});
+
+test('a request to a cancelled tenant is refused when the user has nowhere else to go', function () {
+    $user = userWithTenants(['gone' => true]);
+    $gone = Tenant::query()->where('subdomain', 'gone')->first();
+
+    $this->actingAsTenantUser($user, $gone);
+
+    $this->get($this->tenantUrl($gone))->assertForbidden();
+});
+
+test('an active tenant is served as usual', function () {
+    $user = userWithTenants(['live' => false]);
+    $live = Tenant::query()->where('subdomain', 'live')->first();
+
+    $this->actingAsTenantUser($user, $live);
+
+    expect($this->get($this->tenantUrl($live))->status())->not->toBe(403);
+});
+
+test('signing in is refused for a user of a cancelled tenant', function () {
+    $user = userWithTenants(['gone' => true]);
+
+    Livewire::test(Login::class)
+        ->fillForm(['email' => $user->email, 'password' => 'password'])
+        ->call('authenticate')
+        ->assertHasFormErrors(['email']);
+
+    expect(auth(AuthGuard::TENANT->value)->check())->toBeFalse();
+});
+
+test('signing in still works for a user with an active tenant', function () {
+    $user = userWithTenants(['live' => false]);
+
+    Livewire::test(Login::class)
+        ->fillForm(['email' => $user->email, 'password' => 'password'])
+        ->call('authenticate')
+        ->assertHasNoFormErrors();
+
+    expect(auth(AuthGuard::TENANT->value)->check())->toBeTrue();
+});
+
+test('cancelling a tenant locks out a user who has no other tenant', function () {
+    $owner = User::factory()->create();
+    $tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $owner);
+
+    expect($owner->fresh()->canAccessPanel(Filament::getPanel('app')))->toBeTrue();
+
+    $tenant->forceFill(['cancelled_at' => now()])->save();
+
+    expect($owner->fresh()->canAccessPanel(Filament::getPanel('app')))->toBeFalse();
+});
+
+test('the middleware refuses a cancelled tenant outright when the user has no other tenant to go to', function () {
+    $user = userWithTenants(['gone' => true]);
+    $gone = Tenant::query()->where('subdomain', 'gone')->first();
+    $this->actingAsTenantUser($user, $gone);
+
+    $middleware = app(EnsureTenantIsNotCancelled::class);
+
+    expect(fn () => $middleware->handle(Request::create('/'), fn () => response('ok')))
+        ->toThrow(HttpException::class, 'This account has been cancelled.');
+});
+
+test('the middleware lets an active tenant through untouched', function () {
+    $user = userWithTenants(['live' => false]);
+    $live = Tenant::query()->where('subdomain', 'live')->first();
+    $this->actingAsTenantUser($user, $live);
+
+    $response = app(EnsureTenantIsNotCancelled::class)
+        ->handle(Request::create('/'), fn () => response('ok'));
+
+    expect($response->getContent())->toBe('ok');
+});

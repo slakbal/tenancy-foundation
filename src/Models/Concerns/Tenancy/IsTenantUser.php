@@ -22,7 +22,8 @@ trait IsTenantUser
     {
         return $this instanceof self
             && $panel->getAuthGuard() === AuthGuard::TENANT->getAuthGuard()
-            && $this->guard_name === AuthGuard::TENANT->value;
+            && $this->guard_name === AuthGuard::TENANT->value
+            && ! $this->hasOnlyCancelledTenants();
 
         // todo also do checks so that e.g. models have a specific role or permission to access the admin panel, e.g. 'admin' role or 'access admin panel' permission
     }
@@ -96,9 +97,16 @@ trait IsTenantUser
         return $this->tenants()->wherePivot('is_owner', false);
     }
 
+    public function hasOnlyCancelledTenants(): bool
+    {
+        $this->loadTenantsOnce();
+
+        return $this->tenants->isNotEmpty() && $this->tenants->every->isCancelled();
+    }
+
     public function getTenants(Panel $panel): Collection
     {
-        return $this->tenants;
+        return $this->tenants->reject->isCancelled()->values();
     }
 
     /**
@@ -115,10 +123,10 @@ trait IsTenantUser
 
     public function getDefaultTenant(Panel $panel): ?Model
     {
-        // 1. Ensure the relationship is loaded in memory once
         $this->loadTenantsOnce();
 
-        return $this->tenants->firstWhere('pivot.is_default_tenant', true)
-            ?? $this->tenants->first();
+        $active = $this->getTenants($panel);
+
+        return $active->firstWhere('pivot.is_default_tenant', true) ?? $active->first();
     }
 }

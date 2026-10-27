@@ -5,12 +5,16 @@ namespace Slakbal\TenancyFoundation;
 use Filament\Auth\Http\Responses\Contracts\LogoutResponse as LogoutResponseContract;
 use Filament\Auth\Http\Responses\Contracts\RegistrationResponse as RegistrationResponseContract;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Slakbal\TenancyFoundation\Console\InstallCommand;
+use Slakbal\TenancyFoundation\Events\TenantCancelled;
 use Slakbal\TenancyFoundation\Events\TenantRegistered;
 use Slakbal\TenancyFoundation\Http\Responses\LogoutResponse;
 use Slakbal\TenancyFoundation\Http\Responses\RegistrationResponse;
+use Slakbal\TenancyFoundation\Jobs\DeleteDueTenants;
+use Slakbal\TenancyFoundation\Listeners\SendCancellationNotification;
 use Slakbal\TenancyFoundation\Listeners\SendWelcomeNotification;
 use Slakbal\TenancyFoundation\Listeners\UpdateLastLogin;
 
@@ -19,12 +23,25 @@ class TenancyFoundationServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/tenancy-foundation.php', 'tenancy-foundation');
+        $this->mergeConfigSections(['models', 'notifications', 'redirects', 'cancellation']);
         $this->mergeConfigFrom(__DIR__.'/../config/filament-defaults.php', 'filament-defaults');
 
         $this->app->register(FilamentDefaultsServiceProvider::class);
 
         if (config('tenancy-foundation.register_auth_defaults')) {
             $this->registerAuthDefaults();
+        }
+    }
+
+    /**
+     * @param  array<int, string>  $sections
+     */
+    protected function mergeConfigSections(array $sections): void
+    {
+        $defaults = require __DIR__.'/../config/tenancy-foundation.php';
+
+        foreach ($sections as $section) {
+            config(["tenancy-foundation.{$section}" => array_merge($defaults[$section], config("tenancy-foundation.{$section}", []))]);
         }
     }
 
@@ -53,6 +70,16 @@ class TenancyFoundationServiceProvider extends ServiceProvider
         $this->app->bind(RegistrationResponseContract::class, RegistrationResponse::class);
 
         Event::listen(TenantRegistered::class, SendWelcomeNotification::class);
+        Event::listen(TenantCancelled::class, SendCancellationNotification::class);
+
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+            if (config('tenancy-foundation.cancellation.schedule_deletion')) {
+                $schedule->job(new DeleteDueTenants)
+                    ->dailyAt(config('tenancy-foundation.cancellation.deletion_time'))
+                    ->onOneServer()
+                    ->withoutOverlapping();
+            }
+        });
 
         if (config('tenancy-foundation.register_last_login_listener')) {
             Event::listen(Login::class, UpdateLastLogin::class);
