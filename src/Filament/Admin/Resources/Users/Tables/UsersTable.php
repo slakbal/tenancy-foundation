@@ -14,7 +14,8 @@ class UsersTable extends BaseUsersTable
     protected static function modifyQuery(Table $table): Table
     {
         return $table->modifyQueryUsing(fn ($query) => $query->with([
-            'tenants',
+            'ownedTenants',
+            'memberTenants',
         ]));
     }
 
@@ -26,7 +27,8 @@ class UsersTable extends BaseUsersTable
         $columns = parent::columns();
 
         array_splice($columns, 2, 0, [
-            WrappedBadgeColumn::make('tenants.name')->label(__('Tenants')),
+            WrappedBadgeColumn::make('ownedTenants.name')->label(__('Owner of')),
+            WrappedBadgeColumn::make('memberTenants.name')->label(__('Member of')),
         ]);
 
         return $columns;

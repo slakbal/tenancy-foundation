@@ -36,5 +36,7 @@
     "View Only": "View Only",
     "Welcome to :app": "Welcome to :app",
     "Welcome!": "Welcome!",
-    "Your tenant :tenant has been created and you are its owner.": "Your tenant :tenant has been created and you are its owner."
+    "Your tenant :tenant has been created and you are its owner.": "Your tenant :tenant has been created and you are its owner.",
+    "Owner of": "Owner of",
+    "Member of": "Member of"
 }

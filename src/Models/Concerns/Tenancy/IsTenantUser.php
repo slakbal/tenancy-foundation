@@ -50,6 +50,16 @@ trait IsTenantUser
             ->withTimestamps();
     }
 
+    public function ownedTenants(): BelongsToMany
+    {
+        return $this->tenants()->wherePivot('is_owner', true);
+    }
+
+    public function memberTenants(): BelongsToMany
+    {
+        return $this->tenants()->wherePivot('is_owner', false);
+    }
+
     public function getTenants(Panel $panel): Collection
     {
         return $this->tenants;
