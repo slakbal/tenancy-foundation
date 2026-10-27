@@ -4,6 +4,7 @@ namespace Slakbal\TenancyFoundation\Plugins;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Gate;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Filament\Pages\EditTenantProfile;
@@ -14,6 +15,7 @@ use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureUserHasTenant;
 use Slakbal\TenancyFoundation\Http\Middleware\SyncTenantPermissionsContext;
 use Slakbal\TenancyFoundation\Support\PolicyResolver;
+use Slakbal\TenancyFoundation\Support\SoleOwnerGuard;
 
 class TenantPlugin implements Plugin
 {
@@ -79,7 +81,13 @@ class TenantPlugin implements Plugin
 
     public function boot(Panel $panel): void
     {
-        Gate::before(fn ($user, $ability): ?bool => method_exists($user, 'hasRole') && $user->hasRole(TenantRoles::OWNER) ? true : null);
+        Gate::before(function ($user, $ability, $arguments = []): Response|bool|null {
+            if ($denial = SoleOwnerGuard::denial($ability, $arguments)) {
+                return $denial;
+            }
+
+            return method_exists($user, 'hasRole') && $user->hasRole(TenantRoles::OWNER) ? true : null;
+        });
 
         Gate::guessPolicyNamesUsing(fn (string $modelClass): string => PolicyResolver::resolve('Tenant', $modelClass));
     }

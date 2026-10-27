@@ -3,9 +3,11 @@
 namespace Slakbal\TenancyFoundation\Models\Concerns\Tenancy;
 
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Models\TenantUser;
 
@@ -53,6 +55,40 @@ trait IsTenantUser
     public function ownedTenants(): BelongsToMany
     {
         return $this->tenants()->wherePivot('is_owner', true);
+    }
+
+    public function scopeWithSoleOwnerFlag(Builder $query): void
+    {
+        $users = $this->getTable();
+
+        $query->addSelect([
+            'is_sole_owner' => DB::table('tenant_user as owned')
+                ->selectRaw('1')
+                ->whereColumn('owned.user_id', $users.'.id')
+                ->where('owned.is_owner', true)
+                ->whereNotExists(fn ($others) => $others
+                    ->selectRaw('1')
+                    ->from('tenant_user as co')
+                    ->join($users.' as co_users', 'co_users.id', '=', 'co.user_id')
+                    ->whereColumn('co.tenant_id', 'owned.tenant_id')
+                    ->whereColumn('co.user_id', '!=', 'owned.user_id')
+                    ->where('co.is_owner', true)
+                    ->whereNull('co_users.deleted_at'))
+                ->limit(1),
+        ]);
+    }
+
+    public function isSoleOwnerOfAnyTenant(): bool
+    {
+        if (array_key_exists('is_sole_owner', $this->attributes)) {
+            return (bool) $this->attributes['is_sole_owner'];
+        }
+
+        return (bool) static::query()
+            ->withoutGlobalScopes()
+            ->whereKey($this->getKey())
+            ->withSoleOwnerFlag()
+            ->value('is_sole_owner');
     }
 
     public function memberTenants(): BelongsToMany

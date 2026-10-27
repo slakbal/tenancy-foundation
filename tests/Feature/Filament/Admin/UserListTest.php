@@ -34,7 +34,8 @@ test('an admin with USER_VIEW_ANY sees users from every tenant in the table', fu
     Livewire::test(ListUsers::class)
         ->assertSuccessful()
         ->assertCanSeeTableRecords([$userA, $userB])
-        ->assertTableColumnExists('tenants.name');
+        ->assertTableColumnExists('ownedTenants.name')
+        ->assertTableColumnExists('memberTenants.name');
 });
 
 test('an admin without USER_VIEW_ANY is forbidden from the users list', function () {

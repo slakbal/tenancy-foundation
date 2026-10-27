@@ -38,5 +38,12 @@
     "Welcome!": "Welcome!",
     "Your tenant :tenant has been created and you are its owner.": "Your tenant :tenant has been created and you are its owner.",
     "Owner of": "Owner of",
-    "Member of": "Member of"
+    "Member of": "Member of",
+    "Make owner": "Make owner",
+    ":name is the only owner of a tenant and cannot be deleted. Make another member an owner first.": ":name is the only owner of a tenant and cannot be deleted. Make another member an owner first.",
+    "Make this user the owner?": "Make this user the owner?",
+    "Ownership of this tenant is transferred to this user. You will no longer be the owner.": "Ownership of this tenant is transferred to this user. You will no longer be the owner.",
+    ":name is now the owner of this tenant.": ":name is now the owner of this tenant.",
+    "Ownership of the selected tenant is transferred to this user. The previous owner stays a member.": "Ownership of the selected tenant is transferred to this user. The previous owner stays a member.",
+    ":name is now the owner of :tenant.": ":name is now the owner of :tenant."
 }

@@ -4,13 +4,13 @@ namespace Slakbal\TenancyFoundation\Actions;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Events\TenantRegistered;
-use Spatie\Permission\PermissionRegistrar;
 
 readonly class CreateTenant
 {
+    public function __construct(private AssignTenantRole $assignTenantRole) {}
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -26,24 +26,11 @@ readonly class CreateTenant
                 'is_default_tenant' => $isFirstTenant,
             ]);
 
-            $this->assignOwnerRole($owner, $tenant);
+            $this->assignTenantRole->handle($owner, $tenant, TenantRoles::OWNER);
 
             DB::afterCommit(fn () => TenantRegistered::dispatch($tenant, $owner));
 
             return $tenant;
         });
-    }
-
-    protected function assignOwnerRole(Model $owner, Model $tenant): void
-    {
-        $registrar = app(PermissionRegistrar::class);
-        $previousTeamId = $registrar->getPermissionsTeamId();
-
-        $registrar->getRoleClass()::findOrCreate(TenantRoles::OWNER->value, AuthGuard::TENANT->value);
-
-        $registrar->setPermissionsTeamId($tenant->getKey());
-        $owner->unsetRelation('roles')->assignRole(TenantRoles::OWNER);
-        $registrar->setPermissionsTeamId($previousTeamId);
-        $owner->unsetRelation('roles');
     }
 }

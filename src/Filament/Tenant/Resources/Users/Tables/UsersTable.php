@@ -2,16 +2,18 @@
 
 namespace Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Tables;
 
+use Filament\Actions\Action;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Table;
 use Slakbal\TenancyFoundation\Filament\Components\Resources\Users\UsersTable as BaseUsersTable;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\MakeTenantOwnerAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\WrappedBadgeColumn;
 
 class UsersTable extends BaseUsersTable
 {
     protected static function modifyQuery(Table $table): Table
     {
-        return $table->modifyQueryUsing(fn ($query) => $query->with([
+        return $table->modifyQueryUsing(fn ($query) => $query->withSoleOwnerFlag()->with([
             'ownedTenants',
             'memberTenants',
         ]));
@@ -30,5 +32,16 @@ class UsersTable extends BaseUsersTable
         ]);
 
         return $columns;
+    }
+
+    /**
+     * @return array<int, Action>
+     */
+    protected static function recordActions(): array
+    {
+        return [
+            MakeTenantOwnerAction::make(),
+            ...parent::recordActions(),
+        ];
     }
 }

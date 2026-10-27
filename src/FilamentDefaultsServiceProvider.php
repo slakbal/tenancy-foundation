@@ -150,6 +150,7 @@ class FilamentDefaultsServiceProvider extends ServiceProvider
                 ->icon(Heroicon::OutlinedPencilSquare)
                 ->hiddenLabel()
                 ->iconButton()
+                ->tooltip(fn (): string => $action->getLabel())
             );
         }
 
@@ -158,6 +159,7 @@ class FilamentDefaultsServiceProvider extends ServiceProvider
                 ->icon(Heroicon::OutlinedTrash)
                 ->hiddenLabel()
                 ->iconButton()
+                ->tooltip(fn (): string => $action->getLabel())
             );
         }
 
@@ -166,6 +168,7 @@ class FilamentDefaultsServiceProvider extends ServiceProvider
                 ->icon(Heroicon::OutlinedEye)
                 ->hiddenLabel()
                 ->iconButton()
+                ->tooltip(fn (): string => $action->getLabel())
             );
         }
 
@@ -174,6 +177,7 @@ class FilamentDefaultsServiceProvider extends ServiceProvider
                 ->icon(Heroicon::ArrowUturnLeft)
                 ->hiddenLabel()
                 ->iconButton()
+                ->tooltip(fn (): string => $action->getLabel())
             );
         }
 
@@ -182,6 +186,7 @@ class FilamentDefaultsServiceProvider extends ServiceProvider
                 ->icon(Heroicon::OutlinedTrash)
                 ->hiddenLabel()
                 ->iconButton()
+                ->tooltip(fn (): string => $action->getLabel())
             );
         }
 
