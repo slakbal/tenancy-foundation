@@ -1,0 +1,65 @@
+{
+    "schema": 1,
+    "tool": "sloppy",
+    "generated_at": "2026-10-28T14:32:04+00:00",
+    "score": 95,
+    "total": 7,
+    "entries": [
+        {
+            "id": "aa26c0eb4c253421",
+            "rule": "SL101",
+            "file": "src/FilamentDefaultsServiceProvider.php",
+            "fingerprint": "FilamentDefaultsServiceProvider::applyActionDefaults",
+            "count": 1,
+            "message": "FilamentDefaultsServiceProvider::applyActionDefaults() spans 93 lines with 24 statements, cyclomatic complexity 13, nesting depth 1 and 58 calls to 29 distinct collaborators."
+        },
+        {
+            "id": "2807fa03613c9389",
+            "rule": "SL102",
+            "file": "src/FilamentDefaultsServiceProvider.php",
+            "fingerprint": "FilamentDefaultsServiceProvider",
+            "count": 1,
+            "message": "FilamentDefaultsServiceProvider spans 375 lines with 16 methods (3 public), 112 statements and talks to 75 distinct collaborators."
+        },
+        {
+            "id": "18a638100c6bee5a",
+            "rule": "SL109",
+            "file": "src/Enums/Authorisation/AdminPermissions.php",
+            "fingerprint": "file:contact-requests",
+            "count": 1,
+            "message": "Comment \"Contact Requests\" restates the code below it."
+        },
+        {
+            "id": "0fada9858dd68317",
+            "rule": "SL109",
+            "file": "src/Enums/Authorisation/AdminPermissions.php",
+            "fingerprint": "file:impersonate-users",
+            "count": 1,
+            "message": "Comment \"Impersonate Users\" restates the code below it."
+        },
+        {
+            "id": "e35b2bc0bcfe73d7",
+            "rule": "SL109",
+            "file": "src/Enums/Authorisation/AdminPermissions.php",
+            "fingerprint": "file:tenants",
+            "count": 1,
+            "message": "Comment \"Tenants\" restates the code below it."
+        },
+        {
+            "id": "ece2380940f730c8",
+            "rule": "SL109",
+            "file": "src/Enums/Authorisation/TenantPermissions.php",
+            "fingerprint": "file:tenant",
+            "count": 1,
+            "message": "Comment \"TENANT\" restates the code below it."
+        },
+        {
+            "id": "21ef1de74e587a1f",
+            "rule": "SL109",
+            "file": "src/Enums/Authorisation/TenantPermissions.php",
+            "fingerprint": "file:users",
+            "count": 1,
+            "message": "Comment \"USERS\" restates the code below it."
+        }
+    ]
+}

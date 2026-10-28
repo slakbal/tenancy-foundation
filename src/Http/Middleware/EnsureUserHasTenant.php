@@ -16,12 +16,10 @@ class EnsureUserHasTenant
 
             $user = Auth::user();
 
-            // 1. Ensure the collection is in memory (0 extra queries if already loaded)
             if (! $user->relationLoaded('tenants')) {
                 $user->load('tenants');
             }
 
-            // 2. Check the in-memory collection length instead of querying the database
             if ($user->tenants->isEmpty()) {
                 // Log out from current guard
                 Auth::guard(Filament::getAuthGuard())->logout();

@@ -40,12 +40,10 @@ class RegisterTenant extends BaseRegisterTenant
             return false;
         }
 
-        // 1. Load the relationship into memory if not already loaded
         if (! $user->relationLoaded('tenants')) {
             $user->load('tenants');
         }
 
-        // 2. Check the in-memory collection (0 extra database queries)
         return $user->tenants->isEmpty();
     }
 
