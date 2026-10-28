@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Console\InstallCommand;
+use Slakbal\TenancyFoundation\Events\ContactRequestAnswered;
 use Slakbal\TenancyFoundation\Events\ContactRequestReceived;
 use Slakbal\TenancyFoundation\Events\TenantCancelled;
 use Slakbal\TenancyFoundation\Events\TenantRegistered;
@@ -18,6 +19,7 @@ use Slakbal\TenancyFoundation\Http\Responses\RegistrationResponse;
 use Slakbal\TenancyFoundation\Jobs\DeleteDueTenants;
 use Slakbal\TenancyFoundation\Listeners\NotifyAdminsOfContactRequest;
 use Slakbal\TenancyFoundation\Listeners\SendCancellationNotification;
+use Slakbal\TenancyFoundation\Listeners\SendContactResponseNotification;
 use Slakbal\TenancyFoundation\Listeners\SendWelcomeNotification;
 use Slakbal\TenancyFoundation\Listeners\UpdateLastLogin;
 use Slakbal\TenancyFoundation\Livewire\PublicContactForm;
@@ -67,19 +69,42 @@ class TenancyFoundationServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->bootResources();
+        $this->bootBindings();
+        $this->bootEventListeners();
+        $this->bootSchedule();
+        $this->bootConsole();
+    }
+
+    protected function bootResources(): void
+    {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadJsonTranslationsFrom(__DIR__.'/../lang');
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'tenancy-foundation');
 
         Livewire::component('public-contact-form', PublicContactForm::class);
+    }
 
+    protected function bootBindings(): void
+    {
         $this->app->bind(LogoutResponseContract::class, LogoutResponse::class);
         $this->app->bind(RegistrationResponseContract::class, RegistrationResponse::class);
+    }
 
+    protected function bootEventListeners(): void
+    {
         Event::listen(TenantRegistered::class, SendWelcomeNotification::class);
         Event::listen(TenantCancelled::class, SendCancellationNotification::class);
         Event::listen(ContactRequestReceived::class, NotifyAdminsOfContactRequest::class);
+        Event::listen(ContactRequestAnswered::class, SendContactResponseNotification::class);
 
+        if (config('tenancy-foundation.register_last_login_listener')) {
+            Event::listen(Login::class, UpdateLastLogin::class);
+        }
+    }
+
+    protected function bootSchedule(): void
+    {
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
             if (config('tenancy-foundation.cancellation.schedule_deletion')) {
                 $schedule->job(new DeleteDueTenants)
@@ -88,31 +113,48 @@ class TenancyFoundationServiceProvider extends ServiceProvider
                     ->withoutOverlapping();
             }
 
-            if (config('tenancy-foundation.contact_requests.schedule_pruning')) {
-                $schedule->command('model:prune', ['--model' => [config('tenancy-foundation.models.contact_request')]])
+            if (config('tenancy-foundation.schedule_pruning')) {
+                $schedule->command('model:prune')
                     ->daily()
-                    ->onOneServer();
+                    ->onOneServer()
+                    ->withoutOverlapping();
+
+                $schedule->command('model:prune', ['--model' => $this->prunableModels()])
+                    ->daily()
+                    ->onOneServer()
+                    ->withoutOverlapping();
             }
         });
+    }
 
-        if (config('tenancy-foundation.register_last_login_listener')) {
-            Event::listen(Login::class, UpdateLastLogin::class);
+    /**
+     * @return array<int, class-string>
+     */
+    protected function prunableModels(): array
+    {
+        return [
+            config('tenancy-foundation.models.contact_request'),
+        ];
+    }
+
+    protected function bootConsole(): void
+    {
+        if (! $this->app->runningInConsole()) {
+            return;
         }
 
-        if ($this->app->runningInConsole()) {
-            $this->commands([InstallCommand::class]);
+        $this->commands([InstallCommand::class]);
 
-            $this->publishes([
-                __DIR__.'/../config/tenancy-foundation.php' => config_path('tenancy-foundation.php'),
-            ], 'tenancy-foundation-config');
+        $this->publishes([
+            __DIR__.'/../config/tenancy-foundation.php' => config_path('tenancy-foundation.php'),
+        ], 'tenancy-foundation-config');
 
-            $this->publishes([
-                __DIR__.'/../config/filament-defaults.php' => config_path('filament-defaults.php'),
-            ], 'tenancy-foundation-defaults');
+        $this->publishes([
+            __DIR__.'/../config/filament-defaults.php' => config_path('filament-defaults.php'),
+        ], 'tenancy-foundation-defaults');
 
-            $this->publishes([
-                __DIR__.'/../resources/views' => resource_path('views/vendor/tenancy-foundation'),
-            ], 'tenancy-foundation-views');
-        }
+        $this->publishes([
+            __DIR__.'/../resources/views' => resource_path('views/vendor/tenancy-foundation'),
+        ], 'tenancy-foundation-views');
     }
 }

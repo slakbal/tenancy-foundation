@@ -3,6 +3,7 @@
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
@@ -16,6 +17,7 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\ContactRe
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\Pages\EditContactRequest;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\Pages\ListContactRequests;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\Widgets\ContactRequestStats;
+use Slakbal\TenancyFoundation\Events\ContactRequestAnswered;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\ContactRequest;
 use Slakbal\TenancyFoundation\Notifications\ContactRequestResponded;
@@ -271,13 +273,15 @@ test('pruning is disabled when the configured days are zero', function (mixed $d
     expect(ContactRequest::query()->count())->toBe(1);
 })->with([0, null]);
 
-test('the pruning command is scheduled daily for the configured model', function () {
-    $event = collect(app(Illuminate\Console\Scheduling\Schedule::class)->events())
-        ->first(fn ($event): bool => str_contains((string) $event->command, 'model:prune'));
+test('the prune command is scheduled for app models and the package models, once across servers', function () {
+    $events = collect(app(Illuminate\Console\Scheduling\Schedule::class)->events())
+        ->filter(fn ($event): bool => str_contains((string) $event->command, 'model:prune'))
+        ->values();
 
-    expect($event)->not->toBeNull()
-        ->and($event->command)->toContain(ContactRequest::class)
-        ->and($event->expression)->toBe('0 0 * * *');
+    expect($events)->toHaveCount(2)
+        ->and($events->every(fn ($event): bool => $event->expression === '0 0 * * *' && $event->onOneServer && $event->withoutOverlapping))->toBeTrue()
+        ->and($events->contains(fn ($event): bool => ! str_contains($event->command, '--model')))->toBeTrue()
+        ->and($events->contains(fn ($event): bool => str_contains($event->command, '--model') && str_contains($event->command, ContactRequest::class)))->toBeTrue();
 });
 
 test('the resource can be swapped through the admin plugin', function () {
@@ -454,4 +458,38 @@ test('the table and stats poll every minute for new requests', function () {
     $request = ContactRequest::factory()->create();
 
     $page->call('$refresh')->assertCanSeeTableRecords([$request]);
+});
+
+test('responding dispatches the answered event after the response is stored', function () {
+    Event::fake([ContactRequestAnswered::class]);
+    Notification::fake();
+    $request = ContactRequest::factory()->create();
+
+    app(Slakbal\TenancyFoundation\Actions\RespondToContactRequest::class)->handle($request, 'Done', 'Agent');
+
+    Event::assertDispatchedTimes(ContactRequestAnswered::class, 1);
+    Event::assertDispatched(ContactRequestAnswered::class, fn ($event): bool => $event->contactRequest->is($request) && $event->contactRequest->response === 'Done');
+    Notification::assertNothingSent();
+});
+
+test('the response email is sent by the listener and can be switched off through config', function () {
+    Notification::fake();
+    $request = ContactRequest::factory()->responded()->create(['name' => 'Jane Doe', 'email' => 'jane@example.com']);
+
+    config(['tenancy-foundation.notifications.contact_response' => null]);
+    event(new ContactRequestAnswered($request));
+    Notification::assertNothingSent();
+
+    config(['tenancy-foundation.notifications.contact_response' => ContactRequestResponded::class]);
+    event(new ContactRequestAnswered($request));
+    Notification::assertSentOnDemandTimes(ContactRequestResponded::class, 1);
+});
+
+test('a failed response never dispatches the event', function () {
+    Event::fake([ContactRequestAnswered::class]);
+    $request = ContactRequest::factory()->responded()->create();
+
+    expect(fn () => app(Slakbal\TenancyFoundation\Actions\RespondToContactRequest::class)->handle($request, 'again', 'Agent'))->toThrow(DomainException::class);
+
+    Event::assertNotDispatched(ContactRequestAnswered::class);
 });

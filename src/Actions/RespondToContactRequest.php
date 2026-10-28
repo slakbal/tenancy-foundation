@@ -4,8 +4,8 @@ namespace Slakbal\TenancyFoundation\Actions;
 
 use DomainException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
 use Slakbal\TenancyFoundation\Enums\ContactStatus;
+use Slakbal\TenancyFoundation\Events\ContactRequestAnswered;
 use Slakbal\TenancyFoundation\Models\ContactRequest;
 
 readonly class RespondToContactRequest
@@ -24,11 +24,7 @@ readonly class RespondToContactRequest
             ])->save();
         });
 
-        $notification = config('tenancy-foundation.notifications.contact_response');
-
-        if ($notification !== null) {
-            Notification::route('mail', [$request->email => $request->name])->notify(new $notification($request));
-        }
+        ContactRequestAnswered::dispatch($request);
 
         return $request;
     }
