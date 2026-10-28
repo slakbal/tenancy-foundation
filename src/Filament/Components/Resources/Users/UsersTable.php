@@ -12,6 +12,7 @@ use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Tables\Columns\Column;
+use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\EmailColumn;
@@ -25,9 +26,7 @@ class UsersTable
     {
         return static::modifyQuery($table)
             ->columns(static::columns())
-            ->filters([
-                TrashedFilter::make(),
-            ])
+            ->filters(static::filters())
             ->recordActions(static::recordActions())
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -36,6 +35,16 @@ class UsersTable
                     RestoreBulkAction::make(),
                 ]),
             ]);
+    }
+
+    /**
+     * @return array<int, BaseFilter>
+     */
+    protected static function filters(): array
+    {
+        return [
+            TrashedFilter::make(),
+        ];
     }
 
     protected static function modifyQuery(Table $table): Table

@@ -68,5 +68,7 @@
     "Everyone is locked out and the owners are emailed. All data is deleted after :days days and cannot be recovered.": "Everyone is locked out and the owners are emailed. All data is deleted after :days days and cannot be recovered.",
     "Everyone can sign in again and the scheduled deletion is cancelled.": "Everyone can sign in again and the scheduled deletion is cancelled.",
     ":tenant has been cancelled.": ":tenant has been cancelled.",
-    ":tenant has been reactivated.": ":tenant has been reactivated."
+    ":tenant has been reactivated.": ":tenant has been reactivated.",
+    "Tenant role": "Tenant role",
+    "No role": "No role"
 }
