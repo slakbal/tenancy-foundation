@@ -68,3 +68,19 @@ test('a captcha token that cloudflare rejects blocks the submission', function (
 
     expect(ContactRequest::query()->count())->toBe(0);
 });
+
+test('the message is limited to 1024 characters', function () {
+    fakeTurnstile(true);
+
+    Livewire::test(PublicContactForm::class)
+        ->fillForm(['name' => 'Jane Doe', 'email' => 'jane@example.com', 'message' => str_repeat('a', 1025), 'captcha' => 'token'])
+        ->call('submit')
+        ->assertHasFormErrors(['message' => 'max']);
+
+    Livewire::test(PublicContactForm::class)
+        ->fillForm(['name' => 'Jane Doe', 'email' => 'jane@example.com', 'message' => str_repeat('a', 1024), 'captcha' => 'token'])
+        ->call('submit')
+        ->assertHasNoFormErrors();
+
+    expect(ContactRequest::query()->count())->toBe(1);
+});

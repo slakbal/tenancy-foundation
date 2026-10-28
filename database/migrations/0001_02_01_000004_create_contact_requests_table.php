@@ -10,11 +10,16 @@ return new class extends Migration
     {
         Schema::create('contact_requests', function (Blueprint $table) {
             $table->id();
+            $table->ulid('ulid')->unique();
             $table->string('name');
             $table->string('email');
             $table->text('message');
             $table->string('source')->default('public')->index();
-            // TODO: Add status; new, in-progress, closed
+            $table->string('status')->default('new')->index();
+            $table->text('response')->nullable();
+            $table->timestamp('responded_at')->nullable();
+            $table->string('responded_by')->nullable();
+            $table->timestamp('closed_at')->nullable()->index();
             $table->timestamps();
         });
     }

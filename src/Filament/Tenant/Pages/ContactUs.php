@@ -62,10 +62,10 @@ class ContactUs extends Page
                 Textarea::make('message')
                     ->label(__('Message'))
                     ->rows(6)
-                    ->maxLength(2048)
+                    ->maxLength(1024)
                     ->required()
                     ->autofocus()
-                    ->helperText(__('Sending as :name (:email)', ['name' => $user->name, 'email' => $user->email])),
+                    ->helperText(__('Sending as :name - :email', ['name' => $user->name, 'email' => $user->email])),
             ]);
     }
 
@@ -73,7 +73,7 @@ class ContactUs extends Page
     {
         return $schema->components([
             Section::make(__('Get in touch'))
-                ->description(__('Send us a message and we will get back to you shortly.'))
+                ->description(__('Send us a message and we will get back to you.'))
                 ->schema([
                     Form::make([EmbeddedSchema::make('form')])
                         ->id('form')

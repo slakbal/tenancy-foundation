@@ -10,11 +10,13 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Console\InstallCommand;
+use Slakbal\TenancyFoundation\Events\ContactRequestReceived;
 use Slakbal\TenancyFoundation\Events\TenantCancelled;
 use Slakbal\TenancyFoundation\Events\TenantRegistered;
 use Slakbal\TenancyFoundation\Http\Responses\LogoutResponse;
 use Slakbal\TenancyFoundation\Http\Responses\RegistrationResponse;
 use Slakbal\TenancyFoundation\Jobs\DeleteDueTenants;
+use Slakbal\TenancyFoundation\Listeners\NotifyAdminsOfContactRequest;
 use Slakbal\TenancyFoundation\Listeners\SendCancellationNotification;
 use Slakbal\TenancyFoundation\Listeners\SendWelcomeNotification;
 use Slakbal\TenancyFoundation\Listeners\UpdateLastLogin;
@@ -25,7 +27,7 @@ class TenancyFoundationServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/tenancy-foundation.php', 'tenancy-foundation');
-        $this->mergeConfigSections(['models', 'notifications', 'redirects', 'cancellation']);
+        $this->mergeConfigSections(['models', 'notifications', 'redirects', 'cancellation', 'contact_requests']);
         $this->mergeConfigFrom(__DIR__.'/../config/filament-defaults.php', 'filament-defaults');
 
         $this->app->register(FilamentDefaultsServiceProvider::class);
@@ -76,6 +78,7 @@ class TenancyFoundationServiceProvider extends ServiceProvider
 
         Event::listen(TenantRegistered::class, SendWelcomeNotification::class);
         Event::listen(TenantCancelled::class, SendCancellationNotification::class);
+        Event::listen(ContactRequestReceived::class, NotifyAdminsOfContactRequest::class);
 
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
             if (config('tenancy-foundation.cancellation.schedule_deletion')) {
@@ -83,6 +86,12 @@ class TenancyFoundationServiceProvider extends ServiceProvider
                     ->dailyAt(config('tenancy-foundation.cancellation.deletion_time'))
                     ->onOneServer()
                     ->withoutOverlapping();
+            }
+
+            if (config('tenancy-foundation.contact_requests.schedule_pruning')) {
+                $schedule->command('model:prune', ['--model' => [config('tenancy-foundation.models.contact_request')]])
+                    ->daily()
+                    ->onOneServer();
             }
         });
 

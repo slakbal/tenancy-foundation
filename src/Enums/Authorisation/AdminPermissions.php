@@ -22,6 +22,13 @@ enum AdminPermissions: string
     case TENANT_CANCEL = 'tenant.cancel';
     case TENANT_REACTIVATE = 'tenant.reactivate';
 
+    // Contact Requests
+    case CONTACT_REQUEST_VIEW_ANY = 'contact_request.view_any';
+    case CONTACT_REQUEST_VIEW = 'contact_request.view';
+    case CONTACT_REQUEST_UPDATE = 'contact_request.update';
+    case CONTACT_REQUEST_RESPOND = 'contact_request.respond';
+    case CONTACT_REQUEST_DELETE = 'contact_request.delete';
+
     // Tenant Users
     case USER_VIEW_ANY = 'user.view_any';
     case USER_VIEW = 'user.view';

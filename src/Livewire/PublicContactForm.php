@@ -58,7 +58,7 @@ class PublicContactForm extends Component implements HasActions, HasSchemas
                 Textarea::make('message')
                     ->label(__('Message'))
                     ->rows(5)
-                    ->maxLength(2048)
+                    ->maxLength(1024)
                     ->required(),
                 Turnstile::make('captcha')
                     ->alignCenter(),

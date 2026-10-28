@@ -24,7 +24,7 @@ test('the source cannot be mass assigned past the action by request data', funct
 });
 
 test('a request created without a source falls back to public', function () {
-    DB::table('contact_requests')->insert(['name' => 'Old', 'email' => 'old@example.com', 'message' => 'Legacy', 'created_at' => now(), 'updated_at' => now()]);
+    DB::table('contact_requests')->insert(['ulid' => (string) Illuminate\Support\Str::ulid(), 'name' => 'Old', 'email' => 'old@example.com', 'message' => 'Legacy', 'created_at' => now(), 'updated_at' => now()]);
 
     expect(ContactRequest::query()->first()->source)->toBe(ContactSource::PUBLIC);
 });

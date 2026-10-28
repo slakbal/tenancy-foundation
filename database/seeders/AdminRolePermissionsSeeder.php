@@ -49,6 +49,10 @@ class AdminRolePermissionsSeeder extends Seeder
                 AdminPermissions::USER_VIEW_ANY->value,
                 AdminPermissions::USER_VIEW->value,
                 AdminPermissions::IMPERSONATE_USER->value,
+                AdminPermissions::CONTACT_REQUEST_VIEW_ANY->value,
+                AdminPermissions::CONTACT_REQUEST_VIEW->value,
+                AdminPermissions::CONTACT_REQUEST_UPDATE->value,
+                AdminPermissions::CONTACT_REQUEST_RESPOND->value,
             ])
         );
     }

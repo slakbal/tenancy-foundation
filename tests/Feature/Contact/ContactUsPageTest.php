@@ -38,7 +38,7 @@ test('the page only asks for the message', function () {
 });
 
 test('the page shows who the message is sent as', function () {
-    Livewire::test(ContactUs::class)->assertSee('Sending as '.$this->user->name.' (jane@example.com)');
+    Livewire::test(ContactUs::class)->assertSee(__('Sending as :name - :email', ['name' => $this->user->name, 'email' => 'jane@example.com']));
 });
 
 test('a message is stored with the name and email of the logged in user and the tenant source', function () {
@@ -70,11 +70,16 @@ test('the message is required and limited in length', function () {
         ->assertHasFormErrors(['message' => 'required']);
 
     Livewire::test(ContactUs::class)
-        ->fillForm(['message' => str_repeat('a', 2049)])
+        ->fillForm(['message' => str_repeat('a', 1025)])
         ->call('submit')
         ->assertHasFormErrors(['message' => 'max']);
 
-    expect(ContactRequest::query()->count())->toBe(0);
+    Livewire::test(ContactUs::class)
+        ->fillForm(['message' => str_repeat('a', 1024)])
+        ->call('submit')
+        ->assertHasNoFormErrors();
+
+    expect(ContactRequest::query()->count())->toBe(1);
 });
 
 test('a name and email posted by the browser are ignored in favour of the logged in user', function () {

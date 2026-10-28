@@ -7,6 +7,7 @@ use Filament\Panel;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Gate;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\ContactRequestResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\TenantResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Support\PolicyResolver;
@@ -17,6 +18,8 @@ class AdminPlugin implements Plugin
     protected string $userResource = UserResource::class;
 
     protected string $tenantResource = TenantResource::class;
+
+    protected string $contactRequestResource = ContactRequestResource::class;
 
     public static function make(): static
     {
@@ -42,9 +45,17 @@ class AdminPlugin implements Plugin
         return $this;
     }
 
+    public function usingContactRequestResource(string $resource): static
+    {
+        $this->contactRequestResource = $resource;
+
+        return $this;
+    }
+
     public function register(Panel $panel): void
     {
-        $panel->resources([$this->userResource, $this->tenantResource]);
+        $panel->databaseNotifications();
+        $panel->resources([$this->userResource, $this->tenantResource, $this->contactRequestResource]);
     }
 
     public function boot(Panel $panel): void
