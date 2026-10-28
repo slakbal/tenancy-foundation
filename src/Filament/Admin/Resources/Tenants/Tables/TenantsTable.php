@@ -19,12 +19,16 @@ class TenantsTable
 {
     public static function configure(Table $table): Table
     {
-        return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with('owners'))
+        return static::modifyQuery($table)
             ->defaultSort('created_at', 'desc')
             ->columns(static::columns())
             ->filters(static::filters())
             ->recordActions(static::recordActions());
+    }
+
+    protected static function modifyQuery(Table $table): Table
+    {
+        return $table;
     }
 
     /**
@@ -41,18 +45,14 @@ class TenantsTable
                 ->label(__('Subdomain'))
                 ->searchable()
                 ->sortable(),
-            TextColumn::make('owners.email')
-                ->label(__('Owner'))
-                ->searchable()
-                ->wrap(),
-            TextColumn::make('members_count')
-                ->label(__('Members'))
-                ->counts('members')
-                ->sortable(),
             TextColumn::make('status')
                 ->label(__('Status'))
                 ->badge()
                 ->sortable(query: fn (Builder $query, string $direction) => $query->orderBy('cancelled_at', $direction)),
+            TextColumn::make('created_at')
+                ->label(__('Created'))
+                ->dateTime()
+                ->sortable(),
             TextColumn::make('cancelled_at')
                 ->label(__('Cancelled'))
                 ->dateTime()
@@ -64,11 +64,6 @@ class TenantsTable
                 ->description(fn (Model $record): ?string => $record->scheduled_for_deletion_at?->diffForHumans())
                 ->placeholder('-')
                 ->sortable(),
-            TextColumn::make('created_at')
-                ->label(__('Created'))
-                ->dateTime()
-                ->sortable()
-                ->toggleable(isToggledHiddenByDefault: true),
         ];
     }
 

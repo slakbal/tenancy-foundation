@@ -78,14 +78,15 @@ test('the list shows every tenant active or cancelled', function () {
         ->assertCanSeeTableRecords([$this->live, $this->gone]);
 });
 
-test('the list shows the status, the owner, the member count and the deletion date', function () {
+test('the list shows the status and the deletion date, without owner or member columns', function () {
     actAsManager();
 
     Livewire::test(ListTenants::class)
         ->assertTableColumnStateSet('status', TenantStatus::ACTIVE, $this->live)
         ->assertTableColumnStateSet('status', TenantStatus::CANCELLED, $this->gone)
-        ->assertTableColumnStateSet('owners.email', ['gone@owner.test'], $this->gone)
-        ->assertTableColumnStateSet('members_count', 1, $this->live)
+        ->assertTableColumnDoesNotExist('owners.email')
+        ->assertTableColumnDoesNotExist('members_count')
+        ->assertTableColumnVisible('created_at')
         ->assertTableColumnStateSet('scheduled_for_deletion_at', $this->gone->scheduled_for_deletion_at, $this->gone)
         ->assertTableColumnStateSet('scheduled_for_deletion_at', null, $this->live);
 });
