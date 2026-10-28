@@ -4,11 +4,11 @@ use Filament\Facades\Filament;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
+use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Filters\RoleFilter;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Pages\ListUsers;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
-use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
