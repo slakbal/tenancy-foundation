@@ -140,13 +140,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Panel defaults (top navigation bar, full width)
+    | Panel defaults (top navigation bar, content width)
     |--------------------------------------------------------------------------
+    |
+    | top_navigation     Panel → top navigation instead of the sidebar.
+    | max_content_width  Maximum width of the panel's main content container.
+    |                    Any Filament\Support\Enums\Width value: '3xs' to '7xl',
+    |                    'full', 'screen', 'screen-sm' to 'screen-2xl', 'prose',
+    |                    'container', 'min', 'max', 'fit' or 'none'. Leave it null
+    |                    to keep Filament's own default ('7xl'). Pages can still
+    |                    set their own $maxContentWidth.
+    |
     */
 
     'panel' => [
-        'top_navigation' => true, // Panel → top navigation
-        'full_width' => true,   // full width container
+        'top_navigation' => true,
+        'max_content_width' => 'container',
     ],
 
     /*

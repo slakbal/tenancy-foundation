@@ -350,13 +350,14 @@ class FilamentDefaultsServiceProvider extends ServiceProvider
         if ($this->isItemEnabled('panel', 'top_navigation')) {
             Panel::configureUsing(fn (Panel $panel) => $panel
                 ->topNavigation()
-                ->maxContentWidth(Width::Full)
             );
         }
 
-        if ($this->isItemEnabled('panel', 'full_width')) {
+        $maxContentWidth = config('filament-defaults.panel.max_content_width');
+
+        if (filled($maxContentWidth)) {
             Panel::configureUsing(fn (Panel $panel) => $panel
-                ->maxContentWidth(Width::Full)
+                ->maxContentWidth(Width::tryFrom($maxContentWidth) ?? $maxContentWidth)
             );
         }
     }
