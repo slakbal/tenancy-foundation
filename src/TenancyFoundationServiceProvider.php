@@ -8,6 +8,7 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Console\InstallCommand;
 use Slakbal\TenancyFoundation\Events\TenantCancelled;
 use Slakbal\TenancyFoundation\Events\TenantRegistered;
@@ -17,6 +18,7 @@ use Slakbal\TenancyFoundation\Jobs\DeleteDueTenants;
 use Slakbal\TenancyFoundation\Listeners\SendCancellationNotification;
 use Slakbal\TenancyFoundation\Listeners\SendWelcomeNotification;
 use Slakbal\TenancyFoundation\Listeners\UpdateLastLogin;
+use Slakbal\TenancyFoundation\Livewire\PublicContactForm;
 
 class TenancyFoundationServiceProvider extends ServiceProvider
 {
@@ -65,6 +67,9 @@ class TenancyFoundationServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadJsonTranslationsFrom(__DIR__.'/../lang');
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'tenancy-foundation');
+
+        Livewire::component('public-contact-form', PublicContactForm::class);
 
         $this->app->bind(LogoutResponseContract::class, LogoutResponse::class);
         $this->app->bind(RegistrationResponseContract::class, RegistrationResponse::class);

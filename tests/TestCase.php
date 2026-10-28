@@ -14,6 +14,7 @@ use Filament\Support\SupportServiceProvider;
 use Filament\Tables\TablesServiceProvider;
 use Filament\Widgets\WidgetsServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use l3aro\FilamentTurnstile\FilamentTurnstileServiceProvider;
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Slakbal\TenancyFoundation\Models\Admin;
@@ -43,6 +44,7 @@ abstract class TestCase extends Orchestra
             TablesServiceProvider::class,
             WidgetsServiceProvider::class,
             FilamentServiceProvider::class,
+            FilamentTurnstileServiceProvider::class,
             PermissionServiceProvider::class,
             TenancyFoundationServiceProvider::class,
             AdminPanelProvider::class,

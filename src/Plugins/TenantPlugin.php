@@ -11,6 +11,7 @@ use Slakbal\TenancyFoundation\Filament\Pages\EditTenantProfile;
 use Slakbal\TenancyFoundation\Filament\Pages\EmailVerificationPrompt;
 use Slakbal\TenancyFoundation\Filament\Pages\RegisterTenant;
 use Slakbal\TenancyFoundation\Filament\Pages\RegisterUser;
+use Slakbal\TenancyFoundation\Filament\Tenant\Pages\ContactUs;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureTenantIsNotCancelled;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureUserHasTenant;
@@ -27,6 +28,8 @@ class TenantPlugin implements Plugin
     protected string $registerTenantPage = RegisterTenant::class;
 
     protected string $editTenantProfilePage = EditTenantProfile::class;
+
+    protected string $contactPage = ContactUs::class;
 
     public static function make(): static
     {
@@ -66,6 +69,13 @@ class TenantPlugin implements Plugin
         return $this;
     }
 
+    public function usingContactPage(string $page): static
+    {
+        $this->contactPage = $page;
+
+        return $this;
+    }
+
     public function register(Panel $panel): void
     {
         $panel
@@ -77,7 +87,8 @@ class TenantPlugin implements Plugin
             ->registration($this->registerUserPage)
             ->emailVerification(EmailVerificationPrompt::class)
             ->middleware([EnsureUserHasTenant::class])
-            ->resources([$this->userResource]);
+            ->resources([$this->userResource])
+            ->pages([$this->contactPage]);
     }
 
     public function boot(Panel $panel): void

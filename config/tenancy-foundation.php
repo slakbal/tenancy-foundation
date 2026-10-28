@@ -1,6 +1,7 @@
 <?php
 
 use Slakbal\TenancyFoundation\Models\Admin;
+use Slakbal\TenancyFoundation\Models\ContactRequest;
 use Slakbal\TenancyFoundation\Models\Role;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
@@ -16,6 +17,7 @@ return [
         'user' => User::class,
         'admin' => Admin::class,
         'role' => Role::class,
+        'contact_request' => ContactRequest::class,
     ],
 
     'user_name_attributes' => ['name'],
