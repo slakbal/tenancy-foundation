@@ -100,6 +100,10 @@ class TenancyFoundationServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../config/filament-defaults.php' => config_path('filament-defaults.php'),
             ], 'tenancy-foundation-defaults');
+
+            $this->publishes([
+                __DIR__.'/../resources/views' => resource_path('views/vendor/tenancy-foundation'),
+            ], 'tenancy-foundation-views');
         }
     }
 }
