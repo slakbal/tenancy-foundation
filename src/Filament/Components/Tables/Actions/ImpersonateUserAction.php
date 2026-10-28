@@ -38,7 +38,7 @@ class ImpersonateUserAction
                     'tenant' => $tenant->subdomain,
                 ]);
             })
-            ->backTo(UserResource::getUrl('index'))
+            ->backTo(fn (): string => request()->header('referer') ?: UserResource::getUrl('index'))
             ->guard(guard: FilamentPanel::TENANT->getAuthGuard())
             ->iconButton()
             ->tooltip(fn (Impersonate $action): string => $action->getLabel())

@@ -12,6 +12,9 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\EditTenant;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ListTenants;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ViewTenant;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\RelationManagers\UsersRelationManager;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\TenantResource;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\User;
 use Spatie\Permission\Models\Permission;
@@ -195,4 +198,17 @@ test('the page header edit and view actions are labelled buttons, not icon butto
             ->and($action->isLabelHidden())->toBeFalse()
             ->and($action->getTooltip())->toBeNull();
     }
+});
+
+test('leaving an impersonation goes back to the page the admin started from', function () {
+    $page = TenantResource::getUrl('view', ['record' => $this->tenant]);
+    request()->headers->set('referer', $page);
+
+    expect(ImpersonateUserAction::make()->getBackTo())->toBe($page);
+});
+
+test('leaving an impersonation falls back to the users list without a referer', function () {
+    request()->headers->remove('referer');
+
+    expect(ImpersonateUserAction::make()->getBackTo())->toBe(UserResource::getUrl('index'));
 });
