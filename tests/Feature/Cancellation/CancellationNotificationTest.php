@@ -94,7 +94,7 @@ test('the mail names the date and the number of days and warns that nothing can 
 
     expect($mail->subject)->toBe('Your Acme School account has been cancelled')
         ->and($text)->toContain('marked for deletion')
-        ->and($text)->toContain('Nov 27, 2026')
+        ->and($text)->toContain('27 Nov 2026')
         ->and($text)->toContain('30 days')
         ->and($text)->toContain('completely deleted and cannot be recovered');
 });
@@ -104,5 +104,5 @@ test('the days in the mail follow the configured grace period', function () {
 
     $tenant = app(CancelTenant::class)->handle($this->tenant);
 
-    expect(implode(' ', (new AccountCancelled($tenant))->toMail($this->owner)->introLines))->toContain('7 days')->toContain('Nov 4, 2026');
+    expect(implode(' ', (new AccountCancelled($tenant))->toMail($this->owner)->introLines))->toContain('7 days')->toContain('4 Nov 2026');
 });

@@ -1,18 +1,17 @@
 <?php
 
-use Slakbal\TenancyFoundation\Enums\ContactSource;
-use Slakbal\TenancyFoundation\Filament\Tenant\Pages\ContactUs;
-use Slakbal\TenancyFoundation\Models\ContactRequest;
-use Spatie\Permission\Models\Role;
-use Slakbal\TenancyFoundation\Models\Tenant;
-use Slakbal\TenancyFoundation\Models\User;
-use Slakbal\TenancyFoundation\Plugins\TenantPlugin;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\CreateTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
+use Slakbal\TenancyFoundation\Enums\ContactSource;
+use Slakbal\TenancyFoundation\Filament\Tenant\Pages\ContactUs;
+use Slakbal\TenancyFoundation\Models\ContactRequest;
+use Slakbal\TenancyFoundation\Models\User;
+use Slakbal\TenancyFoundation\Plugins\TenantPlugin;
+use Spatie\Permission\Models\Role;
 
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('app'));

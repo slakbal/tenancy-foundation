@@ -23,7 +23,7 @@
             "Slakbal\\TenancyFoundation\\Database\\Seeders\\": "database/seeders/"
         },
         "files": [
-            "src/Support/helpers.php"
+            "src/Helpers/helpers.php"
         ]
     },
     "autoload-dev": {

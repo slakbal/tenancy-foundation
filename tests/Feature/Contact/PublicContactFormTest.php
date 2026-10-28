@@ -1,10 +1,10 @@
 <?php
 
-use Slakbal\TenancyFoundation\Livewire\PublicContactForm;
-use Slakbal\TenancyFoundation\Enums\ContactSource;
-use Slakbal\TenancyFoundation\Models\ContactRequest;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
+use Slakbal\TenancyFoundation\Enums\ContactSource;
+use Slakbal\TenancyFoundation\Livewire\PublicContactForm;
+use Slakbal\TenancyFoundation\Models\ContactRequest;
 
 beforeEach(function () {
     config(['filament-turnstile.key' => 'site-key', 'filament-turnstile.secret' => 'secret-key']);

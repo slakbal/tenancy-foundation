@@ -8,7 +8,6 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 
 class ContactRequestForm
 {
@@ -48,7 +47,7 @@ class ContactRequestForm
                         ->visible(fn (?Model $record): bool => (bool) $record?->isResponded()),
                     TextInput::make('responded_at')
                         ->label(__('Responded at'))
-                        ->formatStateUsing(fn (mixed $state): ?string => $state ? Carbon::parse($state)->toDayDateTimeString() : null)
+                        ->formatStateUsing(fn (mixed $state): ?string => displayDateTime($state))
                         ->disabled()
                         ->visible(fn (?Model $record): bool => (bool) $record?->isResponded()),
                 ]),

@@ -49,9 +49,9 @@ class EditContactRequest extends EditRecord
 
         app(RespondToContactRequest::class)->handle($record, $data['response'], $admin->name);
 
-        $this->refreshFormData(['status', 'response', 'responded_at', 'responded_by']);
-
         Notification::make()->title(__('Response sent.'))->success()->send();
+
+        $this->redirect(ContactRequestResource::getUrl());
     }
 
     protected function statusAction(string $name, ContactStatus $status, string $label, Heroicon $icon, string $color, string $ability): Action

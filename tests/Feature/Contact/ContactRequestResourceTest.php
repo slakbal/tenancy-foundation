@@ -2,22 +2,26 @@
 
 use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
+use Slakbal\TenancyFoundation\Actions\ChangeContactRequestStatus;
+use Slakbal\TenancyFoundation\Actions\RespondToContactRequest;
 use Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Enums\ContactSource;
 use Slakbal\TenancyFoundation\Enums\ContactStatus;
+use Slakbal\TenancyFoundation\Events\ContactRequestAnswered;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\ContactRequestResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\Pages\EditContactRequest;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\Pages\ListContactRequests;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\Widgets\ContactRequestStats;
-use Slakbal\TenancyFoundation\Events\ContactRequestAnswered;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\ContactRequest;
 use Slakbal\TenancyFoundation\Notifications\ContactRequestResponded;
@@ -142,8 +146,7 @@ test('responding stores the response and the responder, completes the request an
         ->call('save')
         ->assertHasNoFormErrors()
         ->assertNotified(__('Response sent.'))
-        ->assertFormFieldDisabled('response')
-        ->assertFormSet(['responded_by' => $admin->name]);
+        ->assertRedirect(ContactRequestResource::getUrl());
 
     $fresh = $request->fresh();
     expect($fresh->response)->toBe('We fixed it.')
@@ -161,7 +164,7 @@ test('the responder is kept as plain text when the admin is deleted', function (
     $request = ContactRequest::factory()->create();
     Notification::fake();
 
-    app(Slakbal\TenancyFoundation\Actions\RespondToContactRequest::class)->handle($request, 'Hello', $admin->name);
+    app(RespondToContactRequest::class)->handle($request, 'Hello', $admin->name);
     $admin->forceDelete();
 
     expect($request->fresh()->responded_by)->toBe('Gone Admin');
@@ -173,7 +176,7 @@ test('the response email is queued and quotes the original message', function ()
 
     $mail = $notification->toMail($request);
 
-    expect($notification)->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldQueue::class)
+    expect($notification)->toBeInstanceOf(ShouldQueue::class)
         ->and($mail->subject)->toBe('Re: your message to '.config('app.name'))
         ->and(collect($mail->introLines)->map(fn ($line): string => (string) $line)->implode(' '))->toContain('Line one&lt;script&gt;')->toContain('My question');
 });
@@ -196,7 +199,7 @@ test('a response is required and a second response is not possible', function ()
         ->assertFormFieldDisabled('response')
         ->call('save')
         ->assertForbidden();
-    expect(fn () => app(Slakbal\TenancyFoundation\Actions\RespondToContactRequest::class)->handle($answered, 'again', 'Someone'))->toThrow(DomainException::class);
+    expect(fn () => app(RespondToContactRequest::class)->handle($answered, 'again', 'Someone'))->toThrow(DomainException::class);
     Notification::assertNothingSent();
 });
 
@@ -274,7 +277,7 @@ test('pruning is disabled when the configured days are zero', function (mixed $d
 })->with([0, null]);
 
 test('the prune command is scheduled for app models and the package models, once across servers', function () {
-    $events = collect(app(Illuminate\Console\Scheduling\Schedule::class)->events())
+    $events = collect(app(Schedule::class)->events())
         ->filter(fn ($event): bool => str_contains((string) $event->command, 'model:prune'))
         ->values();
 
@@ -318,7 +321,7 @@ test('a dismissed or completed request cannot be responded to until it is reopen
         ->assertForbidden();
 
     expect($request->fresh()->isResponded())->toBeFalse()
-        ->and(fn () => app(Slakbal\TenancyFoundation\Actions\RespondToContactRequest::class)->handle($request, 'Hi', 'Someone'))->toThrow(DomainException::class);
+        ->and(fn () => app(RespondToContactRequest::class)->handle($request, 'Hi', 'Someone'))->toThrow(DomainException::class);
 
     Livewire::test(EditContactRequest::class, ['record' => $request->getRouteKey()])
         ->callAction('reopen')
@@ -426,7 +429,7 @@ test('a request that was responded to cannot be dismissed', function () {
     Livewire::test(EditContactRequest::class, ['record' => $reopened->getRouteKey()])->assertActionHidden('dismiss');
 
     foreach ([$completed, $reopened] as $request) {
-        expect(fn () => app(Slakbal\TenancyFoundation\Actions\ChangeContactRequestStatus::class)->handle($request, ContactStatus::DISMISSED))->toThrow(DomainException::class)
+        expect(fn () => app(ChangeContactRequestStatus::class)->handle($request, ContactStatus::DISMISSED))->toThrow(DomainException::class)
             ->and(Gate::forUser(auth('admin')->user())->denies('dismiss', $request))->toBeTrue();
     }
 
@@ -465,7 +468,7 @@ test('responding dispatches the answered event after the response is stored', fu
     Notification::fake();
     $request = ContactRequest::factory()->create();
 
-    app(Slakbal\TenancyFoundation\Actions\RespondToContactRequest::class)->handle($request, 'Done', 'Agent');
+    app(RespondToContactRequest::class)->handle($request, 'Done', 'Agent');
 
     Event::assertDispatchedTimes(ContactRequestAnswered::class, 1);
     Event::assertDispatched(ContactRequestAnswered::class, fn ($event): bool => $event->contactRequest->is($request) && $event->contactRequest->response === 'Done');
@@ -489,7 +492,7 @@ test('a failed response never dispatches the event', function () {
     Event::fake([ContactRequestAnswered::class]);
     $request = ContactRequest::factory()->responded()->create();
 
-    expect(fn () => app(Slakbal\TenancyFoundation\Actions\RespondToContactRequest::class)->handle($request, 'again', 'Agent'))->toThrow(DomainException::class);
+    expect(fn () => app(RespondToContactRequest::class)->handle($request, 'again', 'Agent'))->toThrow(DomainException::class);
 
     Event::assertNotDispatched(ContactRequestAnswered::class);
 });
