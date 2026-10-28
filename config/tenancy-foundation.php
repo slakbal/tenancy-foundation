@@ -6,6 +6,7 @@ use Slakbal\TenancyFoundation\Models\Role;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
 use Slakbal\TenancyFoundation\Notifications\AccountCancelled;
+use Slakbal\TenancyFoundation\Notifications\AccountReactivated;
 use Slakbal\TenancyFoundation\Notifications\ContactRequestResponded;
 use Slakbal\TenancyFoundation\Notifications\NewContactRequest;
 use Slakbal\TenancyFoundation\Notifications\WelcomeToTenant;
@@ -105,6 +106,8 @@ return [
     |
     | welcome           Emailed to the new owner after a tenant is registered.
     | cancelled         Emailed to the tenant owners when the tenant is cancelled.
+    | reactivated       Emailed to the tenant owners when a cancelled tenant is
+    |                   reactivated.
     | contact_response  Emailed to the requestor when an admin responds to
     |                   their contact request.
     | contact_received  Sent to the admin panel bell (database notification)
@@ -115,6 +118,7 @@ return [
     'notifications' => [
         'welcome' => WelcomeToTenant::class,
         'cancelled' => AccountCancelled::class,
+        'reactivated' => AccountReactivated::class,
         'contact_response' => ContactRequestResponded::class,
         'contact_received' => NewContactRequest::class,
     ],

@@ -11,7 +11,7 @@ use Slakbal\TenancyFoundation\Database\Factories\TenantFactory;
 use Slakbal\TenancyFoundation\Models\Concerns\HasUlidKey;
 use Slakbal\TenancyFoundation\Models\Concerns\Tenancy\IsTenant;
 
-#[Fillable(['name', 'subdomain', 'is_owner', 'is_default_tenant'])]
+#[Fillable(['name', 'subdomain', 'billing_email', 'is_owner', 'is_default_tenant'])]
 class Tenant extends Model implements HasCurrentTenantLabel, HasName
 {
     /** @use HasFactory<TenantFactory> */

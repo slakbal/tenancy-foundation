@@ -260,7 +260,7 @@ test('the admin and support roles get the right tenant permissions from the seed
 
     $names = fn (AdminRoles $role) => Role::findByName($role->value, AuthGuard::ADMIN->value)->permissions->pluck('name')->filter(fn ($name) => str_starts_with($name, 'tenant.'))->sort()->values()->all();
 
-    expect($names(AdminRoles::ADMIN))->toBe(['tenant.cancel', 'tenant.reactivate', 'tenant.view', 'tenant.view_any'])
+    expect($names(AdminRoles::ADMIN))->toBe(['tenant.cancel', 'tenant.reactivate', 'tenant.update', 'tenant.view', 'tenant.view_any'])
         ->and($names(AdminRoles::SUPPORT))->toBe(['tenant.view', 'tenant.view_any']);
 });
 

@@ -12,6 +12,7 @@ class TenantPolicy extends AuthorisationPolicy
         return [
             'viewAny' => AdminPermissions::TENANT_VIEW_ANY,
             'view' => AdminPermissions::TENANT_VIEW,
+            'update' => AdminPermissions::TENANT_UPDATE,
         ];
     }
 

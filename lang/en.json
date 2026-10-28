@@ -113,5 +113,19 @@
     "Selected requests dismissed.": "Selected requests dismissed.",
     "A request that has been responded to cannot be dismissed.": "A request that has been responded to cannot be dismissed.",
     "Requests that have been responded to cannot be dismissed.": "Requests that have been responded to cannot be dismissed.",
-    "Fill out the form below and we will get back to you shortly.": "Fill out the form below and we will get back to you shortly."
+    "Fill out the form below and we will get back to you.": "Fill out the form below and we will get back to you.",
+    "The name and web address of the tenant.": "The name and web address of the tenant.",
+    "Changing the subdomain changes the address the tenant signs in on.": "Changing the subdomain changes the address the tenant signs in on.",
+    "Where billing notifications, invoices and receipts are sent.": "Where billing notifications, invoices and receipts are sent.",
+    "Edit user": "Edit user",
+    "Joined": "Joined",
+    "Last login": "Last login",
+    "Owners": "Owners",
+    "Billing email": "Billing email",
+    "Billing information": "Billing information",
+    "Edit": "Edit",
+    "Your :tenant account has been reactivated": "Your :tenant account has been reactivated",
+    "Your account :tenant has been reactivated.": "Your account :tenant has been reactivated.",
+    "Everyone can sign in again and the scheduled deletion has been cancelled.": "Everyone can sign in again and the scheduled deletion has been cancelled.",
+    "You have been signed out.": "You have been signed out."
 }

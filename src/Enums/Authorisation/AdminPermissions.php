@@ -19,6 +19,7 @@ enum AdminPermissions: string
     // Tenants
     case TENANT_VIEW_ANY = 'tenant.view_any';
     case TENANT_VIEW = 'tenant.view';
+    case TENANT_UPDATE = 'tenant.update';
     case TENANT_CANCEL = 'tenant.cancel';
     case TENANT_REACTIVATE = 'tenant.reactivate';
 

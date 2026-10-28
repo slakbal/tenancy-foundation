@@ -2,7 +2,9 @@
 
 use Filament\Auth\Pages\Login;
 use Filament\Facades\Filament;
+use Filament\Http\Middleware\Authenticate;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\StartSession;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\CreateTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
@@ -80,13 +82,50 @@ test('a request to a cancelled tenant is sent to another active tenant of the us
         ->assertRedirect(Filament::getUrl(Tenant::query()->where('subdomain', 'live')->first()));
 });
 
-test('a request to a cancelled tenant is refused when the user has nowhere else to go', function () {
+test('a request to a cancelled tenant signs the user out and sends them to the login page when they have nowhere else to go', function () {
     $user = userWithTenants(['gone' => true]);
     $gone = Tenant::query()->where('subdomain', 'gone')->first();
 
     $this->actingAsTenantUser($user, $gone);
 
-    $this->get($this->tenantUrl($gone))->assertForbidden();
+    $this->get($this->tenantUrl($gone))->assertRedirect(Filament::getLoginUrl());
+
+    expect(auth(AuthGuard::TENANT->value)->check())->toBeFalse();
+});
+
+test('the signed out user is told why on the login page', function () {
+    $user = userWithTenants(['gone' => true]);
+    $gone = Tenant::query()->where('subdomain', 'gone')->first();
+
+    $this->actingAsTenantUser($user, $gone);
+
+    $this->get($this->tenantUrl($gone))->assertSessionHas('filament.notifications');
+});
+
+test('a user already working in the tenant is signed out on their next request once it is cancelled', function () {
+    $owner = User::factory()->create();
+    $tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $owner);
+    $this->actingAsTenantUser($owner, $tenant);
+
+    expect(auth(AuthGuard::TENANT->value)->check())->toBeTrue();
+    $this->get($this->tenantUrl($tenant))->assertRedirectContains($tenant->subdomain);
+
+    $tenant->forceFill(['cancelled_at' => now()])->save();
+    $this->actingAsTenantUser($owner->fresh(), $tenant->fresh());
+
+    $this->get($this->tenantUrl($tenant))->assertRedirect(Filament::getLoginUrl());
+    expect(auth(AuthGuard::TENANT->value)->check())->toBeFalse();
+});
+
+test('a user with an active tenant is not signed out when another of their tenants is cancelled', function () {
+    $user = userWithTenants(['gone' => true, 'live' => false]);
+    $live = Tenant::query()->where('subdomain', 'live')->first();
+
+    $this->actingAsTenantUser($user, $live);
+
+    $this->get($this->tenantUrl($live));
+
+    expect(auth(AuthGuard::TENANT->value)->check())->toBeTrue();
 });
 
 test('an active tenant is served as usual', function () {

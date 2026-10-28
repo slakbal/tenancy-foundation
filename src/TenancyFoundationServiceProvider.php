@@ -6,6 +6,8 @@ use Filament\Auth\Http\Responses\Contracts\LogoutResponse as LogoutResponseContr
 use Filament\Auth\Http\Responses\Contracts\RegistrationResponse as RegistrationResponseContract;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
+use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
@@ -13,13 +15,16 @@ use Slakbal\TenancyFoundation\Console\InstallCommand;
 use Slakbal\TenancyFoundation\Events\ContactRequestAnswered;
 use Slakbal\TenancyFoundation\Events\ContactRequestReceived;
 use Slakbal\TenancyFoundation\Events\TenantCancelled;
+use Slakbal\TenancyFoundation\Events\TenantReactivated;
 use Slakbal\TenancyFoundation\Events\TenantRegistered;
+use Slakbal\TenancyFoundation\Http\Middleware\EnsureUserHasTenant;
 use Slakbal\TenancyFoundation\Http\Responses\LogoutResponse;
 use Slakbal\TenancyFoundation\Http\Responses\RegistrationResponse;
 use Slakbal\TenancyFoundation\Jobs\DeleteDueTenants;
 use Slakbal\TenancyFoundation\Listeners\NotifyAdminsOfContactRequest;
 use Slakbal\TenancyFoundation\Listeners\SendCancellationNotification;
 use Slakbal\TenancyFoundation\Listeners\SendContactResponseNotification;
+use Slakbal\TenancyFoundation\Listeners\SendReactivationNotification;
 use Slakbal\TenancyFoundation\Listeners\SendWelcomeNotification;
 use Slakbal\TenancyFoundation\Listeners\UpdateLastLogin;
 use Slakbal\TenancyFoundation\Livewire\PublicContactForm;
@@ -71,6 +76,7 @@ class TenancyFoundationServiceProvider extends ServiceProvider
     {
         $this->bootResources();
         $this->bootBindings();
+        $this->bootMiddlewarePriority();
         $this->bootEventListeners();
         $this->bootSchedule();
         $this->bootConsole();
@@ -91,10 +97,21 @@ class TenancyFoundationServiceProvider extends ServiceProvider
         $this->app->bind(RegistrationResponseContract::class, RegistrationResponse::class);
     }
 
+    protected function bootMiddlewarePriority(): void
+    {
+        $kernel = $this->app->make(HttpKernel::class);
+
+        // Filament's Authenticate would answer a user of only cancelled tenants with a 403 before our sign-out redirect could run.
+        if (method_exists($kernel, 'addToMiddlewarePriorityBefore')) {
+            $kernel->addToMiddlewarePriorityBefore(AuthenticatesRequests::class, EnsureUserHasTenant::class);
+        }
+    }
+
     protected function bootEventListeners(): void
     {
         Event::listen(TenantRegistered::class, SendWelcomeNotification::class);
         Event::listen(TenantCancelled::class, SendCancellationNotification::class);
+        Event::listen(TenantReactivated::class, SendReactivationNotification::class);
         Event::listen(ContactRequestReceived::class, NotifyAdminsOfContactRequest::class);
         Event::listen(ContactRequestAnswered::class, SendContactResponseNotification::class);
 

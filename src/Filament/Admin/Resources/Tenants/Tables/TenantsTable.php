@@ -3,17 +3,17 @@
 namespace Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Tables;
 
 use Filament\Actions\Action;
-use Filament\Notifications\Notification;
-use Filament\Support\Icons\Heroicon;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Slakbal\TenancyFoundation\Actions\CancelTenant;
-use Slakbal\TenancyFoundation\Actions\ReactivateTenant;
 use Slakbal\TenancyFoundation\Enums\TenantStatus;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Actions\CancelTenantAction;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Actions\ReactivateTenantAction;
 
 class TenantsTable
 {
@@ -94,42 +94,10 @@ class TenantsTable
     protected static function recordActions(): array
     {
         return [
-            Action::make('cancel')
-                ->label(__('Cancel tenant'))
-                ->hiddenLabel()
-                ->iconButton()
-                ->tooltip(__('Cancel tenant'))
-                ->icon(Heroicon::OutlinedXCircle)
-                ->color('danger')
-                ->authorize('cancel')
-                ->visible(fn (Model $record): bool => ! $record->isCancelled())
-                ->requiresConfirmation()
-                ->modalHeading(fn (Model $record): string => __('Cancel :tenant?', ['tenant' => $record->name]))
-                ->modalDescription(__('Everyone is locked out and the owners are emailed. All data is deleted after :days days and cannot be recovered.', [
-                    'days' => (int) config('tenancy-foundation.cancellation.grace_days'),
-                ]))
-                ->action(function (Model $record): void {
-                    app(CancelTenant::class)->handle($record);
-
-                    Notification::make()->title(__(':tenant has been cancelled.', ['tenant' => $record->name]))->success()->send();
-                }),
-            Action::make('reactivate')
-                ->label(__('Reactivate tenant'))
-                ->hiddenLabel()
-                ->iconButton()
-                ->tooltip(__('Reactivate tenant'))
-                ->icon(Heroicon::OutlinedArrowUturnLeft)
-                ->color('success')
-                ->authorize('reactivate')
-                ->visible(fn (Model $record): bool => $record->isCancelled())
-                ->requiresConfirmation()
-                ->modalHeading(fn (Model $record): string => __('Reactivate :tenant?', ['tenant' => $record->name]))
-                ->modalDescription(__('Everyone can sign in again and the scheduled deletion is cancelled.'))
-                ->action(function (Model $record): void {
-                    app(ReactivateTenant::class)->handle($record);
-
-                    Notification::make()->title(__(':tenant has been reactivated.', ['tenant' => $record->name]))->success()->send();
-                }),
+            ViewAction::make()->hiddenLabel()->iconButton()->tooltip(__('View')),
+            EditAction::make()->hiddenLabel()->iconButton()->tooltip(__('Edit')),
+            CancelTenantAction::make()->hiddenLabel()->iconButton()->tooltip(__('Cancel tenant')),
+            ReactivateTenantAction::make()->hiddenLabel()->iconButton()->tooltip(__('Reactivate tenant')),
         ];
     }
 }
