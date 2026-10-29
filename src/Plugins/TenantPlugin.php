@@ -6,6 +6,7 @@ use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Gate;
+use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Filament\Pages\EditTenantProfile;
 use Slakbal\TenancyFoundation\Filament\Pages\EmailVerificationPrompt;
@@ -85,6 +86,8 @@ class TenantPlugin implements Plugin
             ->tenantProfile($this->editTenantProfilePage)
             ->tenantMiddleware([SyncTenantPermissionsContext::class, EnsureTenantIsNotCancelled::class], isPersistent: true)
             ->registration($this->registerUserPage)
+            ->passwordReset()
+            ->authPasswordBroker(AuthGuard::TENANT->getPasswordBroker())
             ->emailVerification(EmailVerificationPrompt::class)
             ->middleware([EnsureUserHasTenant::class], isPersistent: true)
             ->resources([$this->userResource])

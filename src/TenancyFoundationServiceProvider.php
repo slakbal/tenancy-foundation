@@ -65,7 +65,7 @@ class TenancyFoundationServiceProvider extends ServiceProvider
             'auth.providers.admins' => config('auth.providers.admins', ['driver' => 'eloquent', 'model' => $admin]),
             'auth.passwords.admins' => config('auth.passwords.admins', [
                 'provider' => 'admins',
-                'table' => config('auth.passwords.users.table', 'password_reset_tokens'),
+                'table' => 'admin_password_reset_tokens',
                 'expire' => 60,
                 'throttle' => 60,
             ]),
