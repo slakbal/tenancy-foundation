@@ -1,8 +1,11 @@
 <?php
 
+use Filament\Auth\Pages\PasswordReset\ResetPassword;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Password;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
+use Slakbal\TenancyFoundation\Listeners\ActivateAdminOnPasswordReset;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\User;
 
@@ -29,18 +32,18 @@ it('ignores a password reset of a tenant user', function () {
     Event::fake([PasswordReset::class]);
     $user = User::factory()->create();
 
-    (new Slakbal\TenancyFoundation\Listeners\ActivateAdminOnPasswordReset)->handle(new PasswordReset($user));
+    (new ActivateAdminOnPasswordReset)->handle(new PasswordReset($user));
 
     expect($user->fresh()->email_verified_at)->not->toBeNull();
 });
 
 it('activates a pending admin through the reset password page', function () {
     $admin = Admin::factory()->pending()->create();
-    $token = Illuminate\Support\Facades\Password::broker('admins')->createToken($admin);
+    $token = Password::broker('admins')->createToken($admin);
 
     Filament\Facades\Filament::setCurrentPanel(Filament\Facades\Filament::getPanel('admin'));
 
-    Livewire\Livewire::test(Filament\Auth\Pages\PasswordReset\ResetPassword::class, ['email' => $admin->email, 'token' => $token])
+    Livewire\Livewire::test(ResetPassword::class, ['email' => $admin->email, 'token' => $token])
         ->fillForm(['password' => 'a-new-password-1', 'passwordConfirmation' => 'a-new-password-1'])
         ->call('resetPassword')
         ->assertHasNoFormErrors();

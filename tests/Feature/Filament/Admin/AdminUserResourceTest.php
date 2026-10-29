@@ -1,8 +1,10 @@
 <?php
 
 use Filament\Facades\Filament;
+use Illuminate\Auth\Access\AuthorizationException;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\UpdateAdminUser;
+use Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
@@ -139,7 +141,7 @@ it('refuses to let a non super admin assign the super admin role', function () {
     $target = adminUserTarget();
 
     expect(fn () => app(UpdateAdminUser::class)->handle($target, ['role' => AdminRoles::SUPER_ADMIN->value], $actor))
-        ->toThrow(Illuminate\Auth\Access\AuthorizationException::class);
+        ->toThrow(AuthorizationException::class);
 
     expect($target->fresh()->hasRole(AdminRoles::SUPER_ADMIN))->toBeFalse();
 });
@@ -175,3 +177,20 @@ it('keeps admins away from editing super admins', function () {
 
     Livewire::test(EditAdminUser::class, ['record' => $super->getRouteKey()])->assertForbidden();
 });
+
+it('renders the view and edit pages per role using the seeded permissions', function (AdminRoles $role, bool $canEdit) {
+    $this->seed(AdminRolePermissionsSeeder::class);
+    $actor = Admin::factory()->create();
+    $actor->assignRole($role);
+    $this->actingAs($actor, AuthGuard::ADMIN->value);
+    $target = adminUserTarget();
+
+    Livewire::test(ViewAdminUser::class, ['record' => $target->getRouteKey()])->assertSuccessful();
+
+    $edit = Livewire::test(EditAdminUser::class, ['record' => $target->getRouteKey()]);
+    $canEdit ? $edit->assertSuccessful() : $edit->assertForbidden();
+})->with([
+    'super admin' => [AdminRoles::SUPER_ADMIN, true],
+    'admin' => [AdminRoles::ADMIN, true],
+    'support' => [AdminRoles::SUPPORT, false],
+]);

@@ -3,6 +3,7 @@
 use Filament\Actions\Testing\TestAction;
 use Filament\Auth\Pages\PasswordReset\ResetPassword;
 use Filament\Facades\Filament;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
@@ -65,7 +66,7 @@ it('refuses to let a non super admin create a super admin', function () {
     $actor = creatingAdmin();
 
     expect(fn () => app(CreateAdminUser::class)->handle(['name' => 'X', 'email' => 'x@example.com', 'role' => AdminRoles::SUPER_ADMIN->value], $actor))
-        ->toThrow(Illuminate\Auth\Access\AuthorizationException::class);
+        ->toThrow(AuthorizationException::class);
 
     expect(Admin::query()->where('email', 'x@example.com')->exists())->toBeFalse();
 });
