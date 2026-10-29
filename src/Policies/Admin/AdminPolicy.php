@@ -4,18 +4,34 @@ namespace Slakbal\TenancyFoundation\Policies\Admin;
 
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Policies\AuthorisationPolicy;
+use Slakbal\TenancyFoundation\Support\AdminAccountGuard;
 
 class AdminPolicy extends AuthorisationPolicy
 {
-    // when there are specific extra logic needed in a policy check, simply add the specific method, otherwise it will fallback to __call in AuthorisationPolicy
-    //    public function update(User $user, Tenant $tenant): bool
-    //    {
-    //        if (! $user->can(TenantPermissions::TENANT_UPDATE)) {
-    //            return false;
-    //        }
-    //
-    //        return $tenant->members()->where('users.id', $user->id)->wherePivot('is_owner', true)->exists();
-    //    }
+    public function update($user, $model): bool
+    {
+        return ! $this->isProtectedFrom($user, $model) && parent::update($user, $model);
+    }
+
+    public function delete($user, $model): bool
+    {
+        return ! $this->isProtectedFrom($user, $model) && parent::delete($user, $model);
+    }
+
+    public function restore($user, $model): bool
+    {
+        return ! $this->isProtectedFrom($user, $model) && parent::restore($user, $model);
+    }
+
+    public function forceDelete($user, $model): bool
+    {
+        return ! $this->isProtectedFrom($user, $model) && parent::forceDelete($user, $model);
+    }
+
+    protected function isProtectedFrom(mixed $user, mixed $model): bool
+    {
+        return AdminAccountGuard::isSuperAdmin($model) && ! AdminAccountGuard::isSuperAdmin($user);
+    }
 
     protected function permissionMap(): array
     {

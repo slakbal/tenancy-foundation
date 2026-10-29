@@ -7,11 +7,12 @@ use Filament\Panel;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Gate;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
-use Slakbal\TenancyFoundation\Filament\Pages\EditProfile;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\ContactRequestResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\TenantResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
+use Slakbal\TenancyFoundation\Filament\Pages\EditProfile;
+use Slakbal\TenancyFoundation\Support\AdminAccountGuard;
 use Slakbal\TenancyFoundation\Support\PolicyResolver;
 use Slakbal\TenancyFoundation\Support\SoleOwnerGuard;
 
@@ -77,7 +78,7 @@ class AdminPlugin implements Plugin
         setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
 
         Gate::before(function ($user, $ability, $arguments = []): Response|bool|null {
-            if ($denial = SoleOwnerGuard::denial($ability, $arguments)) {
+            if ($denial = SoleOwnerGuard::denial($ability, $arguments) ?? AdminAccountGuard::denial($user, $ability, $arguments)) {
                 return $denial;
             }
 

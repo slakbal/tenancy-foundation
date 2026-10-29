@@ -2,9 +2,7 @@
 
 use Filament\Auth\Pages\Login;
 use Filament\Facades\Filament;
-use Filament\Http\Middleware\Authenticate;
 use Illuminate\Http\Request;
-use Illuminate\Session\Middleware\StartSession;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\CreateTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;

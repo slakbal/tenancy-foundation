@@ -107,7 +107,7 @@ class TenantPlugin implements Plugin
     public function boot(Panel $panel): void
     {
         Gate::before(function ($user, $ability, $arguments = []): Response|bool|null {
-            //Always first!! Blocks deleting a user who is the only owner of any tenant. It’s called first in both Gate::before callbacks, so it can deny delete or forceDelete even for super admins and owners, who would otherwise bypass every policy.
+            // Always first!! Blocks deleting a user who is the only owner of any tenant. It’s called first in both Gate::before callbacks, so it can deny delete or forceDelete even for super admins and owners, who would otherwise bypass every policy.
             if ($denial = SoleOwnerGuard::denial($ability, $arguments)) {
                 return $denial;
             }

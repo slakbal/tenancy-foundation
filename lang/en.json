@@ -127,5 +127,7 @@
     "Your :tenant account has been reactivated": "Your :tenant account has been reactivated",
     "Your account :tenant has been reactivated.": "Your account :tenant has been reactivated.",
     "Everyone can sign in again and the scheduled deletion has been cancelled.": "Everyone can sign in again and the scheduled deletion has been cancelled.",
-    "You have been signed out.": "You have been signed out."
+    "You have been signed out.": "You have been signed out.",
+    "You cannot delete your own account.": "You cannot delete your own account.",
+    "The last active super admin cannot be deleted.": "The last active super admin cannot be deleted."
 }
