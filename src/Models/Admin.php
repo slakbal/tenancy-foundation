@@ -33,6 +33,7 @@ class Admin extends Authenticatable implements FilamentUser
     protected function casts(): array
     {
         return [
+            'active' => 'boolean',
             'last_login_at' => 'immutable_datetime',
             'email_verified_at' => 'immutable_datetime',
             'password' => 'hashed',

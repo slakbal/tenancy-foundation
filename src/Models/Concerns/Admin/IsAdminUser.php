@@ -11,7 +11,9 @@ trait IsAdminUser
     {
         return $this instanceof self
             && $panel->getAuthGuard() === AuthGuard::ADMIN->getAuthGuard()
-            && $this->guard_name === AuthGuard::ADMIN->value;
+            && $this->guard_name === AuthGuard::ADMIN->value
+            && (bool) $this->active
+            && ! $this->trashed();
 
         // todo also do checks so that e.g. models have a specific role or permission to access the admin panel, e.g. 'admin' role or 'access admin panel' permission
     }
