@@ -1,6 +1,7 @@
 <?php
 
 use Filament\Facades\Filament;
+use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
@@ -19,6 +20,10 @@ it('refuses an inactive admin', function () {
     expect(Admin::factory()->inactive()->create()->canAccessPanel(Filament::getPanel('admin')))->toBeFalse();
 });
 
+it('lets a pending admin pass so the password reset link works', function () {
+    expect(Admin::factory()->pending()->create()->canAccessPanel(Filament::getPanel('admin')))->toBeTrue();
+});
+
 it('refuses a soft deleted admin', function () {
     $admin = Admin::factory()->create();
     $admin->delete();
@@ -35,7 +40,7 @@ it('refuses an already signed in admin on the next request once deactivated', fu
 
     $this->actingAs($admin, 'admin')->get($url)->assertSuccessful();
 
-    $admin->forceFill(['active' => false])->save();
+    $admin->forceFill(['status' => AdminStatus::INACTIVE])->save();
 
     $this->actingAs($admin->fresh(), 'admin')->get($url)->assertForbidden();
 });

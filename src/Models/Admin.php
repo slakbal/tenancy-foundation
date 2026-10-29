@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Slakbal\TenancyFoundation\Database\Factories\AdminFactory;
+use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Models\Concerns\Admin\CanImpersonate;
 use Slakbal\TenancyFoundation\Models\Concerns\Admin\IsAdminUser;
@@ -23,6 +24,10 @@ class Admin extends Authenticatable implements FilamentUser
 
     protected string $guard_name = AuthGuard::ADMIN->value;
 
+    protected $attributes = [
+        'status' => 'active',
+    ];
+
     protected $hidden = [
         'password',
         'two_factor_secret',
@@ -33,7 +38,7 @@ class Admin extends Authenticatable implements FilamentUser
     protected function casts(): array
     {
         return [
-            'active' => 'boolean',
+            'status' => AdminStatus::class,
             'last_login_at' => 'immutable_datetime',
             'email_verified_at' => 'immutable_datetime',
             'password' => 'hashed',

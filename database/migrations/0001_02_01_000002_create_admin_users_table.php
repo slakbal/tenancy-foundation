@@ -22,7 +22,7 @@ return new class extends Migration
             $table->text('two_factor_recovery_codes')->nullable();
             $table->timestamp('two_factor_confirmed_at')->nullable();
             $table->string('locale')->nullable();
-            $table->boolean('active')->default(true);
+            $table->string('status')->default('pending')->index();
             $table->timestamp('last_login_at')->nullable()->index();
             $table->string('last_login_ip')->nullable();
             $table->rememberToken();

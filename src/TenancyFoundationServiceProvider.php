@@ -5,6 +5,7 @@ namespace Slakbal\TenancyFoundation;
 use Filament\Auth\Http\Responses\Contracts\LogoutResponse as LogoutResponseContract;
 use Filament\Auth\Http\Responses\Contracts\RegistrationResponse as RegistrationResponseContract;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
@@ -21,6 +22,7 @@ use Slakbal\TenancyFoundation\Http\Middleware\EnsureUserHasTenant;
 use Slakbal\TenancyFoundation\Http\Responses\LogoutResponse;
 use Slakbal\TenancyFoundation\Http\Responses\RegistrationResponse;
 use Slakbal\TenancyFoundation\Jobs\DeleteDueTenants;
+use Slakbal\TenancyFoundation\Listeners\ActivateAdminOnPasswordReset;
 use Slakbal\TenancyFoundation\Listeners\NotifyAdminsOfContactRequest;
 use Slakbal\TenancyFoundation\Listeners\SendCancellationNotification;
 use Slakbal\TenancyFoundation\Listeners\SendContactResponseNotification;
@@ -112,6 +114,7 @@ class TenancyFoundationServiceProvider extends ServiceProvider
         Event::listen(TenantRegistered::class, SendWelcomeNotification::class);
         Event::listen(TenantCancelled::class, SendCancellationNotification::class);
         Event::listen(TenantReactivated::class, SendReactivationNotification::class);
+        Event::listen(PasswordReset::class, ActivateAdminOnPasswordReset::class);
         Event::listen(ContactRequestReceived::class, NotifyAdminsOfContactRequest::class);
         Event::listen(ContactRequestAnswered::class, SendContactResponseNotification::class);
 

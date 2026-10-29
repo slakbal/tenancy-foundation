@@ -35,7 +35,7 @@ enum AdminRoles: string implements HasColor, HasIcon, HasLabel
         return match ($this) {
             self::SUPER_ADMIN => 'heroicon-o-shield-check',
             self::ADMIN => 'heroicon-o-user-group',
-            self::SUPPORT => 'heroicon-o-support',
+            self::SUPPORT => 'heroicon-o-lifebuoy',
         };
     }
 }

@@ -5,6 +5,7 @@ namespace Slakbal\TenancyFoundation\Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Slakbal\TenancyFoundation\Enums\AdminStatus;
 
 class AdminFactory extends Factory
 {
@@ -45,7 +46,7 @@ class AdminFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
-            'active' => true,
+            'status' => AdminStatus::ACTIVE,
             'remember_token' => Str::random(10),
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
@@ -66,7 +67,14 @@ class AdminFactory extends Factory
     public function inactive(): static
     {
         return $this->state(fn (array $attributes) => [
-            'active' => false,
+            'status' => AdminStatus::INACTIVE,
+        ]);
+    }
+
+    public function pending(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => AdminStatus::PENDING,
         ]);
     }
 

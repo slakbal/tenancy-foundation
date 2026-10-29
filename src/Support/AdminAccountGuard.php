@@ -5,6 +5,7 @@ namespace Slakbal\TenancyFoundation\Support;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 
 class AdminAccountGuard
@@ -42,9 +43,14 @@ class AdminAccountGuard
 
         return ! $admin::query()
             ->role(AdminRoles::SUPER_ADMIN->value)
-            ->where('active', true)
+            ->where('status', AdminStatus::ACTIVE)
             ->whereKeyNot($admin->getKey())
             ->exists();
+    }
+
+    public static function isLockedFor(mixed $actor, Model $admin): bool
+    {
+        return ($actor instanceof Model && $actor->is($admin)) || static::isLastActiveSuperAdmin($admin);
     }
 
     public static function isSuperAdmin(mixed $admin): bool
@@ -54,6 +60,6 @@ class AdminAccountGuard
 
     protected static function isActiveSuperAdmin(Model $admin): bool
     {
-        return static::isSuperAdmin($admin) && $admin->getAttribute('active') && ! $admin->trashed();
+        return static::isSuperAdmin($admin) && $admin->getAttribute('status') === AdminStatus::ACTIVE && ! $admin->trashed();
     }
 }

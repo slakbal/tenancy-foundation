@@ -1,6 +1,7 @@
 <?php
 
 use Filament\Facades\Filament;
+use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
@@ -58,7 +59,7 @@ it('lets a super admin delete another admin', function () {
 it('protects the last active super admin from deletion', function () {
     $last = safeguardAdmin(AdminRoles::SUPER_ADMIN);
     $inactiveSuper = safeguardAdmin(AdminRoles::SUPER_ADMIN);
-    $inactiveSuper->forceFill(['active' => false])->save();
+    $inactiveSuper->forceFill(['status' => AdminStatus::INACTIVE])->save();
     $deletedSuper = safeguardAdmin(AdminRoles::SUPER_ADMIN);
     $deletedSuper->delete();
 

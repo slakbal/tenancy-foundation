@@ -129,5 +129,18 @@
     "Everyone can sign in again and the scheduled deletion has been cancelled.": "Everyone can sign in again and the scheduled deletion has been cancelled.",
     "You have been signed out.": "You have been signed out.",
     "You cannot delete your own account.": "You cannot delete your own account.",
-    "The last active super admin cannot be deleted.": "The last active super admin cannot be deleted."
+    "The last active super admin cannot be deleted.": "The last active super admin cannot be deleted.",
+    "Admin details": "Admin details",
+    "The name and sign in email of the admin.": "The name and sign in email of the admin.",
+    "Access": "Access",
+    "Role": "Role",
+    "Inactive": "Inactive",
+    "Deleted": "Deleted",
+    "Admins": "Admins",
+    "Last login IP": "Last login IP",
+    "Email verified": "Email verified",
+    "Only a super admin can assign the super admin role.": "Only a super admin can assign the super admin role.",
+    "The role decides what the admin can do.": "The role decides what the admin can do.",
+    "You cannot change your own role, nor the role of the last active super admin.": "You cannot change your own role, nor the role of the last active super admin.",
+    "Pending": "Pending"
 }

@@ -1,0 +1,34 @@
+<?php
+
+use Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder;
+use Slakbal\TenancyFoundation\Enums\AuthGuard;
+use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
+use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
+use Spatie\Permission\Models\Role;
+
+function adminRolePermissions(AdminRoles $role): array
+{
+    return Role::findByName($role->value, AuthGuard::ADMIN->value)->permissions->pluck('name')->all();
+}
+
+beforeEach(fn () => $this->seed(AdminRolePermissionsSeeder::class));
+
+it('lets the admin role work on contact requests', function () {
+    expect(adminRolePermissions(AdminRoles::ADMIN))->toContain(
+        AdminPermissions::CONTACT_REQUEST_VIEW_ANY->value,
+        AdminPermissions::CONTACT_REQUEST_VIEW->value,
+        AdminPermissions::CONTACT_REQUEST_UPDATE->value,
+        AdminPermissions::CONTACT_REQUEST_RESPOND->value,
+        AdminPermissions::CONTACT_REQUEST_DELETE->value,
+    );
+});
+
+it('lets the support role work on contact requests but not delete them', function () {
+    $support = adminRolePermissions(AdminRoles::SUPPORT);
+
+    expect($support)->toContain(
+        AdminPermissions::CONTACT_REQUEST_VIEW_ANY->value,
+        AdminPermissions::CONTACT_REQUEST_UPDATE->value,
+        AdminPermissions::CONTACT_REQUEST_RESPOND->value,
+    )->and($support)->not->toContain(AdminPermissions::CONTACT_REQUEST_DELETE->value);
+});

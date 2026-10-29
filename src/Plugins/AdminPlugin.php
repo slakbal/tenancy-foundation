@@ -8,6 +8,7 @@ use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Gate;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\AdminUserResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\ContactRequestResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\TenantResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
@@ -21,6 +22,8 @@ class AdminPlugin implements Plugin
     protected string $userResource = UserResource::class;
 
     protected string $tenantResource = TenantResource::class;
+
+    protected string $adminUserResource = AdminUserResource::class;
 
     protected string $contactRequestResource = ContactRequestResource::class;
 
@@ -39,6 +42,13 @@ class AdminPlugin implements Plugin
     public function usingUserResource(string $resource): static
     {
         $this->userResource = $resource;
+
+        return $this;
+    }
+
+    public function usingAdminUserResource(string $resource): static
+    {
+        $this->adminUserResource = $resource;
 
         return $this;
     }
@@ -70,7 +80,7 @@ class AdminPlugin implements Plugin
         $panel->passwordReset();
         $panel->profile($this->profilePage);
         $panel->authPasswordBroker(AuthGuard::ADMIN->getPasswordBroker());
-        $panel->resources([$this->userResource, $this->tenantResource, $this->contactRequestResource]);
+        $panel->resources([$this->userResource, $this->adminUserResource, $this->tenantResource, $this->contactRequestResource]);
     }
 
     public function boot(Panel $panel): void
