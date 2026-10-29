@@ -54,8 +54,6 @@ class ContactUs extends Page
 
     public function form(Schema $schema): Schema
     {
-        $user = Filament::auth()->user();
-
         return $schema
             ->statePath('data')
             ->components([
@@ -64,8 +62,7 @@ class ContactUs extends Page
                     ->rows(6)
                     ->maxLength(1024)
                     ->required()
-                    ->autofocus()
-                    ->helperText(__('Sending as :name - :email', ['name' => $user->name, 'email' => $user->email])),
+                    ->autofocus(),
             ]);
     }
 

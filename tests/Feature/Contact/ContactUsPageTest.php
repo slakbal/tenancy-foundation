@@ -30,10 +30,6 @@ test('the page only asks for the message', function () {
         ->assertFormFieldDoesNotExist('captcha');
 });
 
-test('the page shows who the message is sent as', function () {
-    Livewire::test(ContactUs::class)->assertSee(__('Sending as :name - :email', ['name' => $this->user->name, 'email' => 'jane@example.com']));
-});
-
 test('a message is stored with the name and email of the logged in user and the tenant source', function () {
     Livewire::test(ContactUs::class)
         ->fillForm(['message' => 'Please help'])
