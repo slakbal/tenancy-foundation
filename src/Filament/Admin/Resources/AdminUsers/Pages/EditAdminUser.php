@@ -3,6 +3,9 @@
 namespace Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages;
 
 use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\EditRecord;
@@ -23,6 +26,9 @@ class EditAdminUser extends EditRecord
         return [
             ViewAction::make()->button()->hiddenLabel(false)->tooltip(null),
             ResendAdminInvitationAction::make(),
+            DeleteAction::make()->button()->hiddenLabel(false)->tooltip(null),
+            RestoreAction::make()->button()->hiddenLabel(false)->tooltip(null),
+            ForceDeleteAction::make()->button()->hiddenLabel(false)->tooltip(null),
         ];
     }
 

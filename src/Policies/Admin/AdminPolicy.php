@@ -25,7 +25,12 @@ class AdminPolicy extends AuthorisationPolicy
 
     public function forceDelete($user, $model): bool
     {
-        return ! $this->isProtectedFrom($user, $model) && parent::forceDelete($user, $model);
+        return AdminAccountGuard::isSuperAdmin($user) && parent::forceDelete($user, $model);
+    }
+
+    public function forceDeleteAny($user): bool
+    {
+        return AdminAccountGuard::isSuperAdmin($user) && parent::forceDeleteAny($user);
     }
 
     protected function isProtectedFrom(mixed $user, mixed $model): bool

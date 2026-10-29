@@ -87,4 +87,14 @@ it('lets admins with permissions manage other admins', function (string $ability
     $admin = safeguardAdmin(AdminRoles::ADMIN, withAdminUserPermissions: true);
 
     expect($admin->can($ability, safeguardAdmin(AdminRoles::SUPPORT)))->toBeTrue();
-})->with(['update', 'delete', 'restore', 'forceDelete']);
+})->with(['update', 'delete', 'restore']);
+
+it('reserves force delete for super admins', function () {
+    $admin = safeguardAdmin(AdminRoles::ADMIN, withAdminUserPermissions: true);
+    $super = safeguardAdmin(AdminRoles::SUPER_ADMIN);
+    $target = safeguardAdmin(AdminRoles::SUPPORT);
+
+    expect($admin->can('forceDelete', $target))->toBeFalse()
+        ->and($admin->can('forceDeleteAny', Admin::class))->toBeFalse()
+        ->and($super->can('forceDelete', $target))->toBeTrue();
+});

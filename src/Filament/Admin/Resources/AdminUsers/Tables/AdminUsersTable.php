@@ -3,15 +3,26 @@
 namespace Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Tables;
 
 use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\ForceDeleteBulkAction;
+use Filament\Actions\RestoreAction;
+use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\BaseFilter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
-use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ResendAdminInvitationAction;
+use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ResendAdminInvitationAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
 
 class AdminUsersTable
@@ -21,7 +32,15 @@ class AdminUsersTable
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('roles'))
             ->columns(static::columns())
+            ->filters(static::filters())
             ->recordActions(static::recordActions())
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make()->authorizeIndividualRecords('delete'),
+                    RestoreBulkAction::make()->authorizeIndividualRecords('restore'),
+                    ForceDeleteBulkAction::make()->authorizeIndividualRecords('forceDelete'),
+                ]),
+            ])
             ->defaultSort('created_at', 'desc');
     }
 
@@ -51,6 +70,26 @@ class AdminUsersTable
     }
 
     /**
+     * @return array<int, BaseFilter>
+     */
+    protected static function filters(): array
+    {
+        return [
+            SelectFilter::make('role')
+                ->label(__('Role'))
+                ->options(collect(AdminRoles::cases())->mapWithKeys(fn (AdminRoles $role): array => [$role->value => $role->getLabel()])->all())
+                ->query(fn (Builder $query, array $data): Builder => $query->when(
+                    $data['value'] ?? null,
+                    fn (Builder $query, string $role): Builder => $query->whereHas('roles', fn (Builder $roles) => $roles->where('roles.name', $role)),
+                )),
+            SelectFilter::make('status')
+                ->label(__('Status'))
+                ->options(AdminStatus::class),
+            TrashedFilter::make(),
+        ];
+    }
+
+    /**
      * @return array<int, Action>
      */
     protected static function recordActions(): array
@@ -59,6 +98,9 @@ class AdminUsersTable
             ResendAdminInvitationAction::make()->hiddenLabel()->iconButton()->tooltip(__('Resend invitation')),
             ViewAction::make(),
             EditAction::make(),
+            DeleteAction::make(),
+            RestoreAction::make(),
+            ForceDeleteAction::make(),
         ];
     }
 }
