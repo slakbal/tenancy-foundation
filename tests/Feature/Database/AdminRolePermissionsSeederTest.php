@@ -32,3 +32,14 @@ it('lets the support role work on contact requests but not delete them', functio
         AdminPermissions::CONTACT_REQUEST_RESPOND->value,
     )->and($support)->not->toContain(AdminPermissions::CONTACT_REQUEST_DELETE->value);
 });
+
+it('lets the support role view admins but not change them', function () {
+    $support = adminRolePermissions(AdminRoles::SUPPORT);
+
+    expect($support)->toContain(AdminPermissions::ADMIN_USER_VIEW_ANY->value, AdminPermissions::ADMIN_USER_VIEW->value)
+        ->and($support)->not->toContain(
+            AdminPermissions::ADMIN_USER_CREATE->value,
+            AdminPermissions::ADMIN_USER_UPDATE->value,
+            AdminPermissions::ADMIN_USER_DELETE->value,
+        );
+});

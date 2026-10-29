@@ -175,5 +175,6 @@
     "Change the role of :email": "Change the role of :email",
     "Role of :email updated.": "Role of :email updated.",
     "Restore": "Restore",
-    "Force delete": "Force delete"
+    "Force delete": "Force delete",
+    "This email belongs to a deleted admin. Restore that admin instead.": "This email belongs to a deleted admin. Restore that admin instead."
 }

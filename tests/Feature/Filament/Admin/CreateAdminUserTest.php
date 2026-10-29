@@ -97,6 +97,17 @@ it('validates the create form', function () {
         ->assertHasFormErrors(['name' => 'required', 'email' => 'unique', 'role' => 'required']);
 });
 
+it('points to the deleted admin when the email belongs to one', function () {
+    creatingAdmin();
+    $deleted = Admin::factory()->create();
+    $deleted->delete();
+
+    Livewire::test(CreateAdminUserPage::class)
+        ->fillForm(['name' => 'Again', 'email' => $deleted->email, 'role' => AdminRoles::SUPPORT->value])
+        ->call('create')
+        ->assertHasFormErrors(['email' => 'This email belongs to a deleted admin. Restore that admin instead.']);
+});
+
 it('does not offer the super admin role to a non super admin on the create form', function () {
     creatingAdmin();
 

@@ -163,3 +163,17 @@ it('hides the status actions that do not fit even for a super admin', function (
         ->assertActionHidden(TestAction::make('sendPasswordResetLink')->table($inactive))
         ->assertActionHidden(TestAction::make('sendPasswordResetLink')->table($pending));
 });
+
+it('applies a role change on the next request', function () {
+    $this->seed(Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder::class);
+    $actor = Admin::factory()->create();
+    $actor->assignRole(AdminRoles::SUPER_ADMIN);
+    $target = statusTarget();
+
+    expect($target->can(AdminPermissions::ADMIN_USER_UPDATE))->toBeFalse();
+
+    app(Slakbal\TenancyFoundation\Actions\ChangeAdminUserRole::class)->handle($target, AdminRoles::ADMIN->value, $actor);
+
+    expect(Admin::find($target->getKey())->can(AdminPermissions::ADMIN_USER_UPDATE))->toBeTrue()
+        ->and(Admin::find($target->getKey())->can(AdminPermissions::TENANT_VIEW_ANY))->toBeTrue();
+});

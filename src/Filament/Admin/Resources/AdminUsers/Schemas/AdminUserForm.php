@@ -70,6 +70,7 @@ class AdminUserForm
                 ->required()
                 ->maxLength(255)
                 ->unique(ignoreRecord: true)
+                ->validationMessages(['unique' => fn (mixed $state): string => static::emailTakenMessage($state)])
                 ->columnSpanFull(),
         ];
     }
@@ -120,5 +121,14 @@ class AdminUserForm
     protected static function lockedMessage(): string
     {
         return __('You cannot change your own role, nor the role of the last active super admin.');
+    }
+
+    protected static function emailTakenMessage(mixed $email): string
+    {
+        $adminModel = config('tenancy-foundation.models.admin');
+
+        return $adminModel::onlyTrashed()->where('email', $email)->exists()
+            ? __('This email belongs to a deleted admin. Restore that admin instead.')
+            : __('validation.unique', ['attribute' => __('email')]);
     }
 }
