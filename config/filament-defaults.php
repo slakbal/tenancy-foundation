@@ -57,11 +57,11 @@ return [
         'action_group' => true,   // ActionGroup → ellipsis icon
         'action' => true,         // Action → modalWidth(Medium) + closeModalByClickingAway(false)
         'create_action' => true,  // CreateAction → icon + hiddenLabel() + createAnother(false)
-        'edit_action' => true,    // EditAction → icon + hiddenLabel() + button()
-        'delete_action' => true,  // DeleteAction → icon + hiddenLabel() + button()
-        'view_action' => true,    // ViewAction → icon + hiddenLabel() + button()
-        'restore_action' => true,    // RestoreAction → icon + hiddenLabel() + button()
-        'force_delete_action' => true,    // ViewAction → icon + hiddenLabel() + button()
+        'edit_action' => true, // icon only; labels stay visible, group row actions in an ActionGroup
+        'delete_action' => true, // icon only; labels stay visible, group row actions in an ActionGroup
+        'view_action' => true, // icon only; labels stay visible, group row actions in an ActionGroup
+        'restore_action' => true, // icon only; labels stay visible, group row actions in an ActionGroup
+        'force_delete_action' => true, // icon only; labels stay visible, group row actions in an ActionGroup
         'delete_bulk_action' => true,    // DeleteBulkAction → icon + hiddenLabel() + button()
         'force_delete_bulk_action' => true,    // ForceDeleteBulkAction → icon + hiddenLabel() + button()
         'restore_bulk_action' => true,    // RestoreBulkAction → icon + hiddenLabel() + button()

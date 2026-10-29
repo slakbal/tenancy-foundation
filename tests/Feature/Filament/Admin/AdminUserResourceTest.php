@@ -1,9 +1,10 @@
 <?php
 
+use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Auth\Access\AuthorizationException;
 use Livewire\Livewire;
-use Slakbal\TenancyFoundation\Actions\UpdateAdminUser;
+use Slakbal\TenancyFoundation\Actions\ChangeAdminUserRole;
 use Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
@@ -87,13 +88,13 @@ it('casts the status and defaults a new admin to active', function () {
         ->and(Admin::factory()->pending()->create()->fresh()->status)->toBe(AdminStatus::PENDING);
 });
 
-it('updates name, email and role through the edit page', function () {
+it('updates name and email through the edit page', function () {
     adminUserActor(AdminRoles::ADMIN, AdminPermissions::ADMIN_USER_VIEW_ANY, AdminPermissions::ADMIN_USER_VIEW, AdminPermissions::ADMIN_USER_UPDATE);
     $target = adminUserTarget();
 
     Livewire::test(EditAdminUser::class, ['record' => $target->getRouteKey()])
-        ->assertSchemaStateSet(['role' => AdminRoles::SUPPORT->value])
-        ->fillForm(['name' => 'Renamed', 'email' => 'renamed@example.com', 'role' => AdminRoles::ADMIN->value])
+        ->assertFormFieldDoesNotExist('role')
+        ->fillForm(['name' => 'Renamed', 'email' => 'renamed@example.com'])
         ->call('save')
         ->assertHasNoFormErrors();
 
@@ -102,8 +103,7 @@ it('updates name, email and role through the edit page', function () {
     expect($target->name)->toBe('Renamed')
         ->and($target->email)->toBe('renamed@example.com')
         ->and($target->status)->toBe(AdminStatus::ACTIVE)
-        ->and($target->hasRole(AdminRoles::ADMIN))->toBeTrue()
-        ->and($target->hasRole(AdminRoles::SUPPORT))->toBeFalse();
+        ->and($target->hasRole(AdminRoles::SUPPORT))->toBeTrue();
 });
 
 it('validates the email and keeps it unique', function () {
@@ -126,13 +126,15 @@ it('only offers the super admin role to a super admin', function () {
     $actor = adminUserActor(AdminRoles::ADMIN, AdminPermissions::ADMIN_USER_VIEW_ANY, AdminPermissions::ADMIN_USER_VIEW, AdminPermissions::ADMIN_USER_UPDATE);
     $target = adminUserTarget();
 
-    Livewire::test(EditAdminUser::class, ['record' => $target->getRouteKey()])
+    Livewire::test(ListAdminUsers::class)
+        ->mountAction(TestAction::make('changeRole')->table($target))
         ->assertFormFieldExists('role', fn ($field): bool => ! array_key_exists(AdminRoles::SUPER_ADMIN->value, $field->getOptions()));
 
     $actor->syncRoles([AdminRoles::SUPER_ADMIN]);
     $actor->unsetRelation('roles');
 
-    Livewire::test(EditAdminUser::class, ['record' => $target->getRouteKey()])
+    Livewire::test(ListAdminUsers::class)
+        ->mountAction(TestAction::make('changeRole')->table($target))
         ->assertFormFieldExists('role', fn ($field): bool => array_key_exists(AdminRoles::SUPER_ADMIN->value, $field->getOptions()));
 });
 
@@ -140,33 +142,27 @@ it('refuses to let a non super admin assign the super admin role', function () {
     $actor = adminUserActor(AdminRoles::ADMIN, AdminPermissions::ADMIN_USER_UPDATE);
     $target = adminUserTarget();
 
-    expect(fn () => app(UpdateAdminUser::class)->handle($target, ['role' => AdminRoles::SUPER_ADMIN->value], $actor))
+    expect(fn () => app(ChangeAdminUserRole::class)->handle($target, AdminRoles::SUPER_ADMIN->value, $actor))
         ->toThrow(AuthorizationException::class);
 
     expect($target->fresh()->hasRole(AdminRoles::SUPER_ADMIN))->toBeFalse();
 });
 
-it('locks the own role in the form and ignores tampering', function () {
+it('keeps the own role', function () {
     $actor = adminUserActor(AdminRoles::SUPER_ADMIN);
     adminUserTarget(AdminRoles::SUPER_ADMIN);
 
-    Livewire::test(EditAdminUser::class, ['record' => $actor->getRouteKey()])
-        ->assertFormFieldIsDisabled('role');
+    app(ChangeAdminUserRole::class)->handle($actor, AdminRoles::SUPPORT->value, $actor);
 
-    app(UpdateAdminUser::class)->handle($actor, ['name' => 'Me', 'role' => AdminRoles::SUPPORT->value], $actor);
-
-    $actor->refresh();
-
-    expect($actor->name)->toBe('Me')
-        ->and($actor->hasRole(AdminRoles::SUPER_ADMIN))->toBeTrue();
+    expect($actor->fresh()->hasRole(AdminRoles::SUPER_ADMIN))->toBeTrue();
 });
 
-it('locks the last active super admin for another actor', function () {
+it('keeps the role of the last active super admin', function () {
     $actor = adminUserActor(AdminRoles::SUPER_ADMIN);
     $actor->forceFill(['status' => AdminStatus::INACTIVE])->save();
     $last = adminUserTarget(AdminRoles::SUPER_ADMIN);
 
-    app(UpdateAdminUser::class)->handle($last, ['role' => AdminRoles::SUPPORT->value], $actor);
+    app(ChangeAdminUserRole::class)->handle($last, AdminRoles::SUPPORT->value, $actor);
 
     expect($last->fresh()->hasRole(AdminRoles::SUPER_ADMIN))->toBeTrue();
 });

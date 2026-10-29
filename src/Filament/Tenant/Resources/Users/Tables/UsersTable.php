@@ -53,11 +53,11 @@ class UsersTable extends BaseUsersTable
     /**
      * @return array<int, Action>
      */
-    protected static function recordActions(): array
+    protected static function rowActions(): array
     {
         return [
             MakeTenantOwnerAction::make(),
-            ...parent::recordActions(),
+            ...parent::rowActions(),
         ];
     }
 }

@@ -20,7 +20,7 @@ class EditTenant extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            ViewAction::make()->button()->hiddenLabel(false)->tooltip(null),  // overrides the defaults
+            ViewAction::make(),
             CancelTenantAction::make()->successRedirectUrl(fn (Model $record): string => $this->tenantPageUrl('edit', $record)),
             ReactivateTenantAction::make()->successRedirectUrl(fn (Model $record): string => $this->tenantPageUrl('edit', $record)),
         ];

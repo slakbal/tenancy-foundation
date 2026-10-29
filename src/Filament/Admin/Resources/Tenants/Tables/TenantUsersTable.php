@@ -3,6 +3,7 @@
 namespace Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Tables;
 
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Columns\IconColumn;
@@ -96,15 +97,15 @@ class TenantUsersTable
     protected static function recordActions(): array
     {
         return [
-            Action::make('editUser')
-                ->label(__('Edit user'))
-                ->hiddenLabel()
-                ->iconButton()
-                ->tooltip(__('Edit user'))
-                ->icon(Heroicon::OutlinedPencilSquare)
-                ->authorize('update')
-                ->url(fn (Model $record): string => UserResource::getUrl('edit', ['record' => $record])),
-            ImpersonateUserAction::make(),
+            ActionGroup::make([
+                Action::make('editUser')
+                    ->label(__('Edit user'))
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->authorize('update')
+                    ->color('primary')
+                    ->url(fn (Model $record): string => UserResource::getUrl('edit', ['record' => $record])),
+                ImpersonateUserAction::make(),
+            ]),
         ];
     }
 }

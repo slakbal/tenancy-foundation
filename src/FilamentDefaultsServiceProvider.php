@@ -148,45 +148,30 @@ class FilamentDefaultsServiceProvider extends ServiceProvider
         if ($this->isItemEnabled('actions', 'edit_action')) {
             Actions\EditAction::configureUsing(fn (Actions\EditAction $action) => $action
                 ->icon(Heroicon::OutlinedPencilSquare)
-                ->hiddenLabel()
-                ->iconButton()
-                ->tooltip(fn (): string => $action->getLabel())
             );
         }
 
         if ($this->isItemEnabled('actions', 'delete_action')) {
             Actions\DeleteAction::configureUsing(fn (Actions\DeleteAction $action) => $action
                 ->icon(Heroicon::OutlinedTrash)
-                ->hiddenLabel()
-                ->iconButton()
-                ->tooltip(fn (): string => $action->getLabel())
             );
         }
 
         if ($this->isItemEnabled('actions', 'view_action')) {
             Actions\ViewAction::configureUsing(fn (Actions\ViewAction $action) => $action
                 ->icon(Heroicon::OutlinedEye)
-                ->hiddenLabel()
-                ->iconButton()
-                ->tooltip(fn (): string => $action->getLabel())
             );
         }
 
         if ($this->isItemEnabled('actions', 'restore_action')) {
             Actions\RestoreAction::configureUsing(fn (Actions\RestoreAction $action) => $action
                 ->icon(Heroicon::ArrowUturnLeft)
-                ->hiddenLabel()
-                ->iconButton()
-                ->tooltip(fn (): string => $action->getLabel())
             );
         }
 
         if ($this->isItemEnabled('actions', 'force_delete_action')) {
             Actions\ForceDeleteAction::configureUsing(fn (Actions\ForceDeleteAction $action) => $action
                 ->icon(Heroicon::OutlinedTrash)
-                ->hiddenLabel()
-                ->iconButton()
-                ->tooltip(fn (): string => $action->getLabel())
             );
         }
 

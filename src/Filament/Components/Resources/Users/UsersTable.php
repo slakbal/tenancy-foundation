@@ -3,6 +3,7 @@
 namespace Slakbal\TenancyFoundation\Filament\Components\Resources\Users;
 
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -69,6 +70,14 @@ class UsersTable
      * @return array<int, Action>
      */
     protected static function recordActions(): array
+    {
+        return [ActionGroup::make(static::rowActions())];
+    }
+
+    /**
+     * @return array<int, Action>
+     */
+    protected static function rowActions(): array
     {
         return [
             EditAction::make(),

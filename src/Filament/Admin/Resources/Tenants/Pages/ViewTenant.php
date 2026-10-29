@@ -20,7 +20,7 @@ class ViewTenant extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            EditAction::make()->button()->hiddenLabel(false)->tooltip(null), // overrides the defaults
+            EditAction::make(),
             CancelTenantAction::make()->successRedirectUrl(fn (Model $record): string => $this->tenantPageUrl('view', $record)),
             ReactivateTenantAction::make()->successRedirectUrl(fn (Model $record): string => $this->tenantPageUrl('view', $record)),
         ];

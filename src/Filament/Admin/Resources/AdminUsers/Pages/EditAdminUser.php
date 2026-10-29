@@ -7,7 +7,6 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
-use Filament\Facades\Filament;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Actions\UpdateAdminUser;
@@ -28,16 +27,15 @@ class EditAdminUser extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            ViewAction::make()->button()->hiddenLabel(false)->tooltip(null),
+            ViewAction::make(),
             ResendAdminInvitationAction::make(),
             SendAdminPasswordResetLinkAction::make(),
             ChangeAdminUserRoleAction::make(),
             ActivateAdminUserAction::make(),
             DeactivateAdminUserAction::make(),
-            DeleteAction::make()->button()->hiddenLabel(false)->tooltip(null),
-            RestoreAction::make()->button()->hiddenLabel(false)->tooltip(null),
-            ForceDeleteAction::make()->button()->hiddenLabel(false)->tooltip(null),
-        ];
+            DeleteAction::make(),
+            RestoreAction::make(),
+            ForceDeleteAction::make(), ];
     }
 
     /**
@@ -45,6 +43,6 @@ class EditAdminUser extends EditRecord
      */
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        return app(UpdateAdminUser::class)->handle($record, $data, Filament::auth()->user());
+        return app(UpdateAdminUser::class)->handle($record, $data);
     }
 }

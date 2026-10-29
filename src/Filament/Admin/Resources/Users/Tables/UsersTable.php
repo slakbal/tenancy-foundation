@@ -38,12 +38,12 @@ class UsersTable extends BaseUsersTable
     /**
      * @return array<int, Action>
      */
-    protected static function recordActions(): array
+    protected static function rowActions(): array
     {
         return [
             MakeTenantOwnerAsAdminAction::make(),
             ImpersonateUserAction::make(), // see admin model for authorization method: canImpersonate
-            ...parent::recordActions(),
+            ...parent::rowActions(),
         ];
     }
 }

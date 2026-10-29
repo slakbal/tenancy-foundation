@@ -2,6 +2,7 @@
 
 namespace Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\Tables;
 
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -78,8 +79,10 @@ class ContactRequestsTable
                     ),
             ])
             ->recordActions([
-                EditAction::make()->hiddenLabel()->iconButton()->tooltip(__('Open'))->icon(Heroicon::OutlinedEye),
-                DeleteAction::make()->hiddenLabel()->iconButton()->tooltip(__('Delete')),
+                ActionGroup::make([
+                    EditAction::make()->label(__('Open'))->icon(Heroicon::OutlinedEye),
+                    DeleteAction::make(),
+                ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

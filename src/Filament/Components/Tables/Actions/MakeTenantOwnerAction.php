@@ -14,9 +14,6 @@ class MakeTenantOwnerAction
     {
         return Action::make($name)
             ->label(__('Make owner'))
-            ->hiddenLabel()
-            ->iconButton()
-            ->tooltip(__('Make owner'))
             ->icon('heroicon-o-shield-check')
             ->color('warning')
             ->modalHeading(__('Make this user the owner?'));

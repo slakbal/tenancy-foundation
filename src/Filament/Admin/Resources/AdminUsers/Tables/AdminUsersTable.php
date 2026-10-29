@@ -13,7 +13,6 @@ use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\BaseFilter;
@@ -103,21 +102,16 @@ class AdminUsersTable
         return [
             ResendAdminInvitationAction::make()->hiddenLabel()->iconButton()->tooltip(__('Resend invitation')),
             ActionGroup::make([
-                static::groupItem(ViewAction::make(), __('View'), Heroicon::OutlinedEye),
-                static::groupItem(EditAction::make(), __('Edit'), Heroicon::OutlinedPencilSquare),
+                ViewAction::make(),
+                EditAction::make(),
                 SendAdminPasswordResetLinkAction::make(),
                 ChangeAdminUserRoleAction::make(),
                 ActivateAdminUserAction::make(),
                 DeactivateAdminUserAction::make(),
-                static::groupItem(DeleteAction::make(), __('Delete'), Heroicon::OutlinedTrash, 'danger'),
-                static::groupItem(RestoreAction::make(), __('Restore'), Heroicon::OutlinedArrowUturnLeft, 'success'),
-                static::groupItem(ForceDeleteAction::make(), __('Force delete'), Heroicon::OutlinedTrash, 'danger'),
+                DeleteAction::make(),
+                RestoreAction::make(),
+                ForceDeleteAction::make(),
             ]),
         ];
-    }
-
-    protected static function groupItem(Action $action, string $label, Heroicon $icon, ?string $color = null): Action
-    {
-        return $action->label($label)->icon($icon)->color($color)->grouped()->hiddenLabel(false)->tooltip(null);
     }
 }

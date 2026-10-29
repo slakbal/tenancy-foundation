@@ -10,7 +10,6 @@ use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Filament\Components\Schemas\UserNameSchema;
 use Slakbal\TenancyFoundation\Support\AdminAccountGuard;
@@ -51,7 +50,7 @@ class AdminUserForm
     public static function detailsSection(): Section
     {
         return Section::make(__('Admin details'))
-            ->description(__('The name and sign in email of the admin.'))
+            ->description(__('The name and sign in email of the user.'))
             ->icon(Heroicon::OutlinedUser)
             ->schema(static::detailsFields())
             ->columns(2);
@@ -78,10 +77,11 @@ class AdminUserForm
     public static function accessSection(): Section
     {
         return Section::make(__('Access'))
-            ->description(__('The role decides what the admin can do.'))
+            ->description(__('The role decides what the user can do.'))
             ->icon(Heroicon::OutlinedShieldCheck)
             ->schema(static::accessFields())
-            ->columns(2);
+            ->columns(2)
+            ->visibleOn('create');
     }
 
     /**
@@ -93,10 +93,7 @@ class AdminUserForm
             Select::make('role')
                 ->label(__('Role'))
                 ->options(fn (): array => static::assignableRoles())
-                ->required()
-                ->afterStateHydrated(fn (Select $component, ?Model $record) => $component->state($record?->roles->first()?->name))
-                ->disabled(fn (?Model $record): bool => static::isLocked($record))
-                ->helperText(fn (?Model $record): ?string => static::isLocked($record) ? static::lockedMessage() : null),
+                ->required(),
         ];
     }
 
@@ -111,16 +108,6 @@ class AdminUserForm
             ->reject(fn (AdminRoles $role): bool => $role === AdminRoles::SUPER_ADMIN && ! $actorIsSuperAdmin)
             ->mapWithKeys(fn (AdminRoles $role): array => [$role->value => $role->getLabel()])
             ->all();
-    }
-
-    protected static function isLocked(?Model $record): bool
-    {
-        return $record !== null && AdminAccountGuard::isLockedFor(Filament::auth()->user(), $record);
-    }
-
-    protected static function lockedMessage(): string
-    {
-        return __('You cannot change your own role, nor the role of the last active super admin.');
     }
 
     protected static function emailTakenMessage(mixed $email): string

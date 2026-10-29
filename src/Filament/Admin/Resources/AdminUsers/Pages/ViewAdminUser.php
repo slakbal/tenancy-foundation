@@ -25,15 +25,15 @@ class ViewAdminUser extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            EditAction::make()->button()->hiddenLabel(false)->tooltip(null),
+            EditAction::make(),
             ResendAdminInvitationAction::make(),
             SendAdminPasswordResetLinkAction::make(),
             ChangeAdminUserRoleAction::make(),
             ActivateAdminUserAction::make(),
             DeactivateAdminUserAction::make(),
-            DeleteAction::make()->button()->hiddenLabel(false)->tooltip(null),
-            RestoreAction::make()->button()->hiddenLabel(false)->tooltip(null),
-            ForceDeleteAction::make()->button()->hiddenLabel(false)->tooltip(null),
-        ];
+            DeleteAction::make(),
+            RestoreAction::make(),
+            ForceDeleteAction::make(),
+            ];
     }
 }

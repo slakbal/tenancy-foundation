@@ -3,6 +3,7 @@
 namespace Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Tables;
 
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
@@ -94,10 +95,12 @@ class TenantsTable
     protected static function recordActions(): array
     {
         return [
-            ViewAction::make()->hiddenLabel()->iconButton()->tooltip(__('View')),
-            EditAction::make()->hiddenLabel()->iconButton()->tooltip(__('Edit')),
-            CancelTenantAction::make()->hiddenLabel()->iconButton()->tooltip(__('Cancel tenant')),
-            ReactivateTenantAction::make()->hiddenLabel()->iconButton()->tooltip(__('Reactivate tenant')),
+            ActionGroup::make([
+                ViewAction::make(),
+                EditAction::make(),
+                CancelTenantAction::make(),
+                ReactivateTenantAction::make(),
+            ]),
         ];
     }
 }
