@@ -49,7 +49,7 @@ class MakeTenantOwnerAction
 
         return $tenant
             && $authenticated
-            && $authenticated->loadMissing('ownedTenants')->ownedTenants->contains($tenant)
-            && ! $record->loadMissing('ownedTenants')->ownedTenants->contains($tenant);
+            && $authenticated->isOwner($tenant)
+            && ! $record->isOwner($tenant);
     }
 }

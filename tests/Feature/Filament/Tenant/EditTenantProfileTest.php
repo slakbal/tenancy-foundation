@@ -8,7 +8,9 @@ use Slakbal\TenancyFoundation\Actions\CreateTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Filament\Components\Schemas\TenantDetailsSchema;
 use Slakbal\TenancyFoundation\Filament\Pages\EditTenantProfile;
+use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
 use Slakbal\TenancyFoundation\Models\User;
+use Spatie\Permission\Models\Permission;
 
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('app'));
@@ -88,4 +90,34 @@ test('the full tenant url can be copied to the clipboard', function () {
 
     expect($html)->toContain('navigator.clipboard.writeText')
         ->and(html_entity_decode($html))->toContain(str_replace('/', '\\/', $url));
+});
+
+test('only the owner of the tenant can open the profile page', function () {
+    $admin = User::factory()->create();
+    $this->tenant->members()->syncWithoutDetaching([$admin->getKey() => ['is_owner' => false, 'is_default_tenant' => true]]);
+    $viewOnly = User::factory()->create();
+    $this->tenant->members()->syncWithoutDetaching([$viewOnly->getKey() => ['is_owner' => false, 'is_default_tenant' => true]]);
+
+    expect(EditTenantProfile::canView($this->tenant))->toBeTrue();
+
+    foreach ([$admin, $viewOnly] as $member) {
+        $this->actingAs($member->fresh(), AuthGuard::TENANT->value);
+
+        expect(EditTenantProfile::canView($this->tenant))->toBeFalse();
+        Livewire::test(EditTenantProfile::class)->assertNotFound();
+    }
+});
+
+test('a member holding every tenant permission still cannot open the profile page', function () {
+    $member = User::factory()->create();
+    $this->tenant->members()->syncWithoutDetaching([$member->getKey() => ['is_owner' => false, 'is_default_tenant' => true]]);
+
+    foreach (TenantPermissions::cases() as $permission) {
+        Permission::findOrCreate($permission->value, AuthGuard::TENANT->value);
+        $member->givePermissionTo($permission);
+    }
+
+    $this->actingAs($member->fresh(), AuthGuard::TENANT->value);
+
+    Livewire::test(EditTenantProfile::class)->assertNotFound();
 });

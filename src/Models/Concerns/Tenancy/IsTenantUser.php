@@ -4,6 +4,7 @@ namespace Slakbal\TenancyFoundation\Models\Concerns\Tenancy;
 
 use Filament\Facades\Filament;
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -59,7 +60,8 @@ trait IsTenantUser
         return $this->tenants()->wherePivot('is_owner', true);
     }
 
-    public function scopeWithSoleOwnerFlag(Builder $query): void
+    #[Scope]
+    public function withSoleOwnerFlag(Builder $query): void
     {
         $users = $this->getTable();
 
