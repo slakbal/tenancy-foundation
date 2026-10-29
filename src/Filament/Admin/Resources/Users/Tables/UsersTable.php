@@ -3,6 +3,7 @@
 namespace Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Tables;
 
 use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Table;
 use Slakbal\TenancyFoundation\Filament\Components\Resources\Users\UsersTable as BaseUsersTable;
@@ -43,6 +44,7 @@ class UsersTable extends BaseUsersTable
         return [
             MakeTenantOwnerAsAdminAction::make(),
             ImpersonateUserAction::make(), // see admin model for authorization method: canImpersonate
+            ViewAction::make(),
             ...parent::rowActions(),
         ];
     }

@@ -175,5 +175,7 @@
     "Role of :email updated.": "Role of :email updated.",
     "Restore": "Restore",
     "Force delete": "Force delete",
-    "This email belongs to a deleted admin. Restore that admin instead.": "This email belongs to a deleted admin. Restore that admin instead."
+    "This email belongs to a deleted admin. Restore that admin instead.": "This email belongs to a deleted admin. Restore that admin instead.",
+    "User details": "User details",
+    "This email belongs to a deleted user. Restore that user instead.": "This email belongs to a deleted user. Restore that user instead."
 }
