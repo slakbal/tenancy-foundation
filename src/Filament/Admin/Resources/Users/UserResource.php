@@ -4,7 +4,6 @@ namespace Slakbal\TenancyFoundation\Filament\Admin\Resources\Users;
 
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
-use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\CreateUser;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\EditUser;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\ListUsers;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Schemas\UserForm;
@@ -30,7 +29,6 @@ class UserResource extends BaseUserResource
     {
         return [
             'index' => ListUsers::route('/'),
-            'create' => CreateUser::route('/create'),
             'edit' => EditUser::route('/{record}/edit'),
         ];
     }
