@@ -152,5 +152,7 @@
     "Resend invitation": "Resend invitation",
     "Resend the invitation to :email?": "Resend the invitation to :email?",
     "A new link to set a password is emailed. Earlier links stop working.": "A new link to set a password is emailed. Earlier links stop working.",
-    "Invitation sent to :email.": "Invitation sent to :email."
+    "Invitation sent to :email.": "Invitation sent to :email.",
+    "This link is invalid or has expired.": "This link is invalid or has expired.",
+    "Request a new link below to set your password.": "Request a new link below to set your password."
 }

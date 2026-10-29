@@ -11,6 +11,7 @@ use Slakbal\TenancyFoundation\Filament\Pages\EditProfile;
 use Slakbal\TenancyFoundation\Filament\Pages\EditTenantProfile;
 use Slakbal\TenancyFoundation\Filament\Pages\EmailVerificationPrompt;
 use Slakbal\TenancyFoundation\Filament\Pages\RegisterTenant;
+use Slakbal\TenancyFoundation\Filament\Pages\ResetPassword;
 use Slakbal\TenancyFoundation\Filament\Pages\RegisterUser;
 use Slakbal\TenancyFoundation\Filament\Tenant\Pages\ContactUs;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
@@ -95,7 +96,7 @@ class TenantPlugin implements Plugin
             ->tenantProfile($this->editTenantProfilePage)
             ->tenantMiddleware([SyncTenantPermissionsContext::class, EnsureTenantIsNotCancelled::class], isPersistent: true)
             ->registration($this->registerUserPage)
-            ->passwordReset()
+            ->passwordReset(resetAction: ResetPassword::class)
             ->profile($this->profilePage)
             ->authPasswordBroker(AuthGuard::TENANT->getPasswordBroker())
             ->emailVerification(EmailVerificationPrompt::class)

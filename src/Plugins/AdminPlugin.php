@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Gate;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\AdminUserResource;
+use Slakbal\TenancyFoundation\Filament\Pages\ResetPassword;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\ContactRequestResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\TenantResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
@@ -77,7 +78,7 @@ class AdminPlugin implements Plugin
     public function register(Panel $panel): void
     {
         $panel->databaseNotifications();
-        $panel->passwordReset();
+        $panel->passwordReset(resetAction: ResetPassword::class);
         $panel->profile($this->profilePage);
         $panel->authPasswordBroker(AuthGuard::ADMIN->getPasswordBroker());
         $panel->resources([$this->userResource, $this->adminUserResource, $this->tenantResource, $this->contactRequestResource]);
