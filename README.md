@@ -148,7 +148,14 @@ use Slakbal\TenancyFoundation\Database\Seeders\TenantRolePermissionsSeeder;
 $this->call([AdminRolePermissionsSeeder::class, TenantRolePermissionsSeeder::class]);
 ```
 
-Roles are global; tenant roles are assigned per tenant. To add your own permission enums, extend `TenantRolePermissionsSeeder` and override `permissionEnums()` and `viewOnlyPermissions()`.
+Roles are global; tenant roles are assigned per tenant. To add your own permission enums, extend `TenantRolePermissionsSeeder` and override `permissionEnums()` and `viewOnlyPermissions()`. The owner role carries no permission rows: the owner of a tenant bypasses every check for that tenant through `Gate::before`, and owner-only areas (the tenant profile page) are guarded by an owner check. The admin role gets every permission.
+
+**After every upgrade, re-run both seeders.** New permissions and changed role mappings only reach the database through them. The seeders sync each role, so run them again whenever the package or your own permission enums change:
+
+```bash
+php artisan db:seed --class="Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder"
+php artisan db:seed --class="Slakbal\TenancyFoundation\Database\Seeders\TenantRolePermissionsSeeder"
+```
 
 Create the first super admin:
 

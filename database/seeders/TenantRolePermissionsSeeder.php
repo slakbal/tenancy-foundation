@@ -46,8 +46,9 @@ class TenantRolePermissionsSeeder extends Seeder
                 guardName: $guard,
             ));
 
+        // The owner bypasses every check through Gate::before, so the role carries no permission rows
         $roleClass::findOrCreate(name: TenantRoles::OWNER->value, guardName: $guard)
-            ->syncPermissions($permissions);
+            ->syncPermissions([]);
 
         $roleClass::findOrCreate(name: TenantRoles::ADMIN->value, guardName: $guard)
             ->syncPermissions($permissions);

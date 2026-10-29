@@ -7,7 +7,7 @@ enum AdminPermissions: string
     // Impersonate Users
     case IMPERSONATE_USER = 'impersonate.user';
 
-    // Tenant Users
+    // Admin Panel Users (for the users in the admins table)
     case ADMIN_USER_VIEW_ANY = 'admin_user.view_any';
     case ADMIN_USER_VIEW = 'admin_user.view';
     case ADMIN_USER_CREATE = 'admin_user.create';
@@ -30,7 +30,7 @@ enum AdminPermissions: string
     case CONTACT_REQUEST_RESPOND = 'contact_request.respond';
     case CONTACT_REQUEST_DELETE = 'contact_request.delete';
 
-    // Tenant Users
+    // Tenant Users (for the users in the users table)
     case USER_VIEW_ANY = 'user.view_any';
     case USER_VIEW = 'user.view';
     case USER_CREATE = 'user.create';
