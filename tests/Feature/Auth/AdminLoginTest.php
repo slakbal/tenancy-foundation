@@ -23,22 +23,16 @@ test('admin can log in with valid credentials', function () {
     expect(auth(AuthGuard::ADMIN->value)->id())->toBe($admin->id);
 });
 
-test('admin login fails with an invalid password', function () {
-    $admin = Admin::factory()->create(['email' => 'admin@example.com']);
+test('admin login fails with bad credentials', function (string $email, string $password) {
+    Admin::factory()->create(['email' => 'admin@example.com']);
 
     Livewire::test(Login::class)
-        ->set('data.email', $admin->email)
-        ->set('data.password', 'wrong-password')
+        ->set('data.email', $email)
+        ->set('data.password', $password)
         ->call('authenticate');
 
     expect(auth(AuthGuard::ADMIN->value)->check())->toBeFalse();
-});
-
-test('admin login fails for an unknown email', function () {
-    Livewire::test(Login::class)
-        ->set('data.email', 'nobody@example.com')
-        ->set('data.password', 'password')
-        ->call('authenticate');
-
-    expect(auth(AuthGuard::ADMIN->value)->check())->toBeFalse();
-});
+})->with([
+    'invalid password' => ['admin@example.com', 'wrong-password'],
+    'unknown email' => ['nobody@example.com', 'password'],
+]);

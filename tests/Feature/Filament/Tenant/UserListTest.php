@@ -65,13 +65,15 @@ test('the users table shows each user\'s role in the current tenant as a badge',
     Permission::findOrCreate(TenantPermissions::USER_VIEW_ANY->value, AuthGuard::TENANT->value);
     $this->viewer->givePermissionTo(TenantPermissions::USER_VIEW_ANY);
 
+    $owner = User::factory()->create();
     $admin = User::factory()->create();
     $reader = User::factory()->create();
     $none = User::factory()->create();
-    foreach ([$admin, $reader, $none] as $user) {
+    foreach ([$owner, $admin, $reader, $none] as $user) {
         $this->tenant->members()->attach($user, ['is_owner' => false, 'is_default_tenant' => true]);
     }
-    globalRoles(TenantRoles::ADMIN, TenantRoles::VIEW_ONLY);
+    globalRoles(TenantRoles::OWNER, TenantRoles::ADMIN, TenantRoles::VIEW_ONLY);
+    $owner->assignRole(TenantRoles::OWNER);
     $admin->assignRole(TenantRoles::ADMIN);
     $reader->assignRole(TenantRoles::VIEW_ONLY);
 
@@ -80,11 +82,10 @@ test('the users table shows each user\'s role in the current tenant as a badge',
 
     Livewire::test(ListUsers::class)
         ->assertTableColumnExists('roles.name')
+        ->assertTableColumnStateSet('roles.name', [TenantRoles::OWNER->value], $owner)
         ->assertTableColumnStateSet('roles.name', [TenantRoles::ADMIN->value], $admin)
         ->assertTableColumnStateSet('roles.name', [TenantRoles::VIEW_ONLY->value], $reader)
-        ->assertTableColumnStateSet('roles.name', null, $none)
-        ->assertSee('View Only')
-        ->assertSee('Admin');
+        ->assertTableColumnStateSet('roles.name', null, $none);
 });
 
 test('a role held in another tenant is not shown in this tenant', function () {
@@ -109,33 +110,6 @@ test('a role held in another tenant is not shown in this tenant', function () {
         ->assertTableColumnStateSet('roles.name', [TenantRoles::VIEW_ONLY->value], $member);
 });
 
-test('an owner shows the owner role badge', function () {
-    Permission::findOrCreate(TenantPermissions::USER_VIEW_ANY->value, AuthGuard::TENANT->value);
-    $this->viewer->givePermissionTo(TenantPermissions::USER_VIEW_ANY);
-    globalRoles(TenantRoles::OWNER);
-    $this->viewer->assignRole(TenantRoles::OWNER);
-
-    $this->actingAs($this->viewer, AuthGuard::TENANT->value);
-    Filament::setTenant($this->tenant);
-
-    Livewire::test(ListUsers::class)->assertTableColumnStateSet('roles.name', [TenantRoles::OWNER->value], $this->viewer)->assertSee('Owner');
-});
-
-test('a custom role that is not in the enum still shows as a readable badge', function () {
-    Permission::findOrCreate(TenantPermissions::USER_VIEW_ANY->value, AuthGuard::TENANT->value);
-    $this->viewer->givePermissionTo(TenantPermissions::USER_VIEW_ANY);
-    $team = getPermissionsTeamId();
-    setPermissionsTeamId(null);
-    Role::findOrCreate('billing_manager', AuthGuard::TENANT->value);
-    setPermissionsTeamId($team);
-    $this->viewer->assignRole('billing_manager');
-
-    $this->actingAs($this->viewer, AuthGuard::TENANT->value);
-    Filament::setTenant($this->tenant);
-
-    Livewire::test(ListUsers::class)->assertSee('Billing Manager');
-});
-
 function usersWithRoles(object $test): array
 {
     Permission::findOrCreate(TenantPermissions::USER_VIEW_ANY->value, AuthGuard::TENANT->value);
@@ -155,48 +129,27 @@ function usersWithRoles(object $test): array
     return $users;
 }
 
-test('the role filter shows only the users with that role', function () {
-    $users = usersWithRoles($this);
+test('the role filter lists the users matching the picked roles', function (array $picked, array $visible, array $hidden) {
+    $users = usersWithRoles($this) + ['viewer' => $this->viewer];
 
-    Livewire::test(ListUsers::class)
-        ->filterTable('role', [TenantRoles::ADMIN->value])
-        ->assertCanSeeTableRecords([$users['admin']])
-        ->assertCanNotSeeTableRecords([$users['reader'], $users['none'], $this->viewer]);
-});
+    $list = Livewire::test(ListUsers::class);
 
-test('several roles can be picked at once', function () {
-    $users = usersWithRoles($this);
+    if ($picked !== []) {
+        $list->filterTable('role', $picked);
+    }
 
-    Livewire::test(ListUsers::class)
-        ->filterTable('role', [TenantRoles::ADMIN->value, TenantRoles::VIEW_ONLY->value])
-        ->assertCanSeeTableRecords([$users['admin'], $users['reader']])
-        ->assertCanNotSeeTableRecords([$users['none'], $this->viewer]);
-});
+    $list->assertCanSeeTableRecords(array_map(fn (string $key): User => $users[$key], $visible));
 
-test('the no role option finds the users without a role', function () {
-    $users = usersWithRoles($this);
-
-    Livewire::test(ListUsers::class)
-        ->filterTable('role', [RoleFilter::NONE])
-        ->assertCanSeeTableRecords([$users['none'], $this->viewer])
-        ->assertCanNotSeeTableRecords([$users['admin'], $users['reader']]);
-});
-
-test('no role and a role can be combined', function () {
-    $users = usersWithRoles($this);
-
-    Livewire::test(ListUsers::class)
-        ->filterTable('role', [RoleFilter::NONE, TenantRoles::ADMIN->value])
-        ->assertCanSeeTableRecords([$users['none'], $users['admin'], $this->viewer])
-        ->assertCanNotSeeTableRecords([$users['reader']]);
-});
-
-test('every user is listed while the role filter is empty', function () {
-    $users = usersWithRoles($this);
-
-    Livewire::test(ListUsers::class)
-        ->assertCanSeeTableRecords([...array_values($users), $this->viewer]);
-});
+    if ($hidden !== []) {
+        $list->assertCanNotSeeTableRecords(array_map(fn (string $key): User => $users[$key], $hidden));
+    }
+})->with([
+    'one role' => [[TenantRoles::ADMIN->value], ['admin'], ['reader', 'none', 'viewer']],
+    'several roles at once' => [[TenantRoles::ADMIN->value, TenantRoles::VIEW_ONLY->value], ['admin', 'reader'], ['none', 'viewer']],
+    'the no role option' => [[RoleFilter::NONE], ['none', 'viewer'], ['admin', 'reader']],
+    'no role combined with a role' => [[RoleFilter::NONE, TenantRoles::ADMIN->value], ['none', 'admin', 'viewer'], ['reader']],
+    'an empty filter' => [[], ['admin', 'reader', 'none', 'viewer'], []],
+]);
 
 test('the role filter only looks at roles in the current tenant', function () {
     usersWithRoles($this);

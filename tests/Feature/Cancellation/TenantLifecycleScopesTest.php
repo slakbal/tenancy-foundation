@@ -6,18 +6,6 @@ beforeEach(function () {
     $this->travelTo('2026-10-28 12:00:00');
 });
 
-test('a tenant is cancelled once cancelled_at is set', function () {
-    expect(Tenant::factory()->create()->isCancelled())->toBeFalse()
-        ->and(Tenant::factory()->create(['cancelled_at' => now()])->isCancelled())->toBeTrue();
-});
-
-test('the lifecycle columns are cast to dates', function () {
-    $tenant = Tenant::factory()->create(['cancelled_at' => '2026-10-01 08:00:00', 'scheduled_for_deletion_at' => '2026-10-31 23:59:59'])->fresh();
-
-    expect($tenant->cancelled_at)->toBeInstanceOf(DateTimeInterface::class)
-        ->and($tenant->scheduled_for_deletion_at->toDateString())->toBe('2026-10-31');
-});
-
 test('a tenant is only due for deletion once its scheduled moment has passed', function (?string $cancelled, ?string $scheduled, bool $due) {
     $tenant = Tenant::factory()->create(['cancelled_at' => $cancelled, 'scheduled_for_deletion_at' => $scheduled]);
 

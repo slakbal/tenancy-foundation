@@ -17,7 +17,7 @@ test('a user with no tenants is logged out when visiting a tenant panel route', 
 
     expect(auth(AuthGuard::TENANT->value)->check())->toBeTrue();
 
-    $response = $this->get($this->tenantUrl($tenant, '/'));
+    $this->get($this->tenantUrl($tenant, '/'));
 
     // The middleware logs the user out of the guard before the request
     // continues, so any subsequent check on this guard should be false.

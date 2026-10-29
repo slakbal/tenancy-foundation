@@ -64,3 +64,7 @@ test('searching the users table by name or email finds matching users', function
         ->assertCanSeeTableRecords([$other])
         ->assertCanNotSeeTableRecords([$match]);
 });
+
+it('has no create page for tenant users', function () {
+    expect(array_keys(Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource::getPages()))->not->toContain('create');
+});

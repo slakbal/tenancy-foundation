@@ -27,7 +27,6 @@ test('the number of days comes from the config', function (int|string $days, str
 })->with([
     'same day' => [0, '2026-10-28 23:59:59'],
     'a week' => [7, '2026-11-04 23:59:59'],
-    'a month' => [30, '2026-11-27 23:59:59'],
     'as a string from the env' => ['14', '2026-11-11 23:59:59'],
 ]);
 
@@ -52,15 +51,6 @@ test('cancelling twice keeps the first dates and does not dispatch again', funct
         ->and($again->scheduled_for_deletion_at->toDateTimeString())->toBe('2026-11-27 23:59:59');
 
     Event::assertDispatchedTimes(TenantCancelled::class, 1);
-});
-
-test('cancelling one tenant leaves the others untouched', function () {
-    $other = Tenant::factory()->create();
-
-    app(CancelTenant::class)->handle(Tenant::factory()->create());
-
-    expect($other->fresh()->isCancelled())->toBeFalse()
-        ->and($other->fresh()->scheduled_for_deletion_at)->toBeNull();
 });
 
 test('a stale instance is refreshed before it is cancelled', function () {

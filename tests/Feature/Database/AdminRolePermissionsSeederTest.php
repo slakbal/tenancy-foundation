@@ -43,3 +43,16 @@ it('lets the support role view admins but not change them', function () {
             AdminPermissions::ADMIN_USER_DELETE->value,
         );
 });
+
+it('gives the admin and support roles the right tenant permissions', function () {
+    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+
+    $tenantPermissions = fn (AdminRoles $role): array => collect(adminRolePermissions($role))
+        ->filter(fn (string $name): bool => str_starts_with($name, 'tenant.'))
+        ->sort()
+        ->values()
+        ->all();
+
+    expect($tenantPermissions(AdminRoles::ADMIN))->toBe(['tenant.cancel', 'tenant.reactivate', 'tenant.update', 'tenant.view', 'tenant.view_any'])
+        ->and($tenantPermissions(AdminRoles::SUPPORT))->toBe(['tenant.view', 'tenant.view_any']);
+});

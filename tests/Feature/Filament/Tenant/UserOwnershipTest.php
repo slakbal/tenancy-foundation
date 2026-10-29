@@ -38,26 +38,26 @@ test('the sole owner has no delete action while other users do', function () {
         ->assertTableActionVisible('delete', $this->member);
 });
 
-test('make owner shows only to owners and only for non owner members', function () {
-    actAs($this->owner, $this->tenant);
-
-    Livewire::test(ListUsers::class)
-        ->assertTableActionVisible('makeOwner', $this->member)
-        ->assertTableActionHidden('makeOwner', $this->owner);
-});
-
-test('a non owner with every user permission never sees make owner', function () {
-    foreach (TenantPermissions::cases() as $permission) {
-        Permission::findOrCreate($permission->value, AuthGuard::TENANT->value);
+test('make owner shows only to owners and only for non owner members', function (string $actor, bool $visibleForMember) {
+    if ($actor === 'a non owner with every user permission') {
+        foreach (TenantPermissions::cases() as $permission) {
+            Permission::findOrCreate($permission->value, AuthGuard::TENANT->value);
+        }
+        $this->member->givePermissionTo(TenantPermissions::cases());
     }
-    $this->member->givePermissionTo(TenantPermissions::cases());
 
-    actAs($this->member, $this->tenant);
+    actAs($actor === 'an owner' ? $this->owner : $this->member, $this->tenant);
 
-    Livewire::test(ListUsers::class)
-        ->assertTableActionHidden('makeOwner', $this->owner)
-        ->assertTableActionHidden('makeOwner', $this->member);
-});
+    $list = Livewire::test(ListUsers::class)
+        ->assertTableActionHidden('makeOwner', $this->owner);
+
+    $visibleForMember
+        ? $list->assertTableActionVisible('makeOwner', $this->member)
+        : $list->assertTableActionHidden('makeOwner', $this->member);
+})->with([
+    'an owner' => ['an owner', true],
+    'a non owner with every user permission' => ['a non owner with every user permission', false],
+]);
 
 test('making a member the owner transfers ownership and demotes the previous owner', function () {
     actAs($this->owner, $this->tenant);
@@ -84,16 +84,19 @@ test('after the hand over the original owner can be deleted but the new sole own
         ->assertTableActionHidden('delete', $this->member);
 });
 
-test('bulk delete skips a sole owner and still deletes the other selected users', function () {
+test('bulk delete skips a sole owner and still deletes the other selected users', function (bool $withMember) {
     actAs($this->owner, $this->tenant);
 
     Livewire::test(ListUsers::class)
-        ->callTableBulkAction('delete', [$this->owner, $this->member])
+        ->callTableBulkAction('delete', $withMember ? [$this->owner, $this->member] : [$this->owner])
         ->assertNotified();
 
     expect($this->owner->fresh()->trashed())->toBeFalse()
-        ->and($this->member->fresh()->trashed())->toBeTrue();
-});
+        ->and($this->member->fresh()->trashed())->toBe($withMember);
+})->with([
+    'the owner and another user' => true,
+    'only the owner' => false,
+]);
 
 test('the edit page hides delete for a sole owner and shows it for others', function () {
     actAs($this->owner, $this->tenant);
@@ -116,16 +119,6 @@ test('bulk force delete also skips a sole owner', function () {
 
     expect(User::withTrashed()->find($this->owner->getKey()))->not->toBeNull()
         ->and(User::withTrashed()->find($this->member->getKey()))->toBeNull();
-});
-
-test('bulk delete of only the sole owner deletes nothing', function () {
-    actAs($this->owner, $this->tenant);
-
-    Livewire::test(ListUsers::class)
-        ->callTableBulkAction('delete', [$this->owner])
-        ->assertNotified();
-
-    expect($this->owner->fresh()->trashed())->toBeFalse();
 });
 
 test('the refusal message names the owner by their full name', function () {

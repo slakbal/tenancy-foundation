@@ -2,7 +2,6 @@
 
 use Filament\Auth\Pages\PasswordReset\ResetPassword;
 use Illuminate\Auth\Events\PasswordReset;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Password;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Listeners\ActivateAdminOnPasswordReset;
@@ -29,12 +28,11 @@ it('leaves an inactive admin inactive after a password reset', function () {
 });
 
 it('ignores a password reset of a tenant user', function () {
-    Event::fake([PasswordReset::class]);
-    $user = User::factory()->create();
+    $user = User::factory()->unverified()->create();
 
     (new ActivateAdminOnPasswordReset)->handle(new PasswordReset($user));
 
-    expect($user->fresh()->email_verified_at)->not->toBeNull();
+    expect($user->fresh()->email_verified_at)->toBeNull();
 });
 
 it('activates a pending admin through the reset password page', function () {

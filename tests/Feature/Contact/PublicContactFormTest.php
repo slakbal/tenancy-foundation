@@ -1,10 +1,19 @@
 <?php
 
+use Filament\Forms\Components\TextInput;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Enums\ContactSource;
 use Slakbal\TenancyFoundation\Livewire\PublicContactForm;
 use Slakbal\TenancyFoundation\Models\ContactRequest;
+
+class CustomPublicContactForm extends PublicContactForm
+{
+    protected static function fields(): array
+    {
+        return [TextInput::make('phone'), ...parent::fields()];
+    }
+}
 
 beforeEach(function () {
     config(['filament-turnstile.key' => 'site-key', 'filament-turnstile.secret' => 'secret-key']);
@@ -15,7 +24,28 @@ function fakeTurnstile(bool $success): void
     Http::fake(['challenges.cloudflare.com/*' => Http::response(['success' => $success, 'error-codes' => $success ? [] : ['invalid-input-response']])]);
 }
 
-test('a valid submission stores the contact request and resets the form', function () {
+test('the contact page renders the filament styled form', function () {
+    $this->get(route('public.contact'))
+        ->assertOk()
+        ->assertSee('fi-simple-header-heading', false)
+        ->assertSee(__('Get in touch'));
+});
+
+test('the public contact form renders the default fields', function () {
+    Livewire::test(PublicContactForm::class)
+        ->assertFormFieldExists('name')
+        ->assertFormFieldExists('email')
+        ->assertFormFieldExists('message')
+        ->assertFormFieldDoesNotExist('phone');
+});
+
+test('a subclass can change the fields', function () {
+    Livewire::test(CustomPublicContactForm::class)
+        ->assertFormFieldExists('phone')
+        ->assertFormFieldExists('message');
+});
+
+test('a valid submission stores the contact request with the public source and resets the form', function () {
     fakeTurnstile(true);
 
     Livewire::test(PublicContactForm::class)
@@ -25,17 +55,8 @@ test('a valid submission stores the contact request and resets the form', functi
         ->assertNotified(__('Thank you! Your message has been sent.'))
         ->assertSet('data.name', null);
 
-    expect(ContactRequest::query()->where('email', 'jane@example.com')->exists())->toBeTrue();
-});
-
-test('a public submission is stored with the public source', function () {
-    fakeTurnstile(true);
-
-    Livewire::test(PublicContactForm::class)
-        ->fillForm(['name' => 'Jane Doe', 'email' => 'jane@example.com', 'message' => 'Hello there', 'captcha' => 'token'])
-        ->call('submit');
-
-    expect(ContactRequest::query()->sole()->source)->toBe(ContactSource::PUBLIC);
+    expect(ContactRequest::query()->where('email', 'jane@example.com')->exists())->toBeTrue()
+        ->and(ContactRequest::query()->sole()->source)->toBe(ContactSource::PUBLIC);
 });
 
 test('required fields and a valid email are enforced', function () {

@@ -45,24 +45,10 @@ test('a sole owner cannot be deleted even though the owner role bypasses policie
         ->and($this->owner->can('forceDelete', $this->owner))->toBeFalse();
 });
 
-test('a sole owner of a tenant with no other members is blocked too', function () {
-    $loner = User::factory()->create();
-    registerTenantFor($loner, 'solo');
-
-    expect($loner->isSoleOwnerOfAnyTenant())->toBeTrue();
-});
-
 test('a member who owns nothing is not blocked and can be deleted', function () {
     Filament::setTenant($this->tenant, isQuiet: true);
     expect($this->member->isSoleOwnerOfAnyTenant())->toBeFalse()
         ->and($this->owner->can('delete', $this->member))->toBeTrue();
-});
-
-test('the block only concerns deleting, other abilities are untouched', function () {
-    Filament::setTenant($this->tenant, isQuiet: true);
-    expect($this->owner->can('update', $this->owner))->toBeTrue()
-        ->and($this->owner->can('view', $this->owner))->toBeTrue()
-        ->and($this->owner->can('deleteAny', User::class))->toBeTrue();
 });
 
 test('transferring ownership makes the new owner the only owner', function () {
@@ -71,7 +57,8 @@ test('transferring ownership makes the new owner the only owner', function () {
     expect($this->tenant->members()->wherePivot('is_owner', true)->pluck('users.id')->all())->toBe([$this->member->getKey()])
         ->and($this->member->fresh()->hasRole(TenantRoles::OWNER))->toBeTrue()
         ->and($this->owner->fresh()->hasRole(TenantRoles::OWNER))->toBeFalse()
-        ->and($this->owner->fresh()->hasRole(TenantRoles::ADMIN))->toBeTrue();
+        ->and($this->owner->fresh()->hasRole(TenantRoles::ADMIN))->toBeTrue()
+        ->and($this->member->fresh()->isSoleOwnerOfAnyTenant())->toBeTrue();
 });
 
 test('the previous owner stays a member and can be deleted after the transfer', function () {
@@ -85,15 +72,6 @@ test('the previous owner stays a member and can be deleted after the transfer', 
         ->and($this->member->fresh()->can('delete', $previous))->toBeTrue();
 });
 
-test('the new owner is the one protected after the transfer', function () {
-    transferOwnership($this->tenant, $this->member, $this->owner);
-
-    $newOwner = $this->member->fresh();
-
-    expect($newOwner->isSoleOwnerOfAnyTenant())->toBeTrue()
-        ->and($newOwner->can('delete', $newOwner))->toBeFalse();
-});
-
 test('every previous owner is demoted when ownership is transferred', function () {
     $coOwner = attachMember($this->tenant, null, isOwner: true);
 
@@ -104,31 +82,30 @@ test('every previous owner is demoted when ownership is transferred', function (
         ->and($coOwner->fresh()->isSoleOwnerOfAnyTenant())->toBeFalse();
 });
 
-test('a legacy co-owner who is soft deleted does not count as another owner', function () {
-    $coOwner = attachMember($this->tenant, null, isOwner: true);
-    $coOwner->delete();
-
-    expect($this->owner->fresh()->isSoleOwnerOfAnyTenant())->toBeTrue();
-});
-
-test('a live legacy co-owner means nobody is the sole owner', function () {
+test('an owner with a live legacy co-owner can be deleted', function () {
     attachMember($this->tenant, null, isOwner: true);
     Filament::setTenant($this->tenant, isQuiet: true);
 
-    expect($this->owner->fresh()->isSoleOwnerOfAnyTenant())->toBeFalse()
-        ->and($this->owner->can('delete', $this->owner))->toBeTrue();
+    expect($this->owner->can('delete', $this->owner))->toBeTrue();
 });
 
-test('being a sole owner of any one tenant is enough to block, even if co-owned elsewhere', function () {
+test('ownership of another tenant decides whether the previous owner stays a sole owner', function (bool $coOwned) {
     $second = registerTenantFor($this->owner, 'second');
-    attachMember($second, null, isOwner: true);
+
+    if ($coOwned) {
+        attachMember($second, null, isOwner: true);
+    }
 
     expect($this->owner->isSoleOwnerOfAnyTenant())->toBeTrue();
 
     transferOwnership($this->tenant, $this->member, $this->owner);
 
-    expect($this->owner->fresh()->isSoleOwnerOfAnyTenant())->toBeFalse();
-});
+    expect($this->owner->fresh()->isSoleOwnerOfAnyTenant())->toBe(! $coOwned)
+        ->and($this->owner->fresh()->ownedTenants->pluck('id')->all())->toBe([$second->getKey()]);
+})->with([
+    'second tenant co-owned' => true,
+    'second tenant solo' => false,
+]);
 
 test('co-ownership in a different tenant does not unblock the owner', function () {
     $other = registerTenantFor(User::factory()->create(), 'other');
@@ -138,49 +115,51 @@ test('co-ownership in a different tenant does not unblock the owner', function (
     expect($this->owner->isSoleOwnerOfAnyTenant())->toBeTrue();
 });
 
-test('only an owner of the tenant can transfer it and nothing changes when refused', function () {
-    $other = attachMember($this->tenant);
-
-    expect(fn () => app(TransferTenantOwnership::class)->handle($this->tenant, $other, $this->member))
-        ->toThrow(AuthorizationException::class);
-
-    expect($this->tenant->members()->wherePivot('is_owner', true)->pluck('users.id')->all())->toBe([$this->owner->getKey()])
-        ->and($other->fresh()->hasRole(TenantRoles::OWNER))->toBeFalse();
-});
-
-test('an owner of a different tenant cannot transfer this one', function () {
+test('only an owner of the tenant can transfer it and nothing changes when refused', function (string $actorKind) {
     $stranger = User::factory()->create();
-    registerTenantFor($stranger, 'elsewhere');
+    $target = attachMember($this->tenant);
 
-    expect(fn () => app(TransferTenantOwnership::class)->handle($this->tenant, $this->member, $stranger))
+    match ($actorKind) {
+        'a previous owner' => transferOwnership($this->tenant, $this->member, $this->owner),
+        'an owner of a different tenant' => registerTenantFor($stranger, 'elsewhere'),
+        default => null,
+    };
+
+    $actor = match ($actorKind) {
+        'a member' => $this->member,
+        'an owner of a different tenant' => $stranger,
+        'a previous owner' => $this->owner->fresh(),
+    };
+
+    $owners = fn (): array => $this->tenant->members()->wherePivot('is_owner', true)->pluck('users.id')->all();
+    $before = $owners();
+
+    expect(fn () => app(TransferTenantOwnership::class)->handle($this->tenant, $target, $actor))
         ->toThrow(AuthorizationException::class);
-});
 
-test('a previous owner cannot transfer the tenant again', function () {
-    transferOwnership($this->tenant, $this->member, $this->owner);
+    setPermissionsTeamId($this->tenant->getKey());
 
-    $third = attachMember($this->tenant);
+    expect($owners())->toBe($before)
+        ->and($target->fresh()->hasRole(TenantRoles::OWNER))->toBeFalse();
+})->with(['a member', 'an owner of a different tenant', 'a previous owner']);
 
-    expect(fn () => app(TransferTenantOwnership::class)->handle($this->tenant, $third, $this->owner->fresh()))
-        ->toThrow(AuthorizationException::class);
-});
+test('ownership can only be transferred to another live member of the tenant', function (string $targetKind) {
+    $target = match ($targetKind) {
+        'themselves' => $this->owner,
+        'a user outside the tenant' => User::factory()->create(),
+        'a soft deleted member' => tap($this->member)->delete(),
+    };
 
-test('an owner cannot transfer the tenant to themselves', function () {
-    expect(fn () => app(TransferTenantOwnership::class)->handle($this->tenant, $this->owner, $this->owner))
+    $members = fn (): array => $this->tenant->members()->pluck('users.id')->sort()->values()->all();
+    $before = $members();
+
+    expect(fn () => app(TransferTenantOwnership::class)->handle($this->tenant, $target, $this->owner))
         ->toThrow(InvalidArgumentException::class);
 
-    expect($this->owner->fresh()->hasRole(TenantRoles::OWNER))->toBeTrue();
-});
-
-test('only a member of the tenant can become the owner', function () {
-    $stranger = User::factory()->create();
-
-    expect(fn () => app(TransferTenantOwnership::class)->handle($this->tenant, $stranger, $this->owner))
-        ->toThrow(InvalidArgumentException::class);
-
-    expect($this->owner->fresh()->hasRole(TenantRoles::OWNER))->toBeTrue()
-        ->and($this->tenant->members()->where('users.id', $stranger->getKey())->exists())->toBeFalse();
-});
+    expect($members())->toBe($before)
+        ->and($this->owner->fresh()->hasRole(TenantRoles::OWNER))->toBeTrue()
+        ->and($this->owner->fresh()->isSoleOwnerOfAnyTenant())->toBeTrue();
+})->with(['themselves', 'a user outside the tenant', 'a soft deleted member']);
 
 test('roles are scoped to the tenant the ownership moved in', function () {
     $second = Tenant::factory()->create();
@@ -196,15 +175,6 @@ test('roles are scoped to the tenant the ownership moved in', function () {
     expect($this->member->fresh()->hasRole(TenantRoles::OWNER))->toBeTrue();
 });
 
-test('the previous owner keeps ownership of any other tenant they own', function () {
-    $second = registerTenantFor($this->owner, 'second');
-
-    transferOwnership($this->tenant, $this->member, $this->owner);
-
-    expect($this->owner->fresh()->ownedTenants->pluck('id')->all())->toBe([$second->getKey()])
-        ->and($this->owner->fresh()->isSoleOwnerOfAnyTenant())->toBeTrue();
-});
-
 test('a soft deleted previous owner is demoted too and does not return as an owner when restored', function () {
     $ghost = attachMember($this->tenant, null, isOwner: true);
     $ghost->delete();
@@ -214,15 +184,6 @@ test('a soft deleted previous owner is demoted too and does not return as an own
     $ghost->restore();
 
     expect($this->tenant->members()->wherePivot('is_owner', true)->pluck('users.id')->all())->toBe([$this->member->getKey()]);
-});
-
-test('a soft deleted member cannot become the owner', function () {
-    $this->member->delete();
-
-    expect(fn () => app(TransferTenantOwnership::class)->handle($this->tenant, $this->member, $this->owner))
-        ->toThrow(InvalidArgumentException::class);
-
-    expect($this->owner->fresh()->isSoleOwnerOfAnyTenant())->toBeTrue();
 });
 
 test('the membership timestamps are touched for the demoted owner', function () {

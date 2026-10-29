@@ -35,19 +35,16 @@ beforeEach(function () {
     setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
 });
 
-it('stops a super admin deleting themselves', function () {
-    $super = safeguardAdmin(AdminRoles::SUPER_ADMIN);
+it('stops an admin deleting themselves', function (AdminRoles $role, bool $withAdminUserPermissions) {
+    $admin = safeguardAdmin($role, $withAdminUserPermissions);
     safeguardAdmin(AdminRoles::SUPER_ADMIN);
 
-    expect($super->can('delete', $super))->toBeFalse()
-        ->and($super->can('forceDelete', $super))->toBeFalse();
-});
-
-it('stops an admin with delete permission deleting themselves', function () {
-    $admin = safeguardAdmin(AdminRoles::ADMIN, withAdminUserPermissions: true);
-
-    expect($admin->can('delete', $admin))->toBeFalse();
-});
+    expect($admin->can('delete', $admin))->toBeFalse()
+        ->and($admin->can('forceDelete', $admin))->toBeFalse();
+})->with([
+    'super admin' => [AdminRoles::SUPER_ADMIN, false],
+    'admin with delete permission' => [AdminRoles::ADMIN, true],
+]);
 
 it('lets a super admin delete another admin', function () {
     $super = safeguardAdmin(AdminRoles::SUPER_ADMIN);

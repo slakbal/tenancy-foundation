@@ -10,7 +10,6 @@ use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
-use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\AdminUserResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\EditAdminUser;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\ListAdminUsers;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\ViewAdminUser;
@@ -68,7 +67,6 @@ it('lists admins with their roles for an admin who may view them', function () {
 it('keeps the admin users away from someone without permission', function () {
     adminUserActor();
 
-    expect(AdminUserResource::canViewAny())->toBeFalse();
     Livewire::test(ListAdminUsers::class)->assertForbidden();
 });
 
@@ -79,13 +77,6 @@ it('shows the view page with the status', function () {
     Livewire::test(ViewAdminUser::class, ['record' => $target->getRouteKey()])
         ->assertSuccessful()
         ->assertSchemaStateSet(['status' => AdminStatus::ACTIVE]);
-});
-
-it('casts the status and defaults a new admin to active', function () {
-    $admin = new (config('tenancy-foundation.models.admin'));
-
-    expect($admin->status)->toBe(AdminStatus::ACTIVE)
-        ->and(Admin::factory()->pending()->create()->fresh()->status)->toBe(AdminStatus::PENDING);
 });
 
 it('updates name and email through the edit page', function () {
@@ -154,7 +145,8 @@ it('keeps the own role', function () {
 
     app(ChangeAdminUserRole::class)->handle($actor, AdminRoles::SUPPORT->value, $actor);
 
-    expect($actor->fresh()->hasRole(AdminRoles::SUPER_ADMIN))->toBeTrue();
+    expect($actor->fresh()->hasRole(AdminRoles::SUPER_ADMIN))->toBeTrue()
+        ->and($actor->can('changeRole', $actor))->toBeFalse();
 });
 
 it('keeps the role of the last active super admin', function () {

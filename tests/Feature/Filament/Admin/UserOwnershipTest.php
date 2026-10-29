@@ -44,21 +44,6 @@ test('an administrator can transfer a tenant to one of its members without being
         ->and($this->member->fresh()->hasRole(TenantRoles::OWNER))->toBeTrue();
 });
 
-test('the administrator account is left untouched by a transfer', function () {
-    $roles = $this->admin->roles()->count();
-    $permissions = $this->admin->getAllPermissions()->count();
-
-    Livewire::test(ListUsers::class)
-        ->callTableAction('makeOwner', $this->member, ['tenant_id' => $this->tenant->getKey()]);
-
-    $admin = $this->admin->fresh();
-
-    expect($admin->roles()->count())->toBe($roles)
-        ->and($admin->getAllPermissions()->count())->toBe($permissions)
-        ->and(Admin::query()->whereKey($admin->getKey())->exists())->toBeTrue()
-        ->and($this->tenant->members()->where('users.email', $admin->email)->exists())->toBeFalse();
-});
-
 test('the action is hidden for a user who is the owner of every tenant they belong to', function () {
     Livewire::test(ListUsers::class)
         ->assertTableActionHidden('makeOwner', $this->owner)
@@ -74,36 +59,29 @@ test('the action is hidden for an administrator without the update permission', 
         ->assertTableActionHidden('makeOwner', $this->member);
 });
 
-test('a tenant the user does not belong to cannot be chosen', function () {
-    $other = app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], User::factory()->create());
-
-    Livewire::test(ListUsers::class)
-        ->callTableAction('makeOwner', $this->member, ['tenant_id' => $other->getKey()]);
-
-    expect($other->members()->wherePivot('is_owner', true)->where('users.id', $this->member->getKey())->exists())->toBeFalse()
-        ->and($this->owner->fresh()->ownedTenants->contains($this->tenant))->toBeTrue();
-});
-
-test('a member of several tenants only changes the tenant that was chosen', function () {
+test('only the chosen tenant of the user changes', function (bool $belongs) {
     $second = app(CreateTenant::class)->handle(['name' => 'Second', 'subdomain' => 'second'], User::factory()->create());
-    $second->members()->attach($this->member->getKey(), ['is_owner' => false, 'is_default_tenant' => false]);
+
+    if ($belongs) {
+        $second->members()->attach($this->member->getKey(), ['is_owner' => false, 'is_default_tenant' => false]);
+    }
 
     Livewire::test(ListUsers::class)
         ->callTableAction('makeOwner', $this->member, ['tenant_id' => $second->getKey()]);
 
-    expect($this->member->fresh()->ownedTenants->pluck('id')->all())->toBe([$second->getKey()])
+    expect($this->member->fresh()->ownedTenants->pluck('id')->all())->toBe($belongs ? [$second->getKey()] : [])
         ->and($this->owner->fresh()->ownedTenants->contains($this->tenant))->toBeTrue();
-});
+})->with([
+    'a tenant the user belongs to' => true,
+    'a tenant the user does not belong to' => false,
+]);
 
-test('the administrator transfer refuses a user who already owns the tenant', function () {
-    expect(fn () => app(TransferTenantOwnership::class)->handleAsAdministrator($this->tenant, $this->owner))
-        ->toThrow(InvalidArgumentException::class);
-});
+test('the administrator transfer refuses a user who already owns the tenant or is not a member', function (string $candidate) {
+    $user = $candidate === 'an owner' ? $this->owner : User::factory()->create();
 
-test('the administrator transfer refuses a user who is not a member', function () {
-    expect(fn () => app(TransferTenantOwnership::class)->handleAsAdministrator($this->tenant, User::factory()->create()))
+    expect(fn () => app(TransferTenantOwnership::class)->handleAsAdministrator($this->tenant, $user))
         ->toThrow(InvalidArgumentException::class);
-});
+})->with(['an owner', 'a non member']);
 
 test('the administrator transfer demotes every previous owner', function () {
     $coOwner = User::factory()->create();

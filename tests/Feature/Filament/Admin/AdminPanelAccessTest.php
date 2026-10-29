@@ -12,24 +12,21 @@ beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
 });
 
-it('lets an active admin access the admin panel', function () {
-    expect(Admin::factory()->create()->canAccessPanel(Filament::getPanel('admin')))->toBeTrue();
-});
+it('decides panel access from the admin state', function (string $state, bool $canAccess) {
+    $admin = match ($state) {
+        'active' => Admin::factory()->create(),
+        'inactive' => Admin::factory()->inactive()->create(),
+        'pending' => Admin::factory()->pending()->create(),
+        'soft deleted' => tap(Admin::factory()->create())->delete(),
+    };
 
-it('refuses an inactive admin', function () {
-    expect(Admin::factory()->inactive()->create()->canAccessPanel(Filament::getPanel('admin')))->toBeFalse();
-});
-
-it('lets a pending admin pass so the password reset link works', function () {
-    expect(Admin::factory()->pending()->create()->canAccessPanel(Filament::getPanel('admin')))->toBeTrue();
-});
-
-it('refuses a soft deleted admin', function () {
-    $admin = Admin::factory()->create();
-    $admin->delete();
-
-    expect($admin->canAccessPanel(Filament::getPanel('admin')))->toBeFalse();
-});
+    expect($admin->canAccessPanel(Filament::getPanel('admin')))->toBe($canAccess);
+})->with([
+    'an active admin gets in' => ['active', true],
+    'an inactive admin is refused' => ['inactive', false],
+    'a pending admin passes so the password reset link works' => ['pending', true],
+    'a soft deleted admin is refused' => ['soft deleted', false],
+]);
 
 it('refuses an already signed in admin on the next request once deactivated', function () {
     setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));

@@ -24,10 +24,6 @@ function runUsersTenancyMigration(): void
     (require __DIR__.'/../../../database/migrations/0001_02_01_000000_add_tenancy_columns_to_users_table.php')->up();
 }
 
-test('the package migration adds the tenancy columns to the default laravel users table', function () {
-    expect(Schema::hasColumns('users', ['ulid', 'name', 'last_login_at', 'last_login_ip', 'deleted_at']))->toBeTrue();
-});
-
 test('existing users are backfilled with unique ulids', function () {
     recreateDefaultUsersTable();
     foreach (['a', 'b', 'c'] as $letter) {

@@ -9,7 +9,7 @@ use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
 use Spatie\Permission\Models\Permission;
 
-test('UserPolicy (tenant) bulk restoreAny/forceDeleteAny resolve via the shared base exactly as the old explicit methods did', function () {
+test('tenant UserPolicy bulk restoreAny and forceDeleteAny resolve through the shared base', function () {
     Filament::setCurrentPanel(Filament::getPanel('app'));
     Filament::bootCurrentPanel();
 
@@ -32,7 +32,7 @@ test('UserPolicy (tenant) bulk restoreAny/forceDeleteAny resolve via the shared 
     expect($with->can('forceDeleteAny', User::class))->toBeTrue();
 });
 
-test('AdminPolicy and Admin UserPolicy bulk abilities resolve correctly via the shared base', function () {
+test('AdminPolicy bulk restoreAny resolves through the shared base', function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
     setPermissionsTeamId(1);
@@ -55,6 +55,5 @@ test('an ability with no mapped permission at all resolves false rather than thr
     $owner = User::factory()->create();
     $tenant->members()->attach($owner, ['is_owner' => true, 'is_default_tenant' => true]);
 
-    expect(fn () => $owner->can('restore', $tenant))->not->toThrow(Throwable::class);
     expect($owner->can('restore', $tenant))->toBeFalse();
 });

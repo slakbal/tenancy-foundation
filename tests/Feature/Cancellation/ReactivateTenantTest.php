@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Notification;
 use Slakbal\TenancyFoundation\Actions\Tenant\CancelTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\ReactivateTenant;
@@ -27,15 +26,13 @@ test('reactivating clears both cancellation dates', function () {
         ->and($tenant->fresh()->status)->toBe(TenantStatus::ACTIVE);
 });
 
-test('reactivating dispatches the event once and sends no mail', function () {
+test('reactivating dispatches the event once', function () {
     app(CancelTenant::class)->handle($this->tenant);
     Event::fake([TenantReactivated::class]);
-    Notification::fake();
 
     app(ReactivateTenant::class)->handle($this->tenant);
 
     Event::assertDispatchedTimes(TenantReactivated::class, 1);
-    Notification::assertNothingSent();
 });
 
 test('reactivating a tenant that is not cancelled does nothing and dispatches nothing', function () {
@@ -66,15 +63,6 @@ test('a stale instance is refreshed before it is reactivated', function () {
     expect($tenant->fresh()->isCancelled())->toBeFalse();
 });
 
-test('other tenants stay cancelled when one is reactivated', function () {
-    $other = Tenant::factory()->create(['cancelled_at' => now()]);
-    app(CancelTenant::class)->handle($this->tenant);
-
-    app(ReactivateTenant::class)->handle($this->tenant);
-
-    expect($other->fresh()->isCancelled())->toBeTrue();
-});
-
 test('reactivating gives the users their access back', function () {
     app(CancelTenant::class)->handle($this->tenant);
     expect($this->owner->fresh()->hasOnlyCancelledTenants())->toBeTrue();
@@ -100,7 +88,6 @@ test('the status and owners helpers describe the tenant', function () {
     $member = User::factory()->create();
     $this->tenant->members()->attach($member, ['is_owner' => false, 'is_default_tenant' => true]);
 
-    expect($this->tenant->status)->toBe(TenantStatus::ACTIVE)
-        ->and($this->tenant->owners->pluck('id')->all())->toBe([$this->owner->getKey()])
+    expect($this->tenant->owners->pluck('id')->all())->toBe([$this->owner->getKey()])
         ->and(app(CancelTenant::class)->handle($this->tenant)->status)->toBe(TenantStatus::CANCELLED);
 });

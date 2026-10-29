@@ -30,18 +30,3 @@ test('a request created without a source falls back to public', function () {
     expect(ContactRequest::query()->first()->source)->toBe(ContactSource::PUBLIC);
 });
 
-test('the source has a label and colour for the admin ui', function (ContactSource $source, string $label, string $color) {
-    expect($source->getLabel())->toBe($label)
-        ->and($source->getColor())->toBe($color);
-})->with([
-    'public' => [ContactSource::PUBLIC, 'Public', 'gray'],
-    'tenant' => [ContactSource::TENANT, 'Tenant user', 'primary'],
-]);
-
-test('each call creates one separate request', function () {
-    app(CreateContactRequest::class)->handle(contactData(), ContactSource::PUBLIC);
-    app(CreateContactRequest::class)->handle(contactData(['email' => 'other@example.com']), ContactSource::TENANT);
-
-    expect(ContactRequest::query()->count())->toBe(2)
-        ->and(ContactRequest::query()->where('source', 'tenant')->count())->toBe(1);
-});

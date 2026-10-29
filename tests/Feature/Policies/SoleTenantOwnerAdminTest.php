@@ -23,24 +23,21 @@ beforeEach(function () {
     setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
 });
 
-test('a super admin cannot delete a sole tenant owner but can delete other users', function () {
-    Role::findOrCreate(AdminRoles::SUPER_ADMIN->value, AuthGuard::ADMIN->value);
-    $admin = Admin::factory()->create();
-    $admin->assignRole(AdminRoles::SUPER_ADMIN);
+test('an admin cannot delete a sole tenant owner but can delete other users', function (string $actor) {
+    if ($actor === 'super admin') {
+        Role::findOrCreate(AdminRoles::SUPER_ADMIN->value, AuthGuard::ADMIN->value);
+        $admin = Admin::factory()->create();
+        $admin->assignRole(AdminRoles::SUPER_ADMIN);
+    } else {
+        Permission::findOrCreate(AdminPermissions::USER_DELETE->value, AuthGuard::ADMIN->value);
+        $admin = Admin::factory()->create();
+        $admin->givePermissionTo(AdminPermissions::USER_DELETE);
+    }
 
     expect($admin->can('delete', $this->owner))->toBeFalse()
         ->and($admin->can('forceDelete', $this->owner))->toBeFalse()
         ->and($admin->can('delete', $this->member))->toBeTrue();
-});
-
-test('an admin with the delete permission is also blocked from deleting a sole owner', function () {
-    Permission::findOrCreate(AdminPermissions::USER_DELETE->value, AuthGuard::ADMIN->value);
-    $admin = Admin::factory()->create();
-    $admin->givePermissionTo(AdminPermissions::USER_DELETE);
-
-    expect($admin->can('delete', $this->owner))->toBeFalse()
-        ->and($admin->can('delete', $this->member))->toBeTrue();
-});
+})->with(['super admin', 'admin with the delete permission']);
 
 test('an admin can delete the former owner once ownership was transferred', function () {
     Role::findOrCreate(AdminRoles::SUPER_ADMIN->value, AuthGuard::ADMIN->value);

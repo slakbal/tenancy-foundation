@@ -25,45 +25,25 @@ test('the job deletes tenants whose deletion moment has passed and nothing else'
         ->and(Tenant::query()->whereKey([$later->getKey(), $active->getKey()])->count())->toBe(2);
 });
 
-test('the job keeps going when one tenant fails to delete', function () {
+test('the job keeps going when one tenant fails to delete and picks it up again on the next run', function () {
     $this->travelTo('2026-10-28 01:00:00');
     $broken = cancelledTenant('broken', '2026-10-20 23:59:59');
     $fine = cancelledTenant('fine', '2026-10-21 23:59:59');
+    $fail = true;
 
-    Event::listen(TenantDeleting::class, function (TenantDeleting $event): void {
-        throw_if($event->tenant->subdomain === 'broken', RuntimeException::class, 'cannot delete');
+    Event::listen(TenantDeleting::class, function (TenantDeleting $event) use (&$fail): void {
+        throw_if($fail && $event->tenant->subdomain === 'broken', RuntimeException::class, 'cannot delete');
     });
 
     (new DeleteDueTenants)->handle(app(DeleteTenant::class));
 
     expect(Tenant::query()->whereKey($broken->getKey())->exists())->toBeTrue()
         ->and(Tenant::query()->whereKey($fine->getKey())->exists())->toBeFalse();
-});
-
-test('a tenant that failed is picked up again on the next run', function () {
-    $this->travelTo('2026-10-28 01:00:00');
-    $tenant = cancelledTenant('retry', '2026-10-20 23:59:59');
-    $fail = true;
-
-    Event::listen(TenantDeleting::class, function () use (&$fail): void {
-        throw_if($fail, RuntimeException::class, 'not yet');
-    });
-
-    (new DeleteDueTenants)->handle(app(DeleteTenant::class));
-    expect(Tenant::query()->whereKey($tenant->getKey())->exists())->toBeTrue();
 
     $fail = false;
     (new DeleteDueTenants)->handle(app(DeleteTenant::class));
 
-    expect(Tenant::query()->whereKey($tenant->getKey())->exists())->toBeFalse();
-});
-
-test('the job runs without anything due', function () {
-    Tenant::factory()->create();
-
-    (new DeleteDueTenants)->handle(app(DeleteTenant::class));
-
-    expect(Tenant::query()->count())->toBe(1);
+    expect(Tenant::query()->whereKey($broken->getKey())->exists())->toBeFalse();
 });
 
 test('the deletion job is scheduled daily at the configured time', function () {

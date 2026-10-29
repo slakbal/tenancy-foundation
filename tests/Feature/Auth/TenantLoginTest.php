@@ -23,22 +23,16 @@ test('tenant user can log in with valid credentials', function () {
     expect(auth(AuthGuard::TENANT->value)->id())->toBe($user->id);
 });
 
-test('tenant login fails with an invalid password', function () {
-    $user = User::factory()->create(['email' => 'user@example.com']);
+test('tenant login fails with bad credentials', function (string $email, string $password) {
+    User::factory()->create(['email' => 'user@example.com']);
 
     Livewire::test(Login::class)
-        ->set('data.email', $user->email)
-        ->set('data.password', 'wrong-password')
+        ->set('data.email', $email)
+        ->set('data.password', $password)
         ->call('authenticate');
 
     expect(auth(AuthGuard::TENANT->value)->check())->toBeFalse();
-});
-
-test('tenant login fails for an unknown email', function () {
-    Livewire::test(Login::class)
-        ->set('data.email', 'nobody@example.com')
-        ->set('data.password', 'password')
-        ->call('authenticate');
-
-    expect(auth(AuthGuard::TENANT->value)->check())->toBeFalse();
-});
+})->with([
+    'invalid password' => ['user@example.com', 'wrong-password'],
+    'unknown email' => ['nobody@example.com', 'password'],
+]);

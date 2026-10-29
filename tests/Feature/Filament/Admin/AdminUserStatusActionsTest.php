@@ -74,38 +74,13 @@ it('activates an inactive admin', function () {
     expect($target->fresh()->status)->toBe(AdminStatus::ACTIVE);
 });
 
-it('shows only the status action that fits the status', function () {
-    statusActor(AdminRoles::ADMIN);
-    $active = statusTarget();
-    $inactive = statusTarget();
-    $inactive->forceFill(['status' => AdminStatus::INACTIVE])->save();
-    $pending = statusTarget();
-    $pending->forceFill(['status' => AdminStatus::PENDING])->save();
-
-    Livewire::test(ListAdminUsers::class)
-        ->assertActionVisible(TestAction::make('deactivate')->table($active))
-        ->assertActionHidden(TestAction::make('activate')->table($active))
-        ->assertActionVisible(TestAction::make('activate')->table($inactive))
-        ->assertActionHidden(TestAction::make('deactivate')->table($inactive))
-        ->assertActionHidden(TestAction::make('deactivate')->table($pending))
-        ->assertActionHidden(TestAction::make('sendPasswordResetLink')->table($pending));
-});
-
-it('refuses to deactivate yourself or the last active super admin', function () {
+it('hides the deactivate action on your own row', function () {
     $actor = statusActor(AdminRoles::SUPER_ADMIN);
     $other = statusTarget(AdminRoles::SUPER_ADMIN);
     $other->forceFill(['status' => AdminStatus::INACTIVE])->save();
 
     Livewire::test(ListAdminUsers::class)
         ->assertActionHidden(TestAction::make('deactivate')->table($actor));
-
-    $other->forceFill(['status' => AdminStatus::ACTIVE])->save();
-    $actorSupport = statusActor(AdminRoles::ADMIN);
-    $actorSupport->givePermissionTo(AdminPermissions::ADMIN_USER_UPDATE);
-    $actor->forceFill(['status' => AdminStatus::INACTIVE])->save();
-    $this->actingAs($actorSupport, AuthGuard::ADMIN->value);
-
-    expect($actorSupport->can('deactivate', $other))->toBeFalse();
 });
 
 it('keeps an admin from deactivating a super admin', function () {
@@ -142,14 +117,8 @@ it('changes the role of another admin', function () {
         ->and($target->fresh()->hasRole(AdminRoles::SUPPORT))->toBeFalse();
 });
 
-it('refuses to change your own role', function () {
-    $actor = statusActor(AdminRoles::ADMIN);
-
-    expect($actor->can('changeRole', $actor))->toBeFalse();
-});
-
-it('hides the status actions that do not fit even for a super admin', function () {
-    statusActor(AdminRoles::SUPER_ADMIN);
+it('shows only the status action that fits the status', function (AdminRoles $role) {
+    statusActor($role);
     $active = statusTarget();
     $inactive = statusTarget();
     $inactive->forceFill(['status' => AdminStatus::INACTIVE])->save();
@@ -164,7 +133,7 @@ it('hides the status actions that do not fit even for a super admin', function (
         ->assertActionHidden(TestAction::make('deactivate')->table($pending))
         ->assertActionHidden(TestAction::make('sendPasswordResetLink')->table($inactive))
         ->assertActionHidden(TestAction::make('sendPasswordResetLink')->table($pending));
-});
+})->with([AdminRoles::ADMIN, AdminRoles::SUPER_ADMIN]);
 
 it('applies a role change on the next request', function () {
     $this->seed(AdminRolePermissionsSeeder::class);

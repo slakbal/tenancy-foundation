@@ -15,11 +15,13 @@ function applyPanelWidth(?string $width): Panel
 
 afterEach(fn () => applyPanelWidth('full'));
 
-test('the panel content width follows the configured filament width value', function () {
-    expect(applyPanelWidth('7xl')->getMaxContentWidth())->toBe(Width::SevenExtraLarge)
-        ->and(applyPanelWidth('screen-2xl')->getMaxContentWidth())->toBe(Width::ScreenTwoExtraLarge)
-        ->and(applyPanelWidth('full')->getMaxContentWidth())->toBe(Width::Full);
-});
+test('the panel content width follows the configured filament width value', function (string $configured, Width $expected) {
+    expect(applyPanelWidth($configured)->getMaxContentWidth())->toBe($expected);
+})->with([
+    '7xl' => ['7xl', Width::SevenExtraLarge],
+    'screen-2xl' => ['screen-2xl', Width::ScreenTwoExtraLarge],
+    'full' => ['full', Width::Full],
+]);
 
 test('top navigation no longer forces the full content width', function () {
     config(['filament-defaults.panel.top_navigation' => true]);

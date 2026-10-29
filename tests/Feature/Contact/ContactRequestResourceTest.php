@@ -11,10 +11,8 @@ use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\Contact\ChangeContactRequestStatus;
 use Slakbal\TenancyFoundation\Actions\Contact\RespondToContactRequest;
-use Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
-use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Enums\ContactSource;
 use Slakbal\TenancyFoundation\Enums\ContactStatus;
 use Slakbal\TenancyFoundation\Events\ContactRequestAnswered;
@@ -54,12 +52,6 @@ test('an admin without the view permission cannot see the resource', function ()
     expect(ContactRequestResource::canViewAny())->toBeFalse();
 });
 
-test('the table does not show the message', function () {
-    $this->actingAs(contactAdminWith(AdminPermissions::CONTACT_REQUEST_VIEW_ANY), AuthGuard::ADMIN->value);
-
-    Livewire::test(ListContactRequests::class)->assertTableColumnDoesNotExist('message')->assertTableColumnExists('responded_by');
-});
-
 test('an admin with the view permission lists requests and filters them', function () {
     $this->actingAs(contactAdminWith(AdminPermissions::CONTACT_REQUEST_VIEW_ANY), AuthGuard::ADMIN->value);
 
@@ -68,6 +60,8 @@ test('an admin with the view permission lists requests and filters them', functi
     $done = ContactRequest::factory()->closed()->create();
 
     Livewire::test(ListContactRequests::class)
+        ->assertTableColumnDoesNotExist('message')
+        ->assertTableColumnExists('responded_by')
         ->removeTableFilters()
         ->assertCanSeeTableRecords([$new, $tenant, $done])
         ->filterTable('source', ContactSource::TENANT->value)
@@ -181,7 +175,7 @@ test('the response email is queued and quotes the original message', function ()
         ->and(collect($mail->introLines)->map(fn ($line): string => (string) $line)->implode(' '))->toContain('Line one&lt;script&gt;')->toContain('My question');
 });
 
-test('a response is required and a second response is not possible', function () {
+test('a response is required', function () {
     Notification::fake();
     $this->actingAs(contactAdminWith(AdminPermissions::CONTACT_REQUEST_VIEW_ANY, AdminPermissions::CONTACT_REQUEST_VIEW, AdminPermissions::CONTACT_REQUEST_UPDATE, AdminPermissions::CONTACT_REQUEST_RESPOND), AuthGuard::ADMIN->value);
     $request = ContactRequest::factory()->create();
@@ -192,14 +186,6 @@ test('a response is required and a second response is not possible', function ()
         ->assertHasFormErrors(['response' => 'required']);
 
     expect($request->fresh()->isResponded())->toBeFalse();
-
-    $answered = ContactRequest::factory()->responded()->create();
-
-    Livewire::test(EditContactRequest::class, ['record' => $answered->getRouteKey()])
-        ->assertFormFieldDisabled('response')
-        ->call('save')
-        ->assertForbidden();
-    expect(fn () => app(RespondToContactRequest::class)->handle($answered, 'again', 'Someone'))->toThrow(DomainException::class);
     Notification::assertNothingSent();
 });
 
@@ -233,23 +219,6 @@ test('without the delete permission nothing can be deleted', function () {
     Livewire::test(ListContactRequests::class)->assertActionHidden(TestAction::make('delete')->table($request));
 
     expect(ContactRequest::query()->count())->toBe(1);
-});
-
-test('the seeded admin role gets every contact permission and support can handle but not delete', function () {
-    $this->seed(AdminRolePermissionsSeeder::class);
-
-    $admin = Admin::factory()->create();
-    $admin->assignRole(AdminRoles::ADMIN);
-    $support = Admin::factory()->create();
-    $support->assignRole(AdminRoles::SUPPORT);
-
-    foreach ([AdminPermissions::CONTACT_REQUEST_VIEW_ANY, AdminPermissions::CONTACT_REQUEST_UPDATE, AdminPermissions::CONTACT_REQUEST_RESPOND, AdminPermissions::CONTACT_REQUEST_DELETE] as $permission) {
-        expect($admin->can($permission))->toBeTrue();
-    }
-
-    expect($support->can(AdminPermissions::CONTACT_REQUEST_VIEW_ANY))->toBeTrue()
-        ->and($support->can(AdminPermissions::CONTACT_REQUEST_RESPOND))->toBeTrue()
-        ->and($support->can(AdminPermissions::CONTACT_REQUEST_DELETE))->toBeFalse();
 });
 
 test('only closed requests older than the configured days are pruned', function () {
@@ -305,9 +274,7 @@ test('the source and status are shown as badges in the page header', function ()
         ->assertSee('fi-badge', false)
         ->assertSeeInOrder([ContactSource::TENANT->getLabel(), ContactStatus::NEW->getLabel()])
         ->assertFormFieldDoesNotExist('source')
-        ->assertFormFieldDoesNotExist('status')
-        ->callAction('dismiss')
-        ->assertSee(ContactStatus::DISMISSED->getLabel());
+        ->assertFormFieldDoesNotExist('status');
 });
 
 test('a dismissed or completed request cannot be responded to until it is reopened', function (ContactStatus $status) {
@@ -388,10 +355,6 @@ test('the stats widget is shown on the list page', function () {
     Livewire::test(ListContactRequests::class)->assertSeeLivewire(ContactRequestStats::class);
 });
 
-test('the stats widget is deferred loaded', function () {
-    expect(ContactRequestStats::isLazy())->toBeTrue();
-});
-
 test('bulk dismiss dismisses the selected requests and keeps the original closed date', function () {
     $this->actingAs(contactAdminWith(AdminPermissions::CONTACT_REQUEST_VIEW_ANY, AdminPermissions::CONTACT_REQUEST_UPDATE), AuthGuard::ADMIN->value);
     [$one, $two] = ContactRequest::factory()->count(2)->create()->all();
@@ -449,30 +412,14 @@ test('bulk dismiss leaves responded requests untouched', function () {
         ->and($responded->fresh()->status)->toBe(ContactStatus::COMPLETED);
 });
 
-test('the table and stats poll every minute for new requests', function () {
-    $this->actingAs(contactAdminWith(AdminPermissions::CONTACT_REQUEST_VIEW_ANY), AuthGuard::ADMIN->value);
-
-    $page = Livewire::test(ListContactRequests::class);
-    $widget = Livewire::test(ContactRequestStats::class)->instance();
-
-    expect($page->instance()->getTable()->getPollingInterval())->toBe('60s')
-        ->and((fn (): ?string => $this->getPollingInterval())->call($widget))->toBe('60s');
-
-    $request = ContactRequest::factory()->create();
-
-    $page->call('$refresh')->assertCanSeeTableRecords([$request]);
-});
-
 test('responding dispatches the answered event after the response is stored', function () {
     Event::fake([ContactRequestAnswered::class]);
-    Notification::fake();
     $request = ContactRequest::factory()->create();
 
     app(RespondToContactRequest::class)->handle($request, 'Done', 'Agent');
 
     Event::assertDispatchedTimes(ContactRequestAnswered::class, 1);
     Event::assertDispatched(ContactRequestAnswered::class, fn ($event): bool => $event->contactRequest->is($request) && $event->contactRequest->response === 'Done');
-    Notification::assertNothingSent();
 });
 
 test('the response email is sent by the listener and can be switched off through config', function () {

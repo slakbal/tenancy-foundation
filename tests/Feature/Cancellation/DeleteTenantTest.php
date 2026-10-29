@@ -19,19 +19,15 @@ function dueTenant(string $subdomain = 'acme', ?User $owner = null): Tenant
     return $tenant->fresh();
 }
 
-test('a tenant that is not cancelled cannot be deleted', function () {
-    $tenant = Tenant::factory()->create();
+test('a tenant that is not cancelled or not yet due cannot be deleted', function (Closure $makeTenant) {
+    $tenant = $makeTenant();
 
     expect(fn () => app(DeleteTenant::class)->handle($tenant))->toThrow(LogicException::class);
     expect(Tenant::query()->whereKey($tenant->getKey())->exists())->toBeTrue();
-});
-
-test('a cancelled tenant cannot be deleted before its scheduled moment', function () {
-    $tenant = Tenant::factory()->create(['cancelled_at' => now(), 'scheduled_for_deletion_at' => now()->addDays(10)]);
-
-    expect(fn () => app(DeleteTenant::class)->handle($tenant))->toThrow(LogicException::class);
-    expect(Tenant::query()->whereKey($tenant->getKey())->exists())->toBeTrue();
-});
+})->with([
+    'not cancelled' => [fn (): Tenant => Tenant::factory()->create()],
+    'cancelled but before its scheduled moment' => [fn (): Tenant => Tenant::factory()->create(['cancelled_at' => now(), 'scheduled_for_deletion_at' => now()->addDays(10)])],
+]);
 
 test('a due tenant is deleted for good together with its memberships', function () {
     $tenant = dueTenant();
@@ -78,18 +74,6 @@ test('users who also belong to another tenant keep their account', function () {
         ->and($owner->fresh()->tenants()->pluck('tenants.id')->all())->toBe([$other->getKey()]);
 });
 
-test('other tenants and their data are not touched', function () {
-    $otherOwner = User::factory()->create();
-    $other = app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], $otherOwner);
-    $tenant = dueTenant();
-
-    app(DeleteTenant::class)->handle($tenant);
-
-    expect(Tenant::query()->whereKey($other->getKey())->exists())->toBeTrue()
-        ->and(User::query()->whereKey($otherOwner->getKey())->exists())->toBeTrue()
-        ->and(DB::table('tenant_user')->where('tenant_id', $other->getKey())->count())->toBe(1);
-});
-
 test('role assignments of that tenant are removed and those of other tenants stay', function () {
     $otherOwner = User::factory()->create();
     $other = app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], $otherOwner);
@@ -102,6 +86,9 @@ test('role assignments of that tenant are removed and those of other tenants sta
 
     expect(DB::table('model_has_roles')->where($team, $tenant->getKey())->count())->toBe(0)
         ->and(DB::table('model_has_roles')->where($team, $other->getKey())->count())->toBe(1)
+        ->and(Tenant::query()->whereKey($other->getKey())->exists())->toBeTrue()
+        ->and(User::query()->whereKey($otherOwner->getKey())->exists())->toBeTrue()
+        ->and(DB::table('tenant_user')->where('tenant_id', $other->getKey())->count())->toBe(1)
         ->and(Role::query()->where('name', TenantRoles::OWNER->value)->where('guard_name', AuthGuard::TENANT->value)->exists())->toBeTrue();
 });
 

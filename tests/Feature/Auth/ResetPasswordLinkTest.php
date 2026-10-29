@@ -45,9 +45,3 @@ it('does the same for tenant users on the tenant panel', function () {
     Livewire::test(ResetPassword::class, ['email' => $user->email, 'token' => 'wrong'])
         ->assertRedirect(Filament::getRequestPasswordResetUrl());
 });
-
-it('is the reset page of both panels', function (string $panelId) {
-    $action = Filament::getPanel($panelId)->getResetPasswordRouteAction();
-
-    expect($action)->toBe(ResetPassword::class);
-})->with(['admin', 'app']);

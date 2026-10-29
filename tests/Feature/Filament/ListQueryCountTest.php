@@ -3,9 +3,11 @@
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
+use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ListTenants;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\ListUsers as AdminListUsers;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Pages\ListUsers as TenantListUsers;
 use Slakbal\TenancyFoundation\Models\Admin;
@@ -77,5 +79,24 @@ test('the tenant users list runs the same number of queries regardless of row co
                 fn (User $user): array => [$user->getKey() => ['is_owner' => false, 'is_default_tenant' => true]]
             )->all(),
         );
+    });
+});
+
+test('the admin tenants list runs the same number of queries regardless of row count', function () {
+    Filament::setCurrentPanel(Filament::getPanel('admin'));
+    Filament::bootCurrentPanel();
+    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+
+    $this->actingAs(adminWithPermission(AdminPermissions::TENANT_VIEW_ANY), AuthGuard::ADMIN->value);
+
+    assertListQueryCountIsConstant(ListTenants::class, function (int $rows): void {
+        static $created = 0;
+
+        foreach (range(1, $rows) as $ignored) {
+            $created++;
+            app(CreateTenant::class)->handle(['name' => "Extra {$created}", 'subdomain' => "extra{$created}"], User::factory()->create());
+        }
+
+        setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
     });
 });

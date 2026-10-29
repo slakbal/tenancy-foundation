@@ -13,17 +13,12 @@ beforeEach(function () {
     $this->other = app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], User::factory()->create());
 });
 
-it('reads ownership from the tenant_user flag for the given tenant', function () {
+it('reads ownership from the tenant_user flag, defaulting to the current Filament tenant', function () {
     $owner = $this->owner->fresh();
 
     expect($owner->isOwner($this->tenant))->toBeTrue()
-        ->and($owner->isOwner($this->other))->toBeFalse();
-});
-
-it('defaults to the current Filament tenant and is false without one', function () {
-    $owner = $this->owner->fresh();
-
-    expect($owner->isOwner())->toBeFalse();
+        ->and($owner->isOwner($this->other))->toBeFalse()
+        ->and($owner->isOwner())->toBeFalse();
 
     Filament::setTenant($this->tenant, isQuiet: true);
 

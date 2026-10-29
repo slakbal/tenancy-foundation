@@ -74,17 +74,8 @@ test('the subdomain cannot be changed even when the request is tampered with', f
         ->and($this->tenant->fresh()->name)->toBe('Acme Renamed');
 });
 
-test('saving keeps the own subdomain without tripping the unique rule', function () {
-    Livewire::test(EditTenantProfile::class)
-        ->fillForm(['name' => 'Acme Again'])
-        ->call('save')
-        ->assertHasNoFormErrors();
-});
-
 test('the full tenant url can be copied to the clipboard', function () {
     $url = TenantDetailsSchema::url('acme');
-
-    expect($url)->toBe(appDomainScheme().'acme.'.config('tenancy-foundation.domain'));
 
     $html = Livewire::test(EditTenantProfile::class)->html();
 
@@ -92,32 +83,24 @@ test('the full tenant url can be copied to the clipboard', function () {
         ->and(html_entity_decode($html))->toContain(str_replace('/', '\\/', $url));
 });
 
-test('only the owner of the tenant can open the profile page', function () {
-    $admin = User::factory()->create();
-    $this->tenant->members()->syncWithoutDetaching([$admin->getKey() => ['is_owner' => false, 'is_default_tenant' => true]]);
-    $viewOnly = User::factory()->create();
-    $this->tenant->members()->syncWithoutDetaching([$viewOnly->getKey() => ['is_owner' => false, 'is_default_tenant' => true]]);
-
+test('only the owner of the tenant can open the profile page', function (bool $withEveryPermission) {
     expect(EditTenantProfile::canView($this->tenant))->toBeTrue();
 
-    foreach ([$admin, $viewOnly] as $member) {
-        $this->actingAs($member->fresh(), AuthGuard::TENANT->value);
-
-        expect(EditTenantProfile::canView($this->tenant))->toBeFalse();
-        Livewire::test(EditTenantProfile::class)->assertNotFound();
-    }
-});
-
-test('a member holding every tenant permission still cannot open the profile page', function () {
     $member = User::factory()->create();
     $this->tenant->members()->syncWithoutDetaching([$member->getKey() => ['is_owner' => false, 'is_default_tenant' => true]]);
 
-    foreach (TenantPermissions::cases() as $permission) {
-        Permission::findOrCreate($permission->value, AuthGuard::TENANT->value);
-        $member->givePermissionTo($permission);
+    if ($withEveryPermission) {
+        foreach (TenantPermissions::cases() as $permission) {
+            Permission::findOrCreate($permission->value, AuthGuard::TENANT->value);
+            $member->givePermissionTo($permission);
+        }
     }
 
     $this->actingAs($member->fresh(), AuthGuard::TENANT->value);
 
+    expect(EditTenantProfile::canView($this->tenant))->toBeFalse();
     Livewire::test(EditTenantProfile::class)->assertNotFound();
-});
+})->with([
+    'a member without permissions' => false,
+    'a member holding every tenant permission' => true,
+]);

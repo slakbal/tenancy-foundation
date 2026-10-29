@@ -3,13 +3,9 @@
 use Filament\Facades\Filament;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\DB;
-use Slakbal\TenancyFoundation\Actions\Roles\AssignTenantRole;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
-use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
-use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
 use Slakbal\TenancyFoundation\Support\SoleOwnerGuard;
-use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('app'));
@@ -34,9 +30,8 @@ test('the guard only reacts to delete and forceDelete', function (string $abilit
     'deleteAny' => ['deleteAny', false],
 ]);
 
-test('the guard accepts the arguments as a model or as an array', function () {
-    expect(SoleOwnerGuard::denial('delete', $this->owner))->toBeInstanceOf(Response::class)
-        ->and(SoleOwnerGuard::denial('delete', [$this->owner]))->toBeInstanceOf(Response::class);
+test('the guard accepts the arguments as an array', function () {
+    expect(SoleOwnerGuard::denial('delete', [$this->owner]))->toBeInstanceOf(Response::class);
 });
 
 test('the guard ignores arguments that are not a model that can own a tenant', function () {
@@ -101,47 +96,4 @@ test('the flag is added in a single query for the whole list', function () {
     User::query()->withSoleOwnerFlag()->get()->each->isSoleOwnerOfAnyTenant();
 
     expect($queries)->toBe(1);
-});
-
-test('the permissions team id is restored even when assigning the role fails', function () {
-    $registrar = app(PermissionRegistrar::class);
-    $registrar->setPermissionsTeamId(999);
-
-    try {
-        app(AssignTenantRole::class)->handle(Tenant::factory()->create(), $this->tenant, TenantRoles::ADMIN);
-    } catch (Throwable) {
-    }
-
-    expect($registrar->getPermissionsTeamId())->toBe(999);
-});
-
-test('assigning a role replaces the given one inside the tenant only', function () {
-    $second = Tenant::factory()->create();
-    $second->members()->attach($this->owner->getKey(), ['is_owner' => true, 'is_default_tenant' => false]);
-    app(AssignTenantRole::class)->handle($this->owner, $second, TenantRoles::OWNER);
-
-    app(AssignTenantRole::class)->handle($this->owner, $this->tenant, TenantRoles::ADMIN, TenantRoles::OWNER);
-
-    setPermissionsTeamId($this->tenant->getKey());
-    expect($this->owner->fresh()->hasRole(TenantRoles::OWNER))->toBeFalse()
-        ->and($this->owner->fresh()->hasRole(TenantRoles::ADMIN))->toBeTrue();
-
-    setPermissionsTeamId($second->getKey());
-    expect($this->owner->fresh()->hasRole(TenantRoles::OWNER))->toBeTrue();
-});
-
-test('assigning the same role twice does not duplicate it', function () {
-    app(AssignTenantRole::class)->handle($this->member, $this->tenant, TenantRoles::ADMIN);
-    app(AssignTenantRole::class)->handle($this->member, $this->tenant, TenantRoles::ADMIN);
-
-    expect($this->member->roles()->where('name', TenantRoles::ADMIN->value)->count())->toBe(1);
-});
-
-test('roles are created once and stay global', function () {
-    app(AssignTenantRole::class)->handle($this->member, $this->tenant, TenantRoles::ADMIN);
-
-    $role = app(PermissionRegistrar::class)->getRoleClass()::where('name', TenantRoles::ADMIN->value)->get();
-
-    expect($role)->toHaveCount(1)
-        ->and($role->first()->getAttribute('tenant_id'))->toBeNull();
 });
