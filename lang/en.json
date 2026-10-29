@@ -142,5 +142,15 @@
     "Only a super admin can assign the super admin role.": "Only a super admin can assign the super admin role.",
     "The role decides what the admin can do.": "The role decides what the admin can do.",
     "You cannot change your own role, nor the role of the last active super admin.": "You cannot change your own role, nor the role of the last active super admin.",
-    "Pending": "Pending"
+    "Pending": "Pending",
+    "Admin created. An email to set a password has been sent.": "Admin created. An email to set a password has been sent.",
+    "You have been invited to the :app admin panel": "You have been invited to the :app admin panel",
+    "An admin account has been created for you on :app.": "An admin account has been created for you on :app.",
+    "Choose your password to activate the account.": "Choose your password to activate the account.",
+    "Set your password": "Set your password",
+    "This link expires in :minutes minutes. Ask an admin to resend the invitation after that.": "This link expires in :minutes minutes. Ask an admin to resend the invitation after that.",
+    "Resend invitation": "Resend invitation",
+    "Resend the invitation to :email?": "Resend the invitation to :email?",
+    "A new link to set a password is emailed. Earlier links stop working.": "A new link to set a password is emailed. Earlier links stop working.",
+    "Invitation sent to :email.": "Invitation sent to :email."
 }

@@ -11,6 +11,7 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\CreateAdminUser;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\EditAdminUser;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\ListAdminUsers;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\ViewAdminUser;
@@ -85,6 +86,7 @@ class AdminUserResource extends Resource
     {
         return [
             'index' => ListAdminUsers::route('/'),
+            'create' => CreateAdminUser::route('/create'),
             'view' => ViewAdminUser::route('/{record}'),
             'edit' => EditAdminUser::route('/{record}/edit'),
         ];

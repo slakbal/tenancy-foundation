@@ -10,6 +10,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ResendAdminInvitationAction;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
 
@@ -55,6 +56,7 @@ class AdminUsersTable
     protected static function recordActions(): array
     {
         return [
+            ResendAdminInvitationAction::make()->hiddenLabel()->iconButton()->tooltip(__('Resend invitation')),
             ViewAction::make(),
             EditAction::make(),
         ];
