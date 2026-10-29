@@ -8,7 +8,6 @@ use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Gate;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Filament\Pages\EditProfile;
-use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Filament\Pages\EditTenantProfile;
 use Slakbal\TenancyFoundation\Filament\Pages\EmailVerificationPrompt;
 use Slakbal\TenancyFoundation\Filament\Pages\RegisterTenant;
@@ -108,11 +107,12 @@ class TenantPlugin implements Plugin
     public function boot(Panel $panel): void
     {
         Gate::before(function ($user, $ability, $arguments = []): Response|bool|null {
+            //Always first!! Blocks deleting a user who is the only owner of any tenant. It’s called first in both Gate::before callbacks, so it can deny delete or forceDelete even for super admins and owners, who would otherwise bypass every policy.
             if ($denial = SoleOwnerGuard::denial($ability, $arguments)) {
                 return $denial;
             }
 
-            return method_exists($user, 'hasRole') && $user->hasRole(TenantRoles::OWNER) ? true : null;
+            return method_exists($user, 'isOwner') && $user->isOwner() ? true : null;
         });
 
         Gate::guessPolicyNamesUsing(fn (string $modelClass): string => PolicyResolver::resolve('Tenant', $modelClass));

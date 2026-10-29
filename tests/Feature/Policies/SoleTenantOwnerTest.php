@@ -53,11 +53,13 @@ test('a sole owner of a tenant with no other members is blocked too', function (
 });
 
 test('a member who owns nothing is not blocked and can be deleted', function () {
+    Filament::setTenant($this->tenant, isQuiet: true);
     expect($this->member->isSoleOwnerOfAnyTenant())->toBeFalse()
         ->and($this->owner->can('delete', $this->member))->toBeTrue();
 });
 
 test('the block only concerns deleting, other abilities are untouched', function () {
+    Filament::setTenant($this->tenant, isQuiet: true);
     expect($this->owner->can('update', $this->owner))->toBeTrue()
         ->and($this->owner->can('view', $this->owner))->toBeTrue()
         ->and($this->owner->can('deleteAny', User::class))->toBeTrue();
@@ -73,6 +75,7 @@ test('transferring ownership makes the new owner the only owner', function () {
 });
 
 test('the previous owner stays a member and can be deleted after the transfer', function () {
+    Filament::setTenant($this->tenant, isQuiet: true);
     transferOwnership($this->tenant, $this->member, $this->owner);
 
     $previous = $this->owner->fresh();
@@ -110,6 +113,7 @@ test('a legacy co-owner who is soft deleted does not count as another owner', fu
 
 test('a live legacy co-owner means nobody is the sole owner', function () {
     attachMember($this->tenant, null, isOwner: true);
+    Filament::setTenant($this->tenant, isQuiet: true);
 
     expect($this->owner->fresh()->isSoleOwnerOfAnyTenant())->toBeFalse()
         ->and($this->owner->can('delete', $this->owner))->toBeTrue();

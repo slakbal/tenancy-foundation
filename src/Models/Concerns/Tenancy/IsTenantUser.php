@@ -2,6 +2,7 @@
 
 namespace Slakbal\TenancyFoundation\Models\Concerns\Tenancy;
 
+use Filament\Facades\Filament;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -90,6 +91,17 @@ trait IsTenantUser
             ->whereKey($this->getKey())
             ->withSoleOwnerFlag()
             ->value('is_sole_owner');
+    }
+
+    public function isOwner(?Model $tenant = null): bool
+    {
+        $tenant ??= Filament::getTenant();
+
+        if ($tenant === null) {
+            return false;
+        }
+
+        return (bool) $this->loadTenantsOnce()->tenants->firstWhere('id', $tenant->getKey())?->pivot->is_owner;
     }
 
     public function memberTenants(): BelongsToMany
