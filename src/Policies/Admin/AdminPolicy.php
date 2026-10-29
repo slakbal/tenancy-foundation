@@ -2,6 +2,7 @@
 
 namespace Slakbal\TenancyFoundation\Policies\Admin;
 
+use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Policies\AuthorisationPolicy;
 use Slakbal\TenancyFoundation\Support\AdminAccountGuard;
@@ -31,6 +32,26 @@ class AdminPolicy extends AuthorisationPolicy
     public function forceDeleteAny($user): bool
     {
         return AdminAccountGuard::isSuperAdmin($user) && parent::forceDeleteAny($user);
+    }
+
+    public function activate($user, $model): bool
+    {
+        return $model->status === AdminStatus::INACTIVE && ! $model->trashed() && $this->update($user, $model);
+    }
+
+    public function deactivate($user, $model): bool
+    {
+        return $model->status === AdminStatus::ACTIVE && ! $model->trashed() && $this->update($user, $model);
+    }
+
+    public function changeRole($user, $model): bool
+    {
+        return ! $model->trashed() && $this->update($user, $model);
+    }
+
+    public function sendPasswordResetLink($user, $model): bool
+    {
+        return $model->status !== AdminStatus::PENDING && ! $model->trashed() && $this->update($user, $model);
     }
 
     protected function isProtectedFrom(mixed $user, mixed $model): bool

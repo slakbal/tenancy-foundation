@@ -3,6 +3,7 @@
 namespace Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Tables;
 
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -12,6 +13,7 @@ use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\BaseFilter;
@@ -22,7 +24,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ActivateAdminUserAction;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ChangeAdminUserRoleAction;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\DeactivateAdminUserAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ResendAdminInvitationAction;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\SendAdminPasswordResetLinkAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
 
 class AdminUsersTable
@@ -96,11 +102,22 @@ class AdminUsersTable
     {
         return [
             ResendAdminInvitationAction::make()->hiddenLabel()->iconButton()->tooltip(__('Resend invitation')),
-            ViewAction::make(),
-            EditAction::make(),
-            DeleteAction::make(),
-            RestoreAction::make(),
-            ForceDeleteAction::make(),
+            ActionGroup::make([
+                static::groupItem(ViewAction::make(), __('View'), Heroicon::OutlinedEye),
+                static::groupItem(EditAction::make(), __('Edit'), Heroicon::OutlinedPencilSquare),
+                SendAdminPasswordResetLinkAction::make(),
+                ChangeAdminUserRoleAction::make(),
+                ActivateAdminUserAction::make(),
+                DeactivateAdminUserAction::make(),
+                static::groupItem(DeleteAction::make(), __('Delete'), Heroicon::OutlinedTrash, 'danger'),
+                static::groupItem(RestoreAction::make(), __('Restore'), Heroicon::OutlinedArrowUturnLeft, 'success'),
+                static::groupItem(ForceDeleteAction::make(), __('Force delete'), Heroicon::OutlinedTrash, 'danger'),
+            ]),
         ];
+    }
+
+    protected static function groupItem(Action $action, string $label, Heroicon $icon, ?string $color = null): Action
+    {
+        return $action->label($label)->icon($icon)->color($color)->grouped()->hiddenLabel(false)->tooltip(null);
     }
 }

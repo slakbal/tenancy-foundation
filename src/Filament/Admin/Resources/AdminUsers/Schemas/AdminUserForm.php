@@ -102,7 +102,7 @@ class AdminUserForm
     /**
      * @return array<string, string>
      */
-    protected static function assignableRoles(): array
+    public static function assignableRoles(): array
     {
         $actorIsSuperAdmin = AdminAccountGuard::isSuperAdmin(Filament::auth()->user());
 

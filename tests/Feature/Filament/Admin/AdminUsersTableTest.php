@@ -144,3 +144,16 @@ it('shows delete and restore in the page headers', function () {
 
     expect($target->fresh()->trashed())->toBeTrue();
 });
+
+it('shows labels for the grouped row actions', function () {
+    tableActor(AdminRoles::ADMIN, AdminPermissions::ADMIN_USER_UPDATE, AdminPermissions::ADMIN_USER_DELETE);
+    tableTarget();
+
+    $html = Livewire::test(ListAdminUsers::class)->html();
+
+    $missing = collect(['View', 'Edit', 'Delete', 'Change role'])
+        ->reject(fn (string $label): bool => (bool) preg_match('/fi-dropdown-list-item-label[^>]*>\s*'.$label.'\s*</', $html))
+        ->all();
+
+    expect($missing)->toBe([]);
+});

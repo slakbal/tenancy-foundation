@@ -11,7 +11,11 @@ use Filament\Facades\Filament;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Actions\UpdateAdminUser;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ActivateAdminUserAction;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ChangeAdminUserRoleAction;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\DeactivateAdminUserAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ResendAdminInvitationAction;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\SendAdminPasswordResetLinkAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\AdminUserResource;
 
 class EditAdminUser extends EditRecord
@@ -26,6 +30,10 @@ class EditAdminUser extends EditRecord
         return [
             ViewAction::make()->button()->hiddenLabel(false)->tooltip(null),
             ResendAdminInvitationAction::make(),
+            SendAdminPasswordResetLinkAction::make(),
+            ChangeAdminUserRoleAction::make(),
+            ActivateAdminUserAction::make(),
+            DeactivateAdminUserAction::make(),
             DeleteAction::make()->button()->hiddenLabel(false)->tooltip(null),
             RestoreAction::make()->button()->hiddenLabel(false)->tooltip(null),
             ForceDeleteAction::make()->button()->hiddenLabel(false)->tooltip(null),

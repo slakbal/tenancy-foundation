@@ -15,7 +15,9 @@ class AdminAccountGuard
      */
     public static function denial(mixed $user, string $ability, mixed $arguments): ?Response
     {
-        if (! in_array($ability, ['delete', 'forceDelete'], true)) {
+        $messages = static::messages()[$ability] ?? null;
+
+        if ($messages === null) {
             return null;
         }
 
@@ -27,12 +29,34 @@ class AdminAccountGuard
         }
 
         if ($user instanceof Model && $user->is($model)) {
-            return Response::deny(__('You cannot delete your own account.'));
+            return Response::deny($messages['self']);
         }
 
-        return static::isLastActiveSuperAdmin($model)
-            ? Response::deny(__('The last active super admin cannot be deleted.'))
-            : null;
+        return static::isLastActiveSuperAdmin($model) ? Response::deny($messages['last']) : null;
+    }
+
+    /**
+     * @return array<string, array{self: string, last: string}>
+     */
+    protected static function messages(): array
+    {
+        $delete = [
+            'self' => __('You cannot delete your own account.'),
+            'last' => __('The last active super admin cannot be deleted.'),
+        ];
+
+        return [
+            'delete' => $delete,
+            'forceDelete' => $delete,
+            'deactivate' => [
+                'self' => __('You cannot deactivate your own account.'),
+                'last' => __('The last active super admin cannot be deactivated.'),
+            ],
+            'changeRole' => [
+                'self' => __('You cannot change your own role.'),
+                'last' => __('The last active super admin cannot be demoted.'),
+            ],
+        ];
     }
 
     public static function isLastActiveSuperAdmin(Model $admin): bool
