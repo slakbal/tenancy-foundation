@@ -2,7 +2,7 @@
 
 namespace Slakbal\TenancyFoundation\Listeners;
 
-use Slakbal\TenancyFoundation\Actions\InviteAdminUser;
+use Slakbal\TenancyFoundation\Actions\Admin\InviteAdminUser;
 use Slakbal\TenancyFoundation\Events\AdminUserCreated;
 
 class SendAdminInvitation

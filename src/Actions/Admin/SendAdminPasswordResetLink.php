@@ -1,6 +1,6 @@
 <?php
 
-namespace Slakbal\TenancyFoundation\Actions;
+namespace Slakbal\TenancyFoundation\Actions\Admin;
 
 use Filament\Auth\Notifications\ResetPassword;
 use Filament\Facades\Filament;

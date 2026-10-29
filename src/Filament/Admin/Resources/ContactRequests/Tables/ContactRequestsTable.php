@@ -18,7 +18,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Slakbal\TenancyFoundation\Actions\ChangeContactRequestStatus;
+use Slakbal\TenancyFoundation\Actions\Contact\ChangeContactRequestStatus;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\ContactSource;
 use Slakbal\TenancyFoundation\Enums\ContactStatus;

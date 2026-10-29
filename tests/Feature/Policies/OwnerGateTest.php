@@ -1,7 +1,7 @@
 <?php
 
 use Filament\Facades\Filament;
-use Slakbal\TenancyFoundation\Actions\CreateTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Models\User;
 
 beforeEach(function () {

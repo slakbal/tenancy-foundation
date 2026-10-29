@@ -2,9 +2,9 @@
 
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
-use Slakbal\TenancyFoundation\Actions\CancelTenant;
-use Slakbal\TenancyFoundation\Actions\CreateTenant;
-use Slakbal\TenancyFoundation\Actions\ReactivateTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\CancelTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\ReactivateTenant;
 use Slakbal\TenancyFoundation\Enums\TenantStatus;
 use Slakbal\TenancyFoundation\Events\TenantReactivated;
 use Slakbal\TenancyFoundation\Models\Tenant;

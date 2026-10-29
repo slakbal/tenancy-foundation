@@ -1,6 +1,6 @@
 <?php
 
-namespace Slakbal\TenancyFoundation\Actions;
+namespace Slakbal\TenancyFoundation\Actions\Admin;
 
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;

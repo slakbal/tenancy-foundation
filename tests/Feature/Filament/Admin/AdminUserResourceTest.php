@@ -4,7 +4,7 @@ use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Auth\Access\AuthorizationException;
 use Livewire\Livewire;
-use Slakbal\TenancyFoundation\Actions\ChangeAdminUserRole;
+use Slakbal\TenancyFoundation\Actions\Admin\ChangeAdminUserRole;
 use Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;

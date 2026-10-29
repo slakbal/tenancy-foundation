@@ -2,8 +2,8 @@
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Notification;
-use Slakbal\TenancyFoundation\Actions\CancelTenant;
-use Slakbal\TenancyFoundation\Actions\CreateTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\CancelTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Events\TenantCancelled;
 use Slakbal\TenancyFoundation\Models\User;
 use Slakbal\TenancyFoundation\Notifications\AccountCancelled;

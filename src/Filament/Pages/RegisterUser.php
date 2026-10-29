@@ -13,7 +13,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\HtmlString;
 use SensitiveParameter;
-use Slakbal\TenancyFoundation\Actions\RegisterTenantOwner;
+use Slakbal\TenancyFoundation\Actions\Tenant\RegisterTenantOwner;
 use Slakbal\TenancyFoundation\Filament\Components\Schemas\TenantDetailsSchema;
 use Slakbal\TenancyFoundation\Filament\Components\Schemas\UserNameSchema;
 

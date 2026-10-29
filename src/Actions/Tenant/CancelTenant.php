@@ -1,6 +1,6 @@
 <?php
 
-namespace Slakbal\TenancyFoundation\Actions;
+namespace Slakbal\TenancyFoundation\Actions\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;

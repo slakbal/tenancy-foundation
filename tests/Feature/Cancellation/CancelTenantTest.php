@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Event;
-use Slakbal\TenancyFoundation\Actions\CancelTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\CancelTenant;
 use Slakbal\TenancyFoundation\Events\TenantCancelled;
 use Slakbal\TenancyFoundation\Models\Tenant;
 

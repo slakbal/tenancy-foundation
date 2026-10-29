@@ -2,8 +2,8 @@
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Slakbal\TenancyFoundation\Actions\CreateTenant;
-use Slakbal\TenancyFoundation\Actions\DeleteTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\DeleteTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Events\TenantDeleting;

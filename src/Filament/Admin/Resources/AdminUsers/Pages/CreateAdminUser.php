@@ -5,7 +5,7 @@ namespace Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
-use Slakbal\TenancyFoundation\Actions\CreateAdminUser as CreateAdminUserAction;
+use Slakbal\TenancyFoundation\Actions\Admin\CreateAdminUser as CreateAdminUserAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\AdminUserResource;
 
 class CreateAdminUser extends CreateRecord

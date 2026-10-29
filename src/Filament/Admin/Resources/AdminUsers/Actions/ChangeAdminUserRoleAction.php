@@ -8,7 +8,7 @@ use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
-use Slakbal\TenancyFoundation\Actions\ChangeAdminUserRole;
+use Slakbal\TenancyFoundation\Actions\Admin\ChangeAdminUserRole;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Schemas\AdminUserForm;
 
 class ChangeAdminUserRoleAction

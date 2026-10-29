@@ -1,6 +1,6 @@
 <?php
 
-namespace Slakbal\TenancyFoundation\Actions;
+namespace Slakbal\TenancyFoundation\Actions\Contact;
 
 use Illuminate\Support\Facades\DB;
 use Slakbal\TenancyFoundation\Enums\ContactSource;

@@ -5,7 +5,7 @@ namespace Slakbal\TenancyFoundation\Jobs;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Queue\Queueable;
-use Slakbal\TenancyFoundation\Actions\DeleteTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\DeleteTenant;
 
 class DeleteDueTenants implements ShouldQueue
 {

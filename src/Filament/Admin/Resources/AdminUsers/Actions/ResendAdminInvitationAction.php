@@ -6,7 +6,7 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
-use Slakbal\TenancyFoundation\Actions\InviteAdminUser;
+use Slakbal\TenancyFoundation\Actions\Admin\InviteAdminUser;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
 
 class ResendAdminInvitationAction

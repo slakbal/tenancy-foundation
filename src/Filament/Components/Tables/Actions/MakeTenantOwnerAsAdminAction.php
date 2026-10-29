@@ -7,7 +7,7 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Model;
-use Slakbal\TenancyFoundation\Actions\TransferTenantOwnership;
+use Slakbal\TenancyFoundation\Actions\Tenant\TransferTenantOwnership;
 
 class MakeTenantOwnerAsAdminAction
 {

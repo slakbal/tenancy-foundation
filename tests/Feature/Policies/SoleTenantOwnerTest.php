@@ -2,8 +2,8 @@
 
 use Filament\Facades\Filament;
 use Illuminate\Auth\Access\AuthorizationException;
-use Slakbal\TenancyFoundation\Actions\CreateTenant;
-use Slakbal\TenancyFoundation\Actions\TransferTenantOwnership;
+use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\TransferTenantOwnership;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;

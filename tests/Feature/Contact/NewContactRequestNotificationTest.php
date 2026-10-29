@@ -3,7 +3,7 @@
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
-use Slakbal\TenancyFoundation\Actions\CreateContactRequest;
+use Slakbal\TenancyFoundation\Actions\Contact\CreateContactRequest;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;

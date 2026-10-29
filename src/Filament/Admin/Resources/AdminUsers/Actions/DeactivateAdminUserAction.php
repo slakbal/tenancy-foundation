@@ -6,7 +6,7 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
-use Slakbal\TenancyFoundation\Actions\ChangeAdminUserStatus;
+use Slakbal\TenancyFoundation\Actions\Admin\ChangeAdminUserStatus;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
 
 class DeactivateAdminUserAction

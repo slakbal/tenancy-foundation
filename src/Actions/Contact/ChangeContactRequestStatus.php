@@ -1,6 +1,6 @@
 <?php
 
-namespace Slakbal\TenancyFoundation\Actions;
+namespace Slakbal\TenancyFoundation\Actions\Contact;
 
 use DomainException;
 use Illuminate\Support\Facades\DB;

@@ -4,7 +4,7 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Livewire\Livewire;
-use Slakbal\TenancyFoundation\Actions\CreateTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
 use Slakbal\TenancyFoundation\Filament\Components\Schemas\TenantDetailsSchema;

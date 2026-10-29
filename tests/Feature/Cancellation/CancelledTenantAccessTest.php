@@ -4,7 +4,7 @@ use Filament\Auth\Pages\Login;
 use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Livewire\Livewire;
-use Slakbal\TenancyFoundation\Actions\CreateTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureTenantIsNotCancelled;
 use Slakbal\TenancyFoundation\Models\Tenant;

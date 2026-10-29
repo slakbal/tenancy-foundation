@@ -16,7 +16,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
-use Slakbal\TenancyFoundation\Actions\CreateContactRequest;
+use Slakbal\TenancyFoundation\Actions\Contact\CreateContactRequest;
 use Slakbal\TenancyFoundation\Enums\ContactSource;
 
 /**

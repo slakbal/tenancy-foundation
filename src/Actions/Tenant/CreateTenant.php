@@ -1,11 +1,12 @@
 <?php
 
-namespace Slakbal\TenancyFoundation\Actions;
+namespace Slakbal\TenancyFoundation\Actions\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Events\TenantRegistered;
+use Slakbal\TenancyFoundation\Actions\Roles\AssignTenantRole;
 
 readonly class CreateTenant
 {

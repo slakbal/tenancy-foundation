@@ -3,7 +3,7 @@
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
-use Slakbal\TenancyFoundation\Actions\CreateTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Enums\ContactSource;

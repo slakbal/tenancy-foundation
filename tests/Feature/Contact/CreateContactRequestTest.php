@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Slakbal\TenancyFoundation\Actions\CreateContactRequest;
+use Slakbal\TenancyFoundation\Actions\Contact\CreateContactRequest;
 use Slakbal\TenancyFoundation\Enums\ContactSource;
 use Slakbal\TenancyFoundation\Models\ContactRequest;
 

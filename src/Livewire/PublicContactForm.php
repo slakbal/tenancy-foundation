@@ -21,7 +21,7 @@ use Illuminate\Validation\ValidationException;
 use l3aro\FilamentTurnstile\Facades\FilamentTurnstileFacade;
 use l3aro\FilamentTurnstile\Forms\Turnstile;
 use Livewire\Component;
-use Slakbal\TenancyFoundation\Actions\CreateContactRequest;
+use Slakbal\TenancyFoundation\Actions\Contact\CreateContactRequest;
 use Slakbal\TenancyFoundation\Enums\ContactSource;
 use Slakbal\TenancyFoundation\Enums\FilamentPanel;
 

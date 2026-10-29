@@ -9,8 +9,8 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
-use Slakbal\TenancyFoundation\Actions\ChangeContactRequestStatus;
-use Slakbal\TenancyFoundation\Actions\RespondToContactRequest;
+use Slakbal\TenancyFoundation\Actions\Contact\ChangeContactRequestStatus;
+use Slakbal\TenancyFoundation\Actions\Contact\RespondToContactRequest;
 use Slakbal\TenancyFoundation\Enums\ContactStatus;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\ContactRequestResource;
 

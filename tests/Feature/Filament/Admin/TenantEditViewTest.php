@@ -2,9 +2,9 @@
 
 use Filament\Facades\Filament;
 use Livewire\Livewire;
-use Slakbal\TenancyFoundation\Actions\AssignTenantRole;
-use Slakbal\TenancyFoundation\Actions\CancelTenant;
-use Slakbal\TenancyFoundation\Actions\CreateTenant;
+use Slakbal\TenancyFoundation\Actions\Roles\AssignTenantRole;
+use Slakbal\TenancyFoundation\Actions\Tenant\CancelTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;

@@ -2,8 +2,8 @@
 
 use Filament\Facades\Filament;
 use Livewire\Livewire;
-use Slakbal\TenancyFoundation\Actions\CreateTenant;
-use Slakbal\TenancyFoundation\Actions\TransferTenantOwnership;
+use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\TransferTenantOwnership;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
