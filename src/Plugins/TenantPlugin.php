@@ -7,6 +7,7 @@ use Filament\Panel;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Gate;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
+use Slakbal\TenancyFoundation\Filament\Pages\EditProfile;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Filament\Pages\EditTenantProfile;
 use Slakbal\TenancyFoundation\Filament\Pages\EmailVerificationPrompt;
@@ -31,6 +32,8 @@ class TenantPlugin implements Plugin
     protected string $editTenantProfilePage = EditTenantProfile::class;
 
     protected string $contactPage = ContactUs::class;
+
+    protected string $profilePage = EditProfile::class;
 
     public static function make(): static
     {
@@ -77,6 +80,13 @@ class TenantPlugin implements Plugin
         return $this;
     }
 
+    public function usingProfilePage(string $page): static
+    {
+        $this->profilePage = $page;
+
+        return $this;
+    }
+
     public function register(Panel $panel): void
     {
         $panel
@@ -87,6 +97,7 @@ class TenantPlugin implements Plugin
             ->tenantMiddleware([SyncTenantPermissionsContext::class, EnsureTenantIsNotCancelled::class], isPersistent: true)
             ->registration($this->registerUserPage)
             ->passwordReset()
+            ->profile($this->profilePage)
             ->authPasswordBroker(AuthGuard::TENANT->getPasswordBroker())
             ->emailVerification(EmailVerificationPrompt::class)
             ->middleware([EnsureUserHasTenant::class], isPersistent: true)

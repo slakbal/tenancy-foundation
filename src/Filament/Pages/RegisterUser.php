@@ -3,7 +3,6 @@
 namespace Slakbal\TenancyFoundation\Filament\Pages;
 
 use Filament\Auth\Pages\Register;
-use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Components\Wizard\Step;
@@ -13,10 +12,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\HtmlString;
-use Illuminate\Support\Str;
 use SensitiveParameter;
 use Slakbal\TenancyFoundation\Actions\RegisterTenantOwner;
 use Slakbal\TenancyFoundation\Filament\Components\Schemas\TenantDetailsSchema;
+use Slakbal\TenancyFoundation\Filament\Components\Schemas\UserNameSchema;
 
 class RegisterUser extends Register
 {
@@ -73,14 +72,7 @@ class RegisterUser extends Register
      */
     protected function getNameFormComponents(): array
     {
-        return collect(config('tenancy-foundation.user_name_attributes'))
-            ->values()
-            ->map(fn (string $attribute, int $index): Component => TextInput::make($attribute)
-                ->label(__(Str::of($attribute)->replace('_', ' ')->ucfirst()->toString()))
-                ->required()
-                ->maxLength(100)
-                ->autofocus($index === 0))
-            ->all();
+        return UserNameSchema::components();
     }
 
     protected function getWizardSubmitAction(): HtmlString

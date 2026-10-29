@@ -7,6 +7,7 @@ use Filament\Panel;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Gate;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
+use Slakbal\TenancyFoundation\Filament\Pages\EditProfile;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\ContactRequestResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\TenantResource;
@@ -21,6 +22,8 @@ class AdminPlugin implements Plugin
     protected string $tenantResource = TenantResource::class;
 
     protected string $contactRequestResource = ContactRequestResource::class;
+
+    protected string $profilePage = EditProfile::class;
 
     public static function make(): static
     {
@@ -53,10 +56,18 @@ class AdminPlugin implements Plugin
         return $this;
     }
 
+    public function usingProfilePage(string $page): static
+    {
+        $this->profilePage = $page;
+
+        return $this;
+    }
+
     public function register(Panel $panel): void
     {
         $panel->databaseNotifications();
         $panel->passwordReset();
+        $panel->profile($this->profilePage);
         $panel->authPasswordBroker(AuthGuard::ADMIN->getPasswordBroker());
         $panel->resources([$this->userResource, $this->tenantResource, $this->contactRequestResource]);
     }
