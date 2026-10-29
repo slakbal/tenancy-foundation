@@ -1,6 +1,7 @@
 <?php
 
 use Slakbal\TenancyFoundation\Models\Admin;
+use Slakbal\TenancyFoundation\Livewire\PublicContactForm;
 use Slakbal\TenancyFoundation\Models\ContactRequest;
 use Slakbal\TenancyFoundation\Models\Role;
 use Slakbal\TenancyFoundation\Models\Tenant;
@@ -160,12 +161,19 @@ return [
     | notify_admins     Notify admins who may view contact requests (and
     |                   super admins) when a new request is received. See
     |                   notifications.contact_received.
+    | public_path       Path of the public contact page on the main domain
+    |                   (route name public.contact). null disables the page and
+    |                   the route. It is only registered when `domain` is set.
+    | public_form       Livewire component behind the public page. Extend
+    |                   PublicContactForm and override fields() to change it.
     |
     */
 
     'contact_requests' => [
         'prune_after_days' => env('CONTACT_REQUEST_PRUNE_AFTER_DAYS', 90),
         'notify_admins' => true,
+        'public_path' => 'contact',
+        'public_form' => PublicContactForm::class,
     ],
 
     /*

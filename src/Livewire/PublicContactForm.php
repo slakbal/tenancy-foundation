@@ -9,11 +9,13 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Component as SchemaComponent;
 use Filament\Schemas\Components\EmbeddedSchema;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
+use Filament\Support\Facades\FilamentColor;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 use l3aro\FilamentTurnstile\Facades\FilamentTurnstileFacade;
@@ -21,6 +23,7 @@ use l3aro\FilamentTurnstile\Forms\Turnstile;
 use Livewire\Component;
 use Slakbal\TenancyFoundation\Actions\CreateContactRequest;
 use Slakbal\TenancyFoundation\Enums\ContactSource;
+use Slakbal\TenancyFoundation\Enums\FilamentPanel;
 
 /**
  * @property-read Schema $form
@@ -35,6 +38,11 @@ class PublicContactForm extends Component implements HasActions, HasSchemas
      */
     public ?array $data = [];
 
+    public function boot(): void
+    {
+        FilamentColor::register(filament()->getPanel(FilamentPanel::TENANT->getPanelId())->getColors());
+    }
+
     public function mount(): void
     {
         $this->form->fill();
@@ -44,25 +52,33 @@ class PublicContactForm extends Component implements HasActions, HasSchemas
     {
         return $schema
             ->statePath('data')
-            ->components([
-                TextInput::make('name')
-                    ->label(__('Your full name'))
-                    ->required()
-                    ->maxLength(255)
-                    ->autofocus(),
-                TextInput::make('email')
-                    ->label(__('Email'))
-                    ->email()
-                    ->required()
-                    ->maxLength(255),
-                Textarea::make('message')
-                    ->label(__('Message'))
-                    ->rows(5)
-                    ->maxLength(1024)
-                    ->required(),
-                Turnstile::make('captcha')
-                    ->alignCenter(),
-            ]);
+            ->components(static::fields());
+    }
+
+    /**
+     * @return array<int, SchemaComponent>
+     */
+    protected static function fields(): array
+    {
+        return [
+            TextInput::make('name')
+                ->label(__('Your full name'))
+                ->required()
+                ->maxLength(255)
+                ->autofocus(),
+            TextInput::make('email')
+                ->label(__('Email'))
+                ->email()
+                ->required()
+                ->maxLength(255),
+            Textarea::make('message')
+                ->label(__('Message'))
+                ->rows(5)
+                ->maxLength(1024)
+                ->required(),
+            Turnstile::make('captcha')
+                ->alignCenter(),
+        ];
     }
 
     public function content(Schema $schema): Schema

@@ -10,6 +10,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Console\InstallCommand;
@@ -92,7 +93,23 @@ class TenancyFoundationServiceProvider extends ServiceProvider
         $this->loadJsonTranslationsFrom(__DIR__.'/../lang');
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'tenancy-foundation');
 
-        Livewire::component('public-contact-form', PublicContactForm::class);
+        Livewire::component('public-contact-form', config('tenancy-foundation.contact_requests.public_form', PublicContactForm::class));
+
+        $this->bootPublicContactRoute();
+    }
+
+    protected function bootPublicContactRoute(): void
+    {
+        $path = config('tenancy-foundation.contact_requests.public_path');
+        $domain = config('tenancy-foundation.domain');
+
+        if (blank($path) || blank($domain)) {
+            return;
+        }
+
+        Route::middleware('web')->domain($domain)->group(function () use ($path): void {
+            Route::view($path, 'tenancy-foundation::contact')->name('public.contact');
+        });
     }
 
     protected function bootBindings(): void
