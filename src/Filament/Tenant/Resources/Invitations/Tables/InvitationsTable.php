@@ -7,13 +7,13 @@ use Filament\Actions\ActionGroup;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Column;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Enums\Authorisation\InvitationPermissions;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\EmailColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\TimestampColumns;
-use Filament\Tables\Columns\TextColumn;
 
 class InvitationsTable
 {

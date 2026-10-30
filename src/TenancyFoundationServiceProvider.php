@@ -13,12 +13,15 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
+use Slakbal\TenancyFoundation\Actions\Invitation\DeleteTenantInvitations;
+use Slakbal\TenancyFoundation\Actions\Invitation\RevokePendingInvitations;
 use Slakbal\TenancyFoundation\Console\InstallCommand;
 use Slakbal\TenancyFoundation\Events\AdminUserCreated;
 use Slakbal\TenancyFoundation\Events\ContactRequestAnswered;
 use Slakbal\TenancyFoundation\Events\ContactRequestReceived;
 use Slakbal\TenancyFoundation\Events\InvitationIssued;
 use Slakbal\TenancyFoundation\Events\TenantCancelled;
+use Slakbal\TenancyFoundation\Events\TenantDeleting;
 use Slakbal\TenancyFoundation\Events\TenantReactivated;
 use Slakbal\TenancyFoundation\Events\TenantRegistered;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureUserHasTenant;
@@ -26,6 +29,8 @@ use Slakbal\TenancyFoundation\Http\Responses\LogoutResponse;
 use Slakbal\TenancyFoundation\Http\Responses\RegistrationResponse;
 use Slakbal\TenancyFoundation\Jobs\DeleteDueTenants;
 use Slakbal\TenancyFoundation\Listeners\ActivateAdminOnPasswordReset;
+use Slakbal\TenancyFoundation\Listeners\CleanUpCancelledTenant;
+use Slakbal\TenancyFoundation\Listeners\CleanUpDeletedTenant;
 use Slakbal\TenancyFoundation\Listeners\NotifyAdminsOfContactRequest;
 use Slakbal\TenancyFoundation\Listeners\SendAdminInvitation;
 use Slakbal\TenancyFoundation\Listeners\SendCancellationNotification;
@@ -42,7 +47,7 @@ class TenancyFoundationServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/tenancy-foundation.php', 'tenancy-foundation');
-        $this->mergeConfigSections(['models', 'notifications', 'redirects', 'cancellation', 'contact_requests', 'features', 'invitations']);
+        $this->mergeConfigSections(['models', 'notifications', 'redirects', 'cancellation', 'contact_requests', 'features', 'invitations', 'cleanup']);
         $this->mergeConfigFrom(__DIR__.'/../config/filament-defaults.php', 'filament-defaults');
 
         $this->app->register(FilamentDefaultsServiceProvider::class);
@@ -143,12 +148,32 @@ class TenancyFoundationServiceProvider extends ServiceProvider
 
         if (config('tenancy-foundation.features.invitations')) {
             Event::listen(InvitationIssued::class, SendInvitationNotification::class);
+            $this->addCleanupActions('cancelled', [
+                RevokePendingInvitations::class,
+            ]);
+            $this->addCleanupActions('deleting', [
+                DeleteTenantInvitations::class,
+            ]);
             config('tenancy-foundation.models.role')::observe(RoleObserver::class);
         }
 
         if (config('tenancy-foundation.register_last_login_listener')) {
             Event::listen(Login::class, UpdateLastLogin::class);
         }
+
+        Event::listen(TenantCancelled::class, CleanUpCancelledTenant::class);
+        Event::listen(TenantDeleting::class, CleanUpDeletedTenant::class);
+    }
+
+    /**
+     * @param  array<int, class-string>  $actions
+     */
+    protected function addCleanupActions(string $moment, array $actions): void
+    {
+        config(["tenancy-foundation.cleanup.{$moment}" => array_values(array_unique([
+            ...$actions,
+            ...config("tenancy-foundation.cleanup.{$moment}", []),
+        ]))]);
     }
 
     protected function bootSchedule(): void

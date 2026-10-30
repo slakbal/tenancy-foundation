@@ -3,14 +3,14 @@
 namespace Slakbal\TenancyFoundation\Observers;
 
 use Illuminate\Database\Eloquent\Model;
+use Slakbal\TenancyFoundation\Actions\Invitation\ReleaseRoleInvitations;
 
 class RoleObserver
 {
+    public function __construct(private ReleaseRoleInvitations $releaseRoleInvitations) {}
+
     public function deleting(Model $role): void
     {
-        $invitations = config('tenancy-foundation.models.invitation')::query()->where('role_id', $role->getKey());
-
-        (clone $invitations)->pending()->delete();
-        $invitations->update(['role_id' => null]);
+        $this->releaseRoleInvitations->handle($role);
     }
 }

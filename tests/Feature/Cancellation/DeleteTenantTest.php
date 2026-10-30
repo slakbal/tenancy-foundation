@@ -120,3 +120,35 @@ test('deleting a tenant removes its invitations, accepted ones included, and kee
 
     expect(Invitation::query()->pluck('id')->all())->toBe([$elsewhere->getKey()]);
 });
+
+test('the action only deletes the tenant row itself, members and permission rows are removed by the listeners', function () {
+    Event::fake([TenantDeleting::class]);
+    $owner = User::factory()->create();
+    $tenant = dueTenant('acme', $owner);
+
+    app(DeleteTenant::class)->handle($tenant);
+
+    expect(Tenant::query()->whereKey($tenant->getKey())->exists())->toBeFalse()
+        ->and(User::query()->whereKey($owner->getKey())->exists())->toBeTrue()
+        ->and(DB::table('model_has_roles')->where(config('permission.column_names.team_foreign_key'), $tenant->getKey())->count())->toBe(1);
+});
+
+class RecordsMembersBeforeRemoval
+{
+    public static ?int $members = null;
+
+    public function handle(Tenant $tenant): void
+    {
+        self::$members = $tenant->members()->count();
+    }
+}
+
+test('actions added to the cleanup config run before the members and permission rows are removed', function () {
+    $tenant = dueTenant();
+    config(['tenancy-foundation.cleanup.deleting' => [...config('tenancy-foundation.cleanup.deleting'), RecordsMembersBeforeRemoval::class]]);
+
+    app(DeleteTenant::class)->handle($tenant);
+
+    expect(RecordsMembersBeforeRemoval::$members)->toBe(1)
+        ->and($tenant->members()->count())->toBe(0);
+});

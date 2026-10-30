@@ -16,38 +16,7 @@ readonly class DeleteTenant
         DB::transaction(function () use ($tenant): void {
             TenantDeleting::dispatch($tenant);
 
-            $this->deleteInvitations($tenant);
-            $this->deleteMembers($tenant);
-            $this->deletePermissionData($tenant);
-
             $tenant->delete();
         });
-    }
-
-    protected function deleteInvitations(Model $tenant): void
-    {
-        if (config('tenancy-foundation.features.invitations')) {
-            config('tenancy-foundation.models.invitation')::query()->where('tenant_id', $tenant->getKey())->delete();
-        }
-    }
-
-    protected function deleteMembers(Model $tenant): void
-    {
-        $exclusive = $tenant->members()
-            ->withTrashed()
-            ->whereDoesntHave('tenants', fn ($query) => $query->whereKeyNot($tenant->getKey()))
-            ->get();
-
-        $tenant->members()->detach();
-
-        $exclusive->each->forceDelete();
-    }
-
-    protected function deletePermissionData(Model $tenant): void
-    {
-        $team = config('permission.column_names.team_foreign_key');
-
-        collect(['model_has_roles', 'model_has_permissions', 'roles'])
-            ->each(fn (string $table) => DB::table(config("permission.table_names.{$table}"))->where($team, $tenant->getKey())->delete());
     }
 }

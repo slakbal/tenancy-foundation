@@ -81,3 +81,13 @@ test('cancelling revokes the pending invitations of that tenant only', function 
     expect(Invitation::query()->whereKey($pending->getKey())->exists())->toBeFalse()
         ->and(Invitation::query()->whereKey([$accepted->getKey(), $elsewhere->getKey()])->count())->toBe(2);
 });
+
+test('the action itself leaves the invitations alone, the listener on the cancelled event revokes them', function () {
+    Event::fake([TenantCancelled::class]);
+    $tenant = Tenant::factory()->create();
+    $pending = Invitation::factory()->create(['tenant_id' => $tenant->getKey()]);
+
+    app(CancelTenant::class)->handle($tenant);
+
+    expect(Invitation::query()->whereKey($pending->getKey())->exists())->toBeTrue();
+});

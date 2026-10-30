@@ -1,15 +1,15 @@
 <?php
 
-use Slakbal\TenancyFoundation\Filament\Tenant\Pages\AcceptInvitation;
-use Slakbal\TenancyFoundation\Models\Invitation;
-use Slakbal\TenancyFoundation\Models\Role;
-use Slakbal\TenancyFoundation\Models\Tenant;
-use Slakbal\TenancyFoundation\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
+use Slakbal\TenancyFoundation\Filament\Tenant\Pages\AcceptInvitation;
+use Slakbal\TenancyFoundation\Models\Invitation;
+use Slakbal\TenancyFoundation\Models\Role;
+use Slakbal\TenancyFoundation\Models\Tenant;
+use Slakbal\TenancyFoundation\Models\User;
 
 function invitationAcceptUrl(Invitation $invitation): string
 {

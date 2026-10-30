@@ -6,9 +6,9 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use UnitEnum;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Invitations\Pages\ListInvitations;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Invitations\Tables\InvitationsTable;
+use UnitEnum;
 
 class InvitationResource extends Resource
 {

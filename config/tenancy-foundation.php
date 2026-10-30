@@ -122,6 +122,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Tenant cleanup
+    |--------------------------------------------------------------------------
+    |
+    | Action classes (with a handle(Model $tenant) method) run in order when a
+    | tenant is cancelled or deleted. Add your own to clean up data you own.
+    | The package adds its own (such as the invitation cleanup when the
+    | invitations feature is on) and always removes the members and the
+    | permission rows last on deletion, after every action listed here.
+    |
+    | cancelled  Run after a tenant was cancelled (TenantCancelled).
+    | deleting   Run inside the deletion transaction, while the tenant still
+    |            exists (TenantDeleting). A failing action rolls the deletion back.
+    |
+    */
+
+    'cleanup' => [
+        'cancelled' => [],
+        'deleting' => [],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Reserved subdomains
     |--------------------------------------------------------------------------
     |
