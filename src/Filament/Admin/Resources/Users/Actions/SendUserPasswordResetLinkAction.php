@@ -3,6 +3,7 @@
 namespace Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions;
 
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +18,7 @@ class SendUserPasswordResetLinkAction
             ->label(__('Send password reset link'))
             ->icon(Heroicon::OutlinedKey)
             ->color('info')
+            ->visible(fn (Model $record): bool => ! $record->trashed() && ! Filament::auth()->user()?->is($record))
             ->authorize('sendPasswordResetLink')
             ->requiresConfirmation()
             ->modalHeading(fn (Model $record): string => __('Send a password reset link to :email?', ['email' => $record->email]))

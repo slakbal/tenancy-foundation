@@ -7,8 +7,13 @@ use Illuminate\Support\Facades\Password;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder;
+use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\ListAdminUsers;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ViewTenant;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\RelationManagers\UsersRelationManager;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\ListUsers;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\ViewUser;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\User;
@@ -80,4 +85,42 @@ test('marking the email verified sets the timestamp and then hides the action', 
         ->assertActionHidden('markEmailVerified');
 
     expect($this->user->fresh()->email_verified_at)->not->toBeNull();
+});
+
+test('the users table sends the reset link for support but not for a deleted user', function () {
+    Notification::fake();
+    signInAdmin(AdminRoles::SUPPORT);
+    $deleted = User::factory()->create();
+    $deleted->delete();
+
+    Livewire::test(ListUsers::class)
+        ->callTableAction('sendPasswordResetLink', $this->user)
+        ->assertNotified()
+        ->filterTable('trashed', true)
+        ->assertTableActionHidden('sendPasswordResetLink', $deleted);
+
+    Notification::assertSentTo($this->user, ResetPassword::class);
+});
+
+test('the tenant users tab sends the reset link to a member', function () {
+    Notification::fake();
+    signInAdmin(AdminRoles::SUPPORT);
+    $tenant = $this->user->tenants()->first();
+    $row = $tenant->members()->find($this->user->getKey());
+
+    Livewire::test(UsersRelationManager::class, ['ownerRecord' => $tenant, 'pageClass' => ViewTenant::class])
+        ->callTableAction('sendPasswordResetLink', $row)
+        ->assertNotified();
+
+    Notification::assertSentTo($this->user, ResetPassword::class);
+});
+
+test('an admin is not offered a reset link for their own account', function () {
+    $self = signInAdmin(AdminRoles::SUPER_ADMIN);
+    $self->forceFill(['status' => AdminStatus::ACTIVE])->save();
+    $other = Admin::factory()->create(['status' => AdminStatus::ACTIVE]);
+
+    Livewire::test(ListAdminUsers::class)
+        ->assertTableActionHidden('sendPasswordResetLink', $self)
+        ->assertTableActionVisible('sendPasswordResetLink', $other);
 });

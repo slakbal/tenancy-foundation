@@ -6,6 +6,7 @@ use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Table;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\SendUserPasswordResetLinkAction;
 use Slakbal\TenancyFoundation\Filament\Components\Resources\Users\UsersTable as BaseUsersTable;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\VerifiedColumn;
@@ -45,6 +46,7 @@ class UsersTable extends BaseUsersTable
         return [
             ImpersonateUserAction::make(), // see admin model for authorization method: canImpersonate
             ViewAction::make(),
+            SendUserPasswordResetLinkAction::make(),
             ...parent::rowActions(),
         ];
     }

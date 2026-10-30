@@ -19,12 +19,14 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\MakeUserTen
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\ManageTenantRolesAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\RemoveUserFromTenantAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\RemoveUserTenantOwnerAction;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\SendUserPasswordResetLinkAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\EmailColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\NameColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\VerifiedColumn;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Filters\VerifiedFilter;
 use Slakbal\TenancyFoundation\Support\TenantUserRoles;
 
 class TenantUsersTable
@@ -88,6 +90,7 @@ class TenantUsersTable
                 ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
                     ? $query->whereKey($roles->userIdsWithRole($data['value']))
                     : $query),
+            VerifiedFilter::make(),
             TernaryFilter::make('is_owner')
                 ->label(__('Owner'))
                 ->queries(
@@ -113,6 +116,7 @@ class TenantUsersTable
                 MakeUserTenantOwnerAction::make(tenant: $tenant),
                 RemoveUserTenantOwnerAction::make(tenant: $tenant),
                 ManageTenantRolesAction::make(tenant: $tenant),
+                SendUserPasswordResetLinkAction::make(),
                 RemoveUserFromTenantAction::make(tenant: $tenant),
                 ImpersonateUserAction::make(),
             ]),

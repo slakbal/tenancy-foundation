@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- Verified (email) icon column on the admin portal users, admin users, tenant users relation manager and tenant panel users tables (`Components\Tables\Columns\VerifiedColumn`, sortable).
+- "Send password reset link" is also a row action on the admin portal users table and the tenant Users relation manager; it is hidden for deleted users and, on both reset actions (users and admins), for your own row.
+- Verified (email) icon column on the admin portal users, admin users, tenant users relation manager and tenant panel users tables (`Components\Tables\Columns\VerifiedColumn`, sortable). A matching verified filter (Filament's default Yes/No/All ternary) is on the same tables.
 - `RedirectDeletedUserHome` (tenant panel, persistent): a user whose session is still signed in but whose account was deleted is sent to `app.url` and the session is cleared, instead of landing on a login redirect on the tenant subdomain.
 - Soft deleted users in the tenant users table only offer restore and force delete: edit (shared `UsersTable`, so the admin users table too), make owner, remove ownership and remove from tenant are hidden for trashed records.
 - Email change verification is on for both panels (`email_change_verification`, default `true`; `false` saves profile email changes directly). The old email stays until the link sent to the new address is used (valid one hour, marks the email verified); the old address gets a notice with a block link. Add the key to published configs.

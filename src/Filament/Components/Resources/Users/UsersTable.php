@@ -21,6 +21,7 @@ use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\EmailColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\LastLoginColumns;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\NameColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\TimestampColumns;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Filters\VerifiedFilter;
 
 class UsersTable
 {
@@ -45,6 +46,7 @@ class UsersTable
     protected static function filters(): array
     {
         return [
+            VerifiedFilter::make(),
             TrashedFilter::make(),
         ];
     }

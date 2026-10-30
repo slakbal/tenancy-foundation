@@ -30,6 +30,7 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\Resend
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\SendAdminPasswordResetLinkAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\VerifiedColumn;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Filters\VerifiedFilter;
 
 class AdminUsersTable
 {
@@ -92,6 +93,7 @@ class AdminUsersTable
             SelectFilter::make('status')
                 ->label(__('Status'))
                 ->options(AdminStatus::class),
+            VerifiedFilter::make(),
             TrashedFilter::make(),
         ];
     }
