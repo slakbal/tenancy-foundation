@@ -9,11 +9,13 @@ use Illuminate\Support\Facades\Gate;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Filament\Pages\EditProfile;
 use Slakbal\TenancyFoundation\Filament\Pages\EditTenantProfile;
+use Slakbal\TenancyFoundation\Filament\Tenant\Pages\AcceptInvitation;
 use Slakbal\TenancyFoundation\Filament\Pages\EmailVerificationPrompt;
 use Slakbal\TenancyFoundation\Filament\Pages\RegisterTenant;
 use Slakbal\TenancyFoundation\Filament\Pages\RegisterUser;
 use Slakbal\TenancyFoundation\Filament\Pages\ResetPassword;
 use Slakbal\TenancyFoundation\Filament\Tenant\Pages\ContactUs;
+use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Invitations\InvitationResource;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureTenantIsNotCancelled;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureUserHasTenant;
@@ -36,6 +38,10 @@ class TenantPlugin implements Plugin
     protected string $contactPage = ContactUs::class;
 
     protected string $profilePage = EditProfile::class;
+
+    protected string $acceptInvitationPage = AcceptInvitation::class;
+
+    protected string $invitationResource = InvitationResource::class;
 
     public static function make(): static
     {
@@ -89,8 +95,27 @@ class TenantPlugin implements Plugin
         return $this;
     }
 
+    public function usingInvitationResource(string $resource): static
+    {
+        $this->invitationResource = $resource;
+
+        return $this;
+    }
+
+    public function usingAcceptInvitationPage(string $page): static
+    {
+        $this->acceptInvitationPage = $page;
+
+        return $this;
+    }
+
     public function register(Panel $panel): void
     {
+        if (config('tenancy-foundation.features.invitations')) {
+            $panel->routes(fn (Panel $panel) => $this->acceptInvitationPage::routes($panel));
+            $panel->resources([$this->invitationResource]);
+        }
+
         $panel
             ->tenant(config('tenancy-foundation.models.tenant'), slugAttribute: 'subdomain')
             ->tenantDomain('{tenant:subdomain}.'.config('tenancy-foundation.domain'))

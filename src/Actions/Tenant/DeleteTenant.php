@@ -16,11 +16,19 @@ readonly class DeleteTenant
         DB::transaction(function () use ($tenant): void {
             TenantDeleting::dispatch($tenant);
 
+            $this->deleteInvitations($tenant);
             $this->deleteMembers($tenant);
             $this->deletePermissionData($tenant);
 
             $tenant->delete();
         });
+    }
+
+    protected function deleteInvitations(Model $tenant): void
+    {
+        if (config('tenancy-foundation.features.invitations')) {
+            config('tenancy-foundation.models.invitation')::query()->where('tenant_id', $tenant->getKey())->delete();
+        }
     }
 
     protected function deleteMembers(Model $tenant): void

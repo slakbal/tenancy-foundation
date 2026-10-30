@@ -4,6 +4,7 @@ namespace Slakbal\TenancyFoundation\Database\Seeders;
 
 use BackedEnum;
 use Illuminate\Database\Seeder;
+use Slakbal\TenancyFoundation\Enums\Authorisation\InvitationPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Enums\FilamentPanel;
@@ -17,7 +18,10 @@ class TenantRolePermissionsSeeder extends Seeder
      */
     protected function permissionEnums(): array
     {
-        return [TenantPermissions::class];
+        return array_filter([
+            TenantPermissions::class,
+            config('tenancy-foundation.features.invitations') ? InvitationPermissions::class : null,
+        ]);
     }
 
     /**
@@ -28,6 +32,7 @@ class TenantRolePermissionsSeeder extends Seeder
         return [
             TenantPermissions::USER_VIEW_ANY,
             TenantPermissions::USER_VIEW,
+            ...(config('tenancy-foundation.features.invitations') ? [InvitationPermissions::INVITATION_VIEW_ANY, InvitationPermissions::INVITATION_VIEW] : []),
         ];
     }
 

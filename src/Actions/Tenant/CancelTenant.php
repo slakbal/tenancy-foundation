@@ -22,6 +22,10 @@ readonly class CancelTenant
                 'scheduled_for_deletion_at' => now()->addDays((int) config('tenancy-foundation.cancellation.grace_days'))->endOfDay(),
             ])->save();
 
+            if (config('tenancy-foundation.features.invitations')) {
+                config('tenancy-foundation.models.invitation')::query()->pending()->where('tenant_id', $tenant->getKey())->delete();
+            }
+
             DB::afterCommit(fn () => TenantCancelled::dispatch($tenant));
 
             return $tenant;

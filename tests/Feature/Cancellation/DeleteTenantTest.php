@@ -7,6 +7,7 @@ use Slakbal\TenancyFoundation\Actions\Tenant\DeleteTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Events\TenantDeleting;
+use Slakbal\TenancyFoundation\Models\Invitation;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
 use Spatie\Permission\Models\Role;
@@ -107,4 +108,15 @@ test('a failing cleanup listener rolls the whole deletion back', function () {
     expect(Tenant::query()->whereKey($tenant->getKey())->exists())->toBeTrue()
         ->and(User::query()->whereKey($owner->getKey())->exists())->toBeTrue()
         ->and(DB::table('model_has_roles')->where(config('permission.column_names.team_foreign_key'), $tenant->getKey())->count())->toBe(1);
+});
+
+test('deleting a tenant removes its invitations, accepted ones included, and keeps other tenants invitations', function () {
+    $tenant = dueTenant();
+    Invitation::factory()->create(['tenant_id' => $tenant->getKey()]);
+    Invitation::factory()->create(['tenant_id' => $tenant->getKey(), 'accepted_at' => now()->subDay()]);
+    $elsewhere = Invitation::factory()->create();
+
+    app(DeleteTenant::class)->handle($tenant);
+
+    expect(Invitation::query()->pluck('id')->all())->toBe([$elsewhere->getKey()]);
 });

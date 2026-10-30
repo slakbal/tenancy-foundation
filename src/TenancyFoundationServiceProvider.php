@@ -17,6 +17,7 @@ use Slakbal\TenancyFoundation\Console\InstallCommand;
 use Slakbal\TenancyFoundation\Events\AdminUserCreated;
 use Slakbal\TenancyFoundation\Events\ContactRequestAnswered;
 use Slakbal\TenancyFoundation\Events\ContactRequestReceived;
+use Slakbal\TenancyFoundation\Events\InvitationIssued;
 use Slakbal\TenancyFoundation\Events\TenantCancelled;
 use Slakbal\TenancyFoundation\Events\TenantReactivated;
 use Slakbal\TenancyFoundation\Events\TenantRegistered;
@@ -29,17 +30,19 @@ use Slakbal\TenancyFoundation\Listeners\NotifyAdminsOfContactRequest;
 use Slakbal\TenancyFoundation\Listeners\SendAdminInvitation;
 use Slakbal\TenancyFoundation\Listeners\SendCancellationNotification;
 use Slakbal\TenancyFoundation\Listeners\SendContactResponseNotification;
+use Slakbal\TenancyFoundation\Listeners\SendInvitationNotification;
 use Slakbal\TenancyFoundation\Listeners\SendReactivationNotification;
 use Slakbal\TenancyFoundation\Listeners\SendWelcomeNotification;
 use Slakbal\TenancyFoundation\Listeners\UpdateLastLogin;
 use Slakbal\TenancyFoundation\Livewire\PublicContactForm;
+use Slakbal\TenancyFoundation\Observers\RoleObserver;
 
 class TenancyFoundationServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/tenancy-foundation.php', 'tenancy-foundation');
-        $this->mergeConfigSections(['models', 'notifications', 'redirects', 'cancellation', 'contact_requests']);
+        $this->mergeConfigSections(['models', 'notifications', 'redirects', 'cancellation', 'contact_requests', 'features', 'invitations']);
         $this->mergeConfigFrom(__DIR__.'/../config/filament-defaults.php', 'filament-defaults');
 
         $this->app->register(FilamentDefaultsServiceProvider::class);
@@ -138,6 +141,11 @@ class TenancyFoundationServiceProvider extends ServiceProvider
         Event::listen(ContactRequestReceived::class, NotifyAdminsOfContactRequest::class);
         Event::listen(ContactRequestAnswered::class, SendContactResponseNotification::class);
 
+        if (config('tenancy-foundation.features.invitations')) {
+            Event::listen(InvitationIssued::class, SendInvitationNotification::class);
+            config('tenancy-foundation.models.role')::observe(RoleObserver::class);
+        }
+
         if (config('tenancy-foundation.register_last_login_listener')) {
             Event::listen(Login::class, UpdateLastLogin::class);
         }
@@ -172,9 +180,10 @@ class TenancyFoundationServiceProvider extends ServiceProvider
      */
     protected function prunableModels(): array
     {
-        return [
+        return array_filter([
             config('tenancy-foundation.models.contact_request'),
-        ];
+            config('tenancy-foundation.features.invitations') ? config('tenancy-foundation.models.invitation') : null,
+        ]);
     }
 
     protected function bootConsole(): void

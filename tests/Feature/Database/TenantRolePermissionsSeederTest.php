@@ -2,6 +2,7 @@
 
 use Slakbal\TenancyFoundation\Database\Seeders\TenantRolePermissionsSeeder;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
+use Slakbal\TenancyFoundation\Enums\Authorisation\InvitationPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Spatie\Permission\Models\Role;
@@ -17,9 +18,9 @@ it('gives the owner role no permission rows because the owner bypasses checks', 
     expect(tenantRolePermissions(TenantRoles::OWNER))->toBe([]);
 });
 
-it('gives the admin role every permission', function () {
+it('gives the admin role every permission, invitations included', function () {
     expect(tenantRolePermissions(TenantRoles::ADMIN))
-        ->toBe(collect(TenantPermissions::cases())->pluck('value')->sort()->values()->all());
+        ->toBe(collect([...TenantPermissions::cases(), ...InvitationPermissions::cases()])->pluck('value')->sort()->values()->all());
 });
 
 it('clears owner permission rows left behind by an earlier seed', function () {
@@ -30,7 +31,16 @@ it('clears owner permission rows left behind by an earlier seed', function () {
     expect(tenantRolePermissions(TenantRoles::OWNER))->toBe([]);
 });
 
-it('limits the view only role to viewing users', function () {
+it('limits the view only role to viewing users and invitations', function () {
     expect(tenantRolePermissions(TenantRoles::VIEW_ONLY))
-        ->toBe([TenantPermissions::USER_VIEW->value, TenantPermissions::USER_VIEW_ANY->value]);
+        ->toBe(collect([TenantPermissions::USER_VIEW, TenantPermissions::USER_VIEW_ANY, InvitationPermissions::INVITATION_VIEW, InvitationPermissions::INVITATION_VIEW_ANY])->pluck('value')->sort()->values()->all());
+});
+
+it('leaves the invitation permissions out when the feature is off', function () {
+    config(['tenancy-foundation.features.invitations' => false]);
+
+    $this->seed(TenantRolePermissionsSeeder::class);
+
+    expect(tenantRolePermissions(TenantRoles::ADMIN))
+        ->not->toContain(InvitationPermissions::INVITATION_CREATE->value);
 });

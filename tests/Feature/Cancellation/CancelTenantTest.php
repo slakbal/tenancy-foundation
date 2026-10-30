@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Slakbal\TenancyFoundation\Actions\Tenant\CancelTenant;
 use Slakbal\TenancyFoundation\Events\TenantCancelled;
+use Slakbal\TenancyFoundation\Models\Invitation;
 use Slakbal\TenancyFoundation\Models\Tenant;
 
 beforeEach(function () {
@@ -67,4 +68,16 @@ test('a stale instance is refreshed before it is cancelled', function () {
     $result = app(CancelTenant::class)->handle($tenant);
 
     expect($result->cancelled_at->toDateTimeString())->toBe('2026-10-01 08:00:00');
+});
+
+test('cancelling revokes the pending invitations of that tenant only', function () {
+    $tenant = Tenant::factory()->create();
+    $pending = Invitation::factory()->create(['tenant_id' => $tenant->getKey()]);
+    $accepted = Invitation::factory()->create(['tenant_id' => $tenant->getKey(), 'accepted_at' => now()->subDay()]);
+    $elsewhere = Invitation::factory()->create();
+
+    app(CancelTenant::class)->handle($tenant);
+
+    expect(Invitation::query()->whereKey($pending->getKey())->exists())->toBeFalse()
+        ->and(Invitation::query()->whereKey([$accepted->getKey(), $elsewhere->getKey()])->count())->toBe(2);
 });

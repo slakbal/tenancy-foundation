@@ -207,5 +207,21 @@
     "The name of the user. The sign in email is changed by the user on their own profile.": "The name of the user. The sign in email is changed by the user on their own profile.",
     "This user belongs to other tenants, so only they can change their name.": "This user belongs to other tenants, so only they can change their name.",
     "The roles decide what the user can do in this tenant.": "The roles decide what the user can do in this tenant.",
-    "The roles of an owner or of yourself cannot be changed here.": "The roles of an owner or of yourself cannot be changed here."
+    "The roles of an owner or of yourself cannot be changed here.": "The roles of an owner or of yourself cannot be changed here.",
+    "Accept invitation": "Accept invitation",
+    "Join :tenant": "Join :tenant",
+    "You were invited as :email.": "You were invited as :email.",
+    "Password": "Password",
+    "Confirm password": "Confirm password",
+    "This invitation has expired": "This invitation has expired",
+    "This invitation was already accepted": "This invitation was already accepted",
+    "Ask the person who invited you to send a new invitation.": "Ask the person who invited you to send a new invitation.",
+    "You can sign in with your existing account.": "You can sign in with your existing account.",
+    "Invitation accepted": "Invitation accepted",
+    "You have been invited to join :tenant.": "You have been invited to join :tenant.",
+    "This invitation expires on :date.": "This invitation expires on :date.",
+    "The owner role cannot be given through an invitation.": "The owner role cannot be given through an invitation.",
+    ":email already belongs to this tenant.": ":email already belongs to this tenant.",
+    "This invitation was already accepted or has expired.": "This invitation was already accepted or has expired.",
+    "The account of this email was deleted. Ask an admin to restore it.": "The account of this email was deleted. Ask an admin to restore it."
 }

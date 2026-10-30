@@ -57,6 +57,7 @@ abstract class TestCase extends Orchestra
     protected function defineEnvironment($app): void
     {
         $app['config']->set('database.default', 'testing');
+        $app['config']->set('database.connections.testing.foreign_key_constraints', true);
         $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
         $app['config']->set('tenancy-foundation.domain', 'tenant.test');
         $app['config']->set('auth.providers.users.model', User::class);

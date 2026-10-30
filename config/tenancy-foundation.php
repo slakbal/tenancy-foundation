@@ -3,6 +3,7 @@
 use Slakbal\TenancyFoundation\Livewire\PublicContactForm;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\ContactRequest;
+use Slakbal\TenancyFoundation\Models\Invitation;
 use Slakbal\TenancyFoundation\Models\Role;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
@@ -10,6 +11,7 @@ use Slakbal\TenancyFoundation\Notifications\AccountCancelled;
 use Slakbal\TenancyFoundation\Notifications\AccountReactivated;
 use Slakbal\TenancyFoundation\Notifications\AdminInvited;
 use Slakbal\TenancyFoundation\Notifications\ContactRequestResponded;
+use Slakbal\TenancyFoundation\Notifications\InvitationCreated;
 use Slakbal\TenancyFoundation\Notifications\NewContactRequest;
 use Slakbal\TenancyFoundation\Notifications\WelcomeToTenant;
 
@@ -44,6 +46,7 @@ return [
     | admin            Admin panel users; also the model of the "admins" provider.
     | role             The Spatie role model.
     | contact_request  Public and tenant contact form submissions.
+    | invitation       Invitations to join a tenant (only with features.invitations).
     |
     */
 
@@ -53,6 +56,7 @@ return [
         'admin' => Admin::class,
         'role' => Role::class,
         'contact_request' => ContactRequest::class,
+        'invitation' => Invitation::class,
     ],
 
     /*
@@ -82,6 +86,39 @@ return [
     */
 
     'email_change_verification' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Features
+    |--------------------------------------------------------------------------
+    |
+    | invitations  Invite people into a tenant by email: the tenant panel
+    |              invitations resource and accept page, the invitation
+    |              permissions and the pruning of old invitations. Set to false
+    |              for a product without invitations. The migrations always run,
+    |              whatever the flags say.
+    |
+    */
+
+    'features' => [
+        'invitations' => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Invitations
+    |--------------------------------------------------------------------------
+    |
+    | expiry_days     Days an invitation link stays valid.
+    | retention_days  Accepted invitations are pruned this many days after they
+    |                 were accepted; unaccepted ones when they expire.
+    |
+    */
+
+    'invitations' => [
+        'expiry_days' => env('INVITATION_EXPIRY_DAYS', 7),
+        'retention_days' => env('INVITATION_RETENTION_DAYS', 30),
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -129,6 +166,8 @@ return [
     |                   their contact request.
     | contact_received  Sent to the admin panel bell (database notification)
     |                   when a new contact request comes in.
+    | invitation_created  Emailed to the invited person with a signed accept link
+    |                   (only with features.invitations).
     |
     */
 
@@ -139,6 +178,7 @@ return [
         'admin_invited' => AdminInvited::class,
         'contact_response' => ContactRequestResponded::class,
         'contact_received' => NewContactRequest::class,
+        'invitation_created' => InvitationCreated::class,
     ],
 
     /*
