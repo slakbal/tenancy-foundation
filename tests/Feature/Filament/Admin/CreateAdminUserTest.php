@@ -38,7 +38,7 @@ function creatingAdmin(AdminRoles $role = AdminRoles::ADMIN, bool $mayCreate = t
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
     foreach (AdminRoles::cases() as $role) {
         Role::findOrCreate($role->value, AuthGuard::ADMIN->value);

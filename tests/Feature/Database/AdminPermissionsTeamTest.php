@@ -9,7 +9,7 @@ use Slakbal\TenancyFoundation\Models\User;
 use Spatie\Permission\Models\Role;
 
 beforeEach(function () {
-    $this->adminTeam = config('tenancy-foundation.admin_permissions_team_id');
+    $this->adminTeam = Admin::PERMISSIONS_TEAM_ID;
     $this->tenant = Tenant::factory()->create();
 });
 

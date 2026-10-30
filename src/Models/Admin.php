@@ -22,6 +22,8 @@ class Admin extends Authenticatable implements FilamentUser
     /** @use HasFactory<AdminFactory> */
     use CanImpersonate, HasFactory, HasRoles, HasUlidKey, IsAdminUser, Notifiable, SoftDeletes;
 
+    public const int PERMISSIONS_TEAM_ID = 0;
+
     protected string $guard_name = AuthGuard::ADMIN->value;
 
     protected $attributes = [

@@ -13,7 +13,7 @@ use Slakbal\TenancyFoundation\Models\User;
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
     $this->actingAs(adminWithAccess(AdminRoles::SUPER_ADMIN, AdminPermissions::ADMIN_USER_VIEW_ANY, AdminPermissions::USER_VIEW_ANY), AuthGuard::ADMIN->value);
 });

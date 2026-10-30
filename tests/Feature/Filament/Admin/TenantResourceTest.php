@@ -28,7 +28,7 @@ function tenantWithOwner(string $subdomain): Tenant
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
     $this->travelTo('2026-10-28 09:30:00');
     config(['tenancy-foundation.cancellation.grace_days' => 30]);
@@ -36,7 +36,7 @@ beforeEach(function () {
     $this->live = tenantWithOwner('live');
     $this->gone = app(CancelTenant::class)->handle(tenantWithOwner('gone'));
 
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 });
 
 function actAsManager(): Admin

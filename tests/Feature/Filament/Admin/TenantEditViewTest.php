@@ -29,13 +29,13 @@ function tenantPageAdmin(AdminPermissions ...$permissions): Admin
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
     $this->owner = User::factory()->create(['email' => 'owner@acme.test']);
     $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
     $this->other = app(CreateTenant::class)->handle(['name' => 'Globex', 'subdomain' => 'globex'], User::factory()->create());
 
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 });
 
 test('viewing a tenant needs the view permission', function () {
@@ -105,7 +105,7 @@ test('a tenant can be cancelled and reactivated from the view page, but only wit
         ->callAction('cancel');
 
     expect($this->tenant->refresh()->isCancelled())->toBeTrue();
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
     Livewire::test(ViewTenant::class, ['record' => $this->tenant->getRouteKey()])
         ->assertActionHidden('cancel')
@@ -133,7 +133,7 @@ test('the users tab lists only the tenant members with their tenant role and own
     $member = User::factory()->create(['email' => 'member@acme.test']);
     $this->tenant->members()->attach($member);
     app(AssignTenantRole::class)->handle($member, $this->tenant, TenantRoles::VIEW_ONLY);
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
     $outsider = $this->other->members()->first();
     $rows = $this->tenant->members()->get()->keyBy('email');
@@ -170,7 +170,7 @@ test('the users tab is hidden without the user view permission', function () {
 test('a cancelled tenant can still be viewed and edited', function () {
     tenantPageAdmin(AdminPermissions::TENANT_VIEW, AdminPermissions::TENANT_UPDATE);
     app(CancelTenant::class)->handle($this->tenant);
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
     Livewire::test(ViewTenant::class, ['record' => $this->tenant->getRouteKey()])->assertSuccessful();
     Livewire::test(EditTenant::class, ['record' => $this->tenant->getRouteKey()])->assertSuccessful();

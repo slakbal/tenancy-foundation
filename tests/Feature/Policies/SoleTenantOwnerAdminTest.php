@@ -1,5 +1,6 @@
 <?php
 
+use Slakbal\TenancyFoundation\Models\Admin;
 use Filament\Facades\Filament;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\TransferTenantOwnership;
@@ -16,7 +17,7 @@ beforeEach(function () {
 
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 });
 
 test('an admin cannot delete a sole tenant owner but can delete other users', function (array $grants) {
@@ -35,7 +36,7 @@ test('an admin can delete the former owner once ownership was transferred', func
     $admin = adminWithAccess(AdminRoles::SUPER_ADMIN);
 
     app(TransferTenantOwnership::class)->handle($this->tenant, $this->member, $this->owner);
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
     expect($admin->can('delete', $this->owner))->toBeTrue();
 });

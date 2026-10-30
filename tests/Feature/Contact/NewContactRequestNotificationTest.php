@@ -18,7 +18,7 @@ use Spatie\Permission\Models\Role;
 
 function contactNotifiableAdmin(?AdminPermissions $permission = null, ?AdminRoles $role = null): Admin
 {
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
     $admin = Admin::factory()->create();
 
     if ($permission) {

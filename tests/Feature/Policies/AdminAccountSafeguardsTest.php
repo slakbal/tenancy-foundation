@@ -19,7 +19,7 @@ function safeguardAdmin(?AdminRoles $role = null, bool $withAdminUserPermissions
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 });
 
 it('stops an admin deleting themselves', function (AdminRoles $role, bool $withAdminUserPermissions) {

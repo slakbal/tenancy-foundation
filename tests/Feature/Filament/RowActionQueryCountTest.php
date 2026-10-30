@@ -1,5 +1,6 @@
 <?php
 
+use Slakbal\TenancyFoundation\Models\Admin;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -44,7 +45,7 @@ function assertQueryCountIsConstant(string $component, Closure $parameters, Clos
 test('the tenant users tab keeps its query count with the owner, role and removal actions', function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
     $this->actingAs(adminWithAccess(AdminPermissions::TENANT_VIEW_ANY, AdminPermissions::TENANT_VIEW, AdminPermissions::USER_VIEW_ANY, AdminPermissions::USER_UPDATE), AuthGuard::ADMIN->value);
 
     $tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], User::factory()->create());
@@ -64,7 +65,7 @@ test('the tenant users tab keeps its query count with the owner, role and remova
 test('the user tenants tab keeps its query count with the owner, role and removal actions', function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
     $this->actingAs(adminWithAccess(AdminPermissions::TENANT_VIEW_ANY, AdminPermissions::TENANT_VIEW, AdminPermissions::USER_VIEW_ANY, AdminPermissions::USER_VIEW, AdminPermissions::USER_UPDATE), AuthGuard::ADMIN->value);
 
     $user = User::factory()->create();

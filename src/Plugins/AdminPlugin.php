@@ -2,6 +2,7 @@
 
 namespace Slakbal\TenancyFoundation\Plugins;
 
+use Slakbal\TenancyFoundation\Models\Admin;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Illuminate\Auth\Access\Response;
@@ -87,7 +88,7 @@ class AdminPlugin implements Plugin
 
     public function boot(Panel $panel): void
     {
-        setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+        setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
         Gate::before(function ($user, $ability, $arguments = []): Response|bool|null {
             if ($denial = SoleOwnerGuard::denial($ability, $arguments) ?? AdminAccountGuard::denial($user, $ability, $arguments)) {

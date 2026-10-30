@@ -32,7 +32,7 @@ function adminUserTarget(AdminRoles $role = AdminRoles::SUPPORT): Admin
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 });
 
 it('lists admins with their roles for an admin who may view them', function () {

@@ -1,5 +1,6 @@
 <?php
 
+use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
@@ -45,7 +46,7 @@ it('lets the support role view admins but not change them', function () {
 });
 
 it('gives the admin and support roles the right tenant permissions', function () {
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
     $tenantPermissions = fn (AdminRoles $role): array => collect(adminRolePermissions($role))
         ->filter(fn (string $name): bool => str_starts_with($name, 'tenant.'))

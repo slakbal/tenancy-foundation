@@ -29,7 +29,7 @@ function statusTarget(AdminRoles $role = AdminRoles::SUPPORT): Admin
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 });
 
 it('deactivates an active admin and clears the remember token', function () {

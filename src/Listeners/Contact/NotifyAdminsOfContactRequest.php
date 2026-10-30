@@ -2,6 +2,7 @@
 
 namespace Slakbal\TenancyFoundation\Listeners\Contact;
 
+use Slakbal\TenancyFoundation\Models\Admin;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Notification;
@@ -30,7 +31,7 @@ class NotifyAdminsOfContactRequest implements ShouldQueue
         $registrar = app(PermissionRegistrar::class);
         $previousTeamId = $registrar->getPermissionsTeamId();
 
-        $registrar->setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+        $registrar->setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
         try {
             return config('tenancy-foundation.models.admin')::query()

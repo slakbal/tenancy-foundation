@@ -135,23 +135,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Admin permissions team id
-    |--------------------------------------------------------------------------
-    |
-    | Spatie permissions run with teams enabled and the team is the tenant.
-    | Admin roles and permissions are not tenant specific, so admin role
-    | assignments are stored under this one fixed team id. It must never be
-    | a real tenant id, so the default is 0 (auto increment ids start at 1).
-    | It is applied when the admin panel boots and whenever the package
-    | checks admin permissions outside that panel (for example when
-    | notifying admins of a new contact request).
-    |
-    */
-
-    'admin_permissions_team_id' => 0,
-
-    /*
-    |--------------------------------------------------------------------------
     | Notifications
     |--------------------------------------------------------------------------
     |

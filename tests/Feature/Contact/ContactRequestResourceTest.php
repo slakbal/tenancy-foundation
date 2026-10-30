@@ -41,7 +41,7 @@ function contactAdminWith(AdminPermissions ...$permissions): Admin
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
     $this->travelTo('2026-10-28 09:30:00');
 });

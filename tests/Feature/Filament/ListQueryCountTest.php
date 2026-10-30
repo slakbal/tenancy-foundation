@@ -1,5 +1,6 @@
 <?php
 
+use Slakbal\TenancyFoundation\Models\Admin;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -76,7 +77,7 @@ test('the tenant users list runs the same number of queries regardless of row co
 test('the admin tenants list runs the same number of queries regardless of row count', function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
     $this->actingAs(adminWithAccess(AdminPermissions::TENANT_VIEW_ANY), AuthGuard::ADMIN->value);
 
@@ -88,6 +89,6 @@ test('the admin tenants list runs the same number of queries regardless of row c
             app(CreateTenant::class)->handle(['name' => "Extra {$created}", 'subdomain' => "extra{$created}"], User::factory()->create());
         }
 
-        setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+        setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
     });
 });

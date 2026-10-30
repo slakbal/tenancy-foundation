@@ -29,7 +29,7 @@ it('decides panel access from the admin state', function (string $state, bool $c
 ]);
 
 it('refuses an already signed in admin on the next request once deactivated', function () {
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
     $admin = Admin::factory()->create();
     Role::findOrCreate(AdminRoles::SUPER_ADMIN->value, AuthGuard::ADMIN->value);
     $admin->assignRole(AdminRoles::SUPER_ADMIN);
