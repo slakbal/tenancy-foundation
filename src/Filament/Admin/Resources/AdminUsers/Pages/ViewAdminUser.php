@@ -34,6 +34,6 @@ class ViewAdminUser extends ViewRecord
             DeleteAction::make(),
             RestoreAction::make(),
             ForceDeleteAction::make(),
-            ];
+        ];
     }
 }

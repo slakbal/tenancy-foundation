@@ -29,4 +29,3 @@ test('a request created without a source falls back to public', function () {
 
     expect(ContactRequest::query()->first()->source)->toBe(ContactSource::PUBLIC);
 });
-

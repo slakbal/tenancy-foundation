@@ -6,8 +6,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
-use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Actions\Roles\AssignTenantRole;
+use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 
 readonly class TransferTenantOwnership
 {

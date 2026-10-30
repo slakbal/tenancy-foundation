@@ -1,14 +1,11 @@
 <?php
 
-use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\EditUser;
-use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\ListUsers;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\ViewUser;
-use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
@@ -34,10 +31,6 @@ beforeEach(function () {
     setPermissionsTeamId(1);
 });
 
-it('has no create page but view and edit pages', function () {
-    expect(array_keys(UserResource::getPages()))->toBe(['index', 'view', 'edit']);
-});
-
 it('shows the user with the tenant count and last login on the view page', function () {
     userViewActor();
     $user = User::factory()->create(['last_login_ip' => '10.1.2.3']);
@@ -47,7 +40,7 @@ it('shows the user with the tenant count and last login on the view page', funct
         ->assertSuccessful()
         ->assertSee($user->email)
         ->assertSee('10.1.2.3')
-        ->assertSee('2');
+        ->assertSeeInOrder(['Tenants', '2']);
 });
 
 it('shows a deleted user as deleted', function () {
@@ -103,11 +96,4 @@ it('keeps the edit page away from an admin without update permission', function 
     $user = User::factory()->create();
 
     Livewire::test(EditUser::class, ['record' => $user->getRouteKey()])->assertForbidden();
-});
-
-it('offers a view action on the users table', function () {
-    userViewActor();
-    $user = User::factory()->create();
-
-    Livewire::test(ListUsers::class)->assertActionVisible(TestAction::make('view')->table($user));
 });

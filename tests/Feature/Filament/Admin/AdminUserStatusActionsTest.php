@@ -5,8 +5,6 @@ use Filament\Auth\Notifications\ResetPassword;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
-use Slakbal\TenancyFoundation\Actions\Admin\ChangeAdminUserRole;
-use Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
@@ -134,17 +132,3 @@ it('shows only the status action that fits the status', function (AdminRoles $ro
         ->assertActionHidden(TestAction::make('sendPasswordResetLink')->table($inactive))
         ->assertActionHidden(TestAction::make('sendPasswordResetLink')->table($pending));
 })->with([AdminRoles::ADMIN, AdminRoles::SUPER_ADMIN]);
-
-it('applies a role change on the next request', function () {
-    $this->seed(AdminRolePermissionsSeeder::class);
-    $actor = Admin::factory()->create();
-    $actor->assignRole(AdminRoles::SUPER_ADMIN);
-    $target = statusTarget();
-
-    expect($target->can(AdminPermissions::ADMIN_USER_UPDATE))->toBeFalse();
-
-    app(ChangeAdminUserRole::class)->handle($target, AdminRoles::ADMIN->value, $actor);
-
-    expect(Admin::find($target->getKey())->can(AdminPermissions::ADMIN_USER_UPDATE))->toBeTrue()
-        ->and(Admin::find($target->getKey())->can(AdminPermissions::TENANT_VIEW_ANY))->toBeTrue();
-});

@@ -177,5 +177,10 @@
     "Force delete": "Force delete",
     "This email belongs to a deleted admin. Restore that admin instead.": "This email belongs to a deleted admin. Restore that admin instead.",
     "User details": "User details",
-    "This email belongs to a deleted user. Restore that user instead.": "This email belongs to a deleted user. Restore that user instead."
+    "This email belongs to a deleted user. Restore that user instead.": "This email belongs to a deleted user. Restore that user instead.",
+    "Open tenant": "Open tenant",
+    "Make this user the owner of :tenant?": "Make this user the owner of :tenant?",
+    "Ownership of this tenant is transferred to this user. The previous owner stays a member.": "Ownership of this tenant is transferred to this user. The previous owner stays a member.",
+    "Change the role in :tenant": "Change the role in :tenant",
+    "Role in :tenant updated.": "Role in :tenant updated."
 }

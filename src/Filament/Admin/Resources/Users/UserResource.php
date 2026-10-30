@@ -7,6 +7,7 @@ use Filament\Tables\Table;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\EditUser;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\ListUsers;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\ViewUser;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\RelationManagers\TenantsRelationManager;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Schemas\UserForm;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Schemas\UserInfolist;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Tables\UsersTable;
@@ -25,6 +26,13 @@ class UserResource extends BaseUserResource
     public static function infolist(Schema $schema): Schema
     {
         return UserInfolist::configure($schema);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            TenantsRelationManager::class,
+        ];
     }
 
     public static function table(Table $table): Table

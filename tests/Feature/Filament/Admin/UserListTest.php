@@ -5,6 +5,7 @@ use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\ListUsers;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
@@ -66,5 +67,5 @@ test('searching the users table by name or email finds matching users', function
 });
 
 it('has no create page for tenant users', function () {
-    expect(array_keys(Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource::getPages()))->not->toContain('create');
+    expect(array_keys(UserResource::getPages()))->not->toContain('create');
 });

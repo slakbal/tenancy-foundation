@@ -1,7 +1,7 @@
 <?php
 
-use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Livewire\PublicContactForm;
+use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\ContactRequest;
 use Slakbal\TenancyFoundation\Models\Role;
 use Slakbal\TenancyFoundation\Models\Tenant;
