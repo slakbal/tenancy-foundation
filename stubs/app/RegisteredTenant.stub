@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Listeners\Tenant;
+
+use Slakbal\TenancyFoundation\Events\Tenant\TenantRegistered;
+
+class RegisteredTenant
+{
+    /**
+     * Action classes that run after a tenant registered (for example starting a trial subscription or seeding default data).
+     * Each receives the tenant and its owner. Laravel discovers this listener on its own.
+     *
+     * @return array<int, class-string>
+     */
+    protected function actions(): array
+    {
+        return [
+            //
+        ];
+    }
+
+    public function handle(TenantRegistered $event): void
+    {
+        foreach ($this->actions() as $action) {
+            app($action)->handle($event->tenant, $event->owner);
+        }
+    }
+}

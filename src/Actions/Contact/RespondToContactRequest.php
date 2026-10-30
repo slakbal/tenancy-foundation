@@ -5,7 +5,7 @@ namespace Slakbal\TenancyFoundation\Actions\Contact;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 use Slakbal\TenancyFoundation\Enums\ContactStatus;
-use Slakbal\TenancyFoundation\Events\ContactRequestAnswered;
+use Slakbal\TenancyFoundation\Events\Contact\ContactRequestAnswered;
 use Slakbal\TenancyFoundation\Models\ContactRequest;
 
 readonly class RespondToContactRequest

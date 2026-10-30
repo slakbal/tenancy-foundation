@@ -5,7 +5,7 @@ use Slakbal\TenancyFoundation\Actions\Tenant\CancelTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\ReactivateTenant;
 use Slakbal\TenancyFoundation\Models\User;
-use Slakbal\TenancyFoundation\Notifications\AccountReactivated;
+use Slakbal\TenancyFoundation\Notifications\Tenant\AccountReactivated;
 
 beforeEach(function () {
     $this->owner = User::factory()->create();

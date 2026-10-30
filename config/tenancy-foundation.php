@@ -7,13 +7,13 @@ use Slakbal\TenancyFoundation\Models\Invitation;
 use Slakbal\TenancyFoundation\Models\Role;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
-use Slakbal\TenancyFoundation\Notifications\AccountCancelled;
-use Slakbal\TenancyFoundation\Notifications\AccountReactivated;
-use Slakbal\TenancyFoundation\Notifications\AdminInvited;
-use Slakbal\TenancyFoundation\Notifications\ContactRequestResponded;
-use Slakbal\TenancyFoundation\Notifications\InvitationCreated;
-use Slakbal\TenancyFoundation\Notifications\NewContactRequest;
-use Slakbal\TenancyFoundation\Notifications\WelcomeToTenant;
+use Slakbal\TenancyFoundation\Notifications\Admin\AdminInvited;
+use Slakbal\TenancyFoundation\Notifications\Contact\ContactRequestResponded;
+use Slakbal\TenancyFoundation\Notifications\Contact\NewContactRequest;
+use Slakbal\TenancyFoundation\Notifications\Invitation\InvitationCreated;
+use Slakbal\TenancyFoundation\Notifications\Tenant\AccountCancelled;
+use Slakbal\TenancyFoundation\Notifications\Tenant\AccountReactivated;
+use Slakbal\TenancyFoundation\Notifications\Tenant\WelcomeToTenant;
 
 return [
 
@@ -118,28 +118,6 @@ return [
     'invitations' => [
         'expiry_days' => env('INVITATION_EXPIRY_DAYS', 7),
         'retention_days' => env('INVITATION_RETENTION_DAYS', 30),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Tenant cleanup
-    |--------------------------------------------------------------------------
-    |
-    | Action classes (with a handle(Model $tenant) method) run in order when a
-    | tenant is cancelled or deleted. Add your own to clean up data you own.
-    | The package adds its own (such as the invitation cleanup when the
-    | invitations feature is on) and always removes the members and the
-    | permission rows last on deletion, after every action listed here.
-    |
-    | cancelled  Run after a tenant was cancelled (TenantCancelled).
-    | deleting   Run inside the deletion transaction, while the tenant still
-    |            exists (TenantDeleting). A failing action rolls the deletion back.
-    |
-    */
-
-    'cleanup' => [
-        'cancelled' => [],
-        'deleting' => [],
     ],
 
     /*

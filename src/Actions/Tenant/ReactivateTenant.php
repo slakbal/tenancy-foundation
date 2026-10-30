@@ -4,7 +4,7 @@ namespace Slakbal\TenancyFoundation\Actions\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use Slakbal\TenancyFoundation\Events\TenantReactivated;
+use Slakbal\TenancyFoundation\Events\Tenant\TenantReactivated;
 
 readonly class ReactivateTenant
 {

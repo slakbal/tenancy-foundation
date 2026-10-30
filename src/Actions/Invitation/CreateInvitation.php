@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
-use Slakbal\TenancyFoundation\Events\InvitationIssued;
+use Slakbal\TenancyFoundation\Events\Invitation\InvitationIssued;
 use Slakbal\TenancyFoundation\Exceptions\InvalidInvitation;
 
 class CreateInvitation

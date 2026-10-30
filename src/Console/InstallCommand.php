@@ -23,6 +23,7 @@ class InstallCommand extends Command
             'Point config/tenancy-foundation.php models at your App\\Models subclasses.',
             'Set APP_DOMAIN in .env and run php artisan migrate.',
             'Register AdminPlugin / TenantPlugin in your Filament panel providers.',
+            'Optional: php artisan vendor:publish --tag=tenancy-foundation-stubs for the app listeners that react to a tenant being registered, cancelled, reactivated or deleted.',
             'Seed roles with the package AdminRolePermissionsSeeder and TenantRolePermissionsSeeder.',
         ]);
 

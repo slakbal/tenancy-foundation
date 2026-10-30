@@ -13,32 +13,30 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
-use Slakbal\TenancyFoundation\Actions\Invitation\DeleteTenantInvitations;
-use Slakbal\TenancyFoundation\Actions\Invitation\RevokePendingInvitations;
 use Slakbal\TenancyFoundation\Console\InstallCommand;
-use Slakbal\TenancyFoundation\Events\AdminUserCreated;
-use Slakbal\TenancyFoundation\Events\ContactRequestAnswered;
-use Slakbal\TenancyFoundation\Events\ContactRequestReceived;
-use Slakbal\TenancyFoundation\Events\InvitationIssued;
-use Slakbal\TenancyFoundation\Events\TenantCancelled;
-use Slakbal\TenancyFoundation\Events\TenantDeleting;
-use Slakbal\TenancyFoundation\Events\TenantReactivated;
-use Slakbal\TenancyFoundation\Events\TenantRegistered;
+use Slakbal\TenancyFoundation\Events\Admin\AdminUserCreated;
+use Slakbal\TenancyFoundation\Events\Contact\ContactRequestAnswered;
+use Slakbal\TenancyFoundation\Events\Contact\ContactRequestReceived;
+use Slakbal\TenancyFoundation\Events\Invitation\InvitationIssued;
+use Slakbal\TenancyFoundation\Events\Tenant\TenantCancelled;
+use Slakbal\TenancyFoundation\Events\Tenant\TenantDeleting;
+use Slakbal\TenancyFoundation\Events\Tenant\TenantReactivated;
+use Slakbal\TenancyFoundation\Events\Tenant\TenantRegistered;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureUserHasTenant;
 use Slakbal\TenancyFoundation\Http\Responses\LogoutResponse;
 use Slakbal\TenancyFoundation\Http\Responses\RegistrationResponse;
 use Slakbal\TenancyFoundation\Jobs\DeleteDueTenants;
-use Slakbal\TenancyFoundation\Listeners\ActivateAdminOnPasswordReset;
-use Slakbal\TenancyFoundation\Listeners\CleanUpCancelledTenant;
-use Slakbal\TenancyFoundation\Listeners\CleanUpDeletedTenant;
-use Slakbal\TenancyFoundation\Listeners\NotifyAdminsOfContactRequest;
-use Slakbal\TenancyFoundation\Listeners\SendAdminInvitation;
-use Slakbal\TenancyFoundation\Listeners\SendCancellationNotification;
-use Slakbal\TenancyFoundation\Listeners\SendContactResponseNotification;
-use Slakbal\TenancyFoundation\Listeners\SendInvitationNotification;
-use Slakbal\TenancyFoundation\Listeners\SendReactivationNotification;
-use Slakbal\TenancyFoundation\Listeners\SendWelcomeNotification;
-use Slakbal\TenancyFoundation\Listeners\UpdateLastLogin;
+use Slakbal\TenancyFoundation\Listeners\Admin\ActivateAdminOnPasswordReset;
+use Slakbal\TenancyFoundation\Listeners\Admin\SendAdminInvitation;
+use Slakbal\TenancyFoundation\Listeners\Auth\UpdateLastLogin;
+use Slakbal\TenancyFoundation\Listeners\Contact\NotifyAdminsOfContactRequest;
+use Slakbal\TenancyFoundation\Listeners\Contact\SendContactResponseNotification;
+use Slakbal\TenancyFoundation\Listeners\Invitation\SendInvitationNotification;
+use Slakbal\TenancyFoundation\Listeners\Tenant\CancelledTenant;
+use Slakbal\TenancyFoundation\Listeners\Tenant\DeletedTenant;
+use Slakbal\TenancyFoundation\Listeners\Tenant\SendCancellationNotification;
+use Slakbal\TenancyFoundation\Listeners\Tenant\SendReactivationNotification;
+use Slakbal\TenancyFoundation\Listeners\Tenant\SendWelcomeNotification;
 use Slakbal\TenancyFoundation\Livewire\PublicContactForm;
 use Slakbal\TenancyFoundation\Observers\RoleObserver;
 
@@ -47,7 +45,7 @@ class TenancyFoundationServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/tenancy-foundation.php', 'tenancy-foundation');
-        $this->mergeConfigSections(['models', 'notifications', 'redirects', 'cancellation', 'contact_requests', 'features', 'invitations', 'cleanup']);
+        $this->mergeConfigSections(['models', 'notifications', 'redirects', 'cancellation', 'contact_requests', 'features', 'invitations']);
         $this->mergeConfigFrom(__DIR__.'/../config/filament-defaults.php', 'filament-defaults');
 
         $this->app->register(FilamentDefaultsServiceProvider::class);
@@ -148,12 +146,6 @@ class TenancyFoundationServiceProvider extends ServiceProvider
 
         if (config('tenancy-foundation.features.invitations')) {
             Event::listen(InvitationIssued::class, SendInvitationNotification::class);
-            $this->addCleanupActions('cancelled', [
-                RevokePendingInvitations::class,
-            ]);
-            $this->addCleanupActions('deleting', [
-                DeleteTenantInvitations::class,
-            ]);
             config('tenancy-foundation.models.role')::observe(RoleObserver::class);
         }
 
@@ -161,19 +153,8 @@ class TenancyFoundationServiceProvider extends ServiceProvider
             Event::listen(Login::class, UpdateLastLogin::class);
         }
 
-        Event::listen(TenantCancelled::class, CleanUpCancelledTenant::class);
-        Event::listen(TenantDeleting::class, CleanUpDeletedTenant::class);
-    }
-
-    /**
-     * @param  array<int, class-string>  $actions
-     */
-    protected function addCleanupActions(string $moment, array $actions): void
-    {
-        config(["tenancy-foundation.cleanup.{$moment}" => array_values(array_unique([
-            ...$actions,
-            ...config("tenancy-foundation.cleanup.{$moment}", []),
-        ]))]);
+        Event::listen(TenantCancelled::class, CancelledTenant::class);
+        Event::listen(TenantDeleting::class, DeletedTenant::class);
     }
 
     protected function bootSchedule(): void
@@ -230,5 +211,12 @@ class TenancyFoundationServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../resources/views' => resource_path('views/vendor/tenancy-foundation'),
         ], 'tenancy-foundation-views');
+
+        $this->publishes([
+            __DIR__.'/../stubs/app/DeletedTenant.stub' => app_path('Listeners/Tenant/DeletedTenant.php'),
+            __DIR__.'/../stubs/app/CancelledTenant.stub' => app_path('Listeners/Tenant/CancelledTenant.php'),
+            __DIR__.'/../stubs/app/RegisteredTenant.stub' => app_path('Listeners/Tenant/RegisteredTenant.php'),
+            __DIR__.'/../stubs/app/ReactivatedTenant.stub' => app_path('Listeners/Tenant/ReactivatedTenant.php'),
+        ], 'tenancy-foundation-stubs');
     }
 }

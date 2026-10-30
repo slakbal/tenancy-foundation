@@ -3,7 +3,7 @@
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
 use Slakbal\TenancyFoundation\Actions\Tenant\DeleteTenant;
-use Slakbal\TenancyFoundation\Events\TenantDeleting;
+use Slakbal\TenancyFoundation\Events\Tenant\TenantDeleting;
 use Slakbal\TenancyFoundation\Jobs\DeleteDueTenants;
 use Slakbal\TenancyFoundation\Models\Tenant;
 

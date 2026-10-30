@@ -1,0 +1,29 @@
+<?php
+
+namespace App\Listeners\Tenant;
+
+use Slakbal\TenancyFoundation\Events\Tenant\TenantDeleting;
+
+class DeletedTenant
+{
+    /**
+     * Action classes that delete the data your application owns for the tenant, run in order inside the
+     * deletion transaction while the tenant and its members still exist. The package removes the members
+     * and the permission rows afterwards. Laravel discovers this listener on its own.
+     *
+     * @return array<int, class-string>
+     */
+    protected function actions(): array
+    {
+        return [
+            //
+        ];
+    }
+
+    public function handle(TenantDeleting $event): void
+    {
+        foreach ($this->actions() as $action) {
+            app($action)->handle($event->tenant);
+        }
+    }
+}

@@ -15,14 +15,14 @@ use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\ContactSource;
 use Slakbal\TenancyFoundation\Enums\ContactStatus;
-use Slakbal\TenancyFoundation\Events\ContactRequestAnswered;
+use Slakbal\TenancyFoundation\Events\Contact\ContactRequestAnswered;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\ContactRequestResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\Pages\EditContactRequest;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\Pages\ListContactRequests;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\Widgets\ContactRequestStats;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\ContactRequest;
-use Slakbal\TenancyFoundation\Notifications\ContactRequestResponded;
+use Slakbal\TenancyFoundation\Notifications\Contact\ContactRequestResponded;
 use Slakbal\TenancyFoundation\Plugins\AdminPlugin;
 use Spatie\Permission\Models\Permission;
 

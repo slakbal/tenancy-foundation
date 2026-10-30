@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Listeners\Tenant;
+
+use Slakbal\TenancyFoundation\Events\Tenant\TenantReactivated;
+
+class ReactivatedTenant
+{
+    /**
+     * Action classes that run after a cancelled tenant was reactivated (for example resuming a subscription or restoring access tokens).
+     * Laravel discovers this listener on its own.
+     *
+     * @return array<int, class-string>
+     */
+    protected function actions(): array
+    {
+        return [
+            //
+        ];
+    }
+
+    public function handle(TenantReactivated $event): void
+    {
+        foreach ($this->actions() as $action) {
+            app($action)->handle($event->tenant);
+        }
+    }
+}

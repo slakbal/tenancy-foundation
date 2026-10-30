@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Notification;
 use Slakbal\TenancyFoundation\Actions\Tenant\CancelTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Models\User;
-use Slakbal\TenancyFoundation\Notifications\AccountCancelled;
+use Slakbal\TenancyFoundation\Notifications\Tenant\AccountCancelled;
 
 beforeEach(function () {
     $this->travelTo('2026-10-28 09:30:00');

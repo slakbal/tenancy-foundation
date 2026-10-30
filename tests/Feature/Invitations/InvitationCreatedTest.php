@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\DB;
 use Slakbal\TenancyFoundation\Models\Invitation;
 use Slakbal\TenancyFoundation\Models\Tenant;
-use Slakbal\TenancyFoundation\Notifications\InvitationCreated;
+use Slakbal\TenancyFoundation\Notifications\Invitation\InvitationCreated;
 
 test('the invitation mail names the tenant and loads it with a single query', function () {
     $tenant = Tenant::factory()->create(['name' => 'Acme Corp']);

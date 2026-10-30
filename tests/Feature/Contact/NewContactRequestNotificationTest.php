@@ -8,11 +8,11 @@ use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Enums\ContactSource;
-use Slakbal\TenancyFoundation\Events\ContactRequestReceived;
+use Slakbal\TenancyFoundation\Events\Contact\ContactRequestReceived;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\ContactRequestResource;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\ContactRequest;
-use Slakbal\TenancyFoundation\Notifications\NewContactRequest;
+use Slakbal\TenancyFoundation\Notifications\Contact\NewContactRequest;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 

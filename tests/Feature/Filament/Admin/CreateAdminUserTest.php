@@ -13,11 +13,11 @@ use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
-use Slakbal\TenancyFoundation\Events\AdminUserCreated;
+use Slakbal\TenancyFoundation\Events\Admin\AdminUserCreated;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\CreateAdminUser as CreateAdminUserPage;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\ListAdminUsers;
 use Slakbal\TenancyFoundation\Models\Admin;
-use Slakbal\TenancyFoundation\Notifications\AdminInvited;
+use Slakbal\TenancyFoundation\Notifications\Admin\AdminInvited;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 

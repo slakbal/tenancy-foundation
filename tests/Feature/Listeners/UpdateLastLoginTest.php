@@ -3,7 +3,7 @@
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Event;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
-use Slakbal\TenancyFoundation\Listeners\UpdateLastLogin;
+use Slakbal\TenancyFoundation\Listeners\Auth\UpdateLastLogin;
 use Slakbal\TenancyFoundation\Models\User;
 
 test('logging in records the login time and ip without touching updated_at or firing model events', function () {

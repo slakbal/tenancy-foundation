@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Slakbal\TenancyFoundation\Events\InvitationAccepted;
+use Slakbal\TenancyFoundation\Events\Invitation\InvitationAccepted;
 use Slakbal\TenancyFoundation\Exceptions\InvalidInvitation;
 
 readonly class AcceptInvitation

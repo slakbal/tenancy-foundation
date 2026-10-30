@@ -6,7 +6,7 @@ use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\DeleteTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
-use Slakbal\TenancyFoundation\Events\TenantDeleting;
+use Slakbal\TenancyFoundation\Events\Tenant\TenantDeleting;
 use Slakbal\TenancyFoundation\Models\Invitation;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
@@ -121,7 +121,7 @@ test('deleting a tenant removes its invitations, accepted ones included, and kee
     expect(Invitation::query()->pluck('id')->all())->toBe([$elsewhere->getKey()]);
 });
 
-test('the action only deletes the tenant row itself, members and permission rows are removed by the listeners', function () {
+test('the members and permission rows are removed by the action itself, even when no listener runs', function () {
     Event::fake([TenantDeleting::class]);
     $owner = User::factory()->create();
     $tenant = dueTenant('acme', $owner);
@@ -129,26 +129,20 @@ test('the action only deletes the tenant row itself, members and permission rows
     app(DeleteTenant::class)->handle($tenant);
 
     expect(Tenant::query()->whereKey($tenant->getKey())->exists())->toBeFalse()
-        ->and(User::query()->whereKey($owner->getKey())->exists())->toBeTrue()
-        ->and(DB::table('model_has_roles')->where(config('permission.column_names.team_foreign_key'), $tenant->getKey())->count())->toBe(1);
+        ->and(User::query()->whereKey($owner->getKey())->exists())->toBeFalse()
+        ->and(DB::table('model_has_roles')->where(config('permission.column_names.team_foreign_key'), $tenant->getKey())->count())->toBe(0);
 });
 
-class RecordsMembersBeforeRemoval
-{
-    public static ?int $members = null;
-
-    public function handle(Tenant $tenant): void
-    {
-        self::$members = $tenant->members()->count();
-    }
-}
-
-test('actions added to the cleanup config run before the members and permission rows are removed', function () {
+test('listeners of the deleting event still see the members, the package removes them afterwards', function () {
     $tenant = dueTenant();
-    config(['tenancy-foundation.cleanup.deleting' => [...config('tenancy-foundation.cleanup.deleting'), RecordsMembersBeforeRemoval::class]]);
+    $members = null;
+
+    Event::listen(TenantDeleting::class, function (TenantDeleting $event) use (&$members): void {
+        $members = $event->tenant->members()->count();
+    });
 
     app(DeleteTenant::class)->handle($tenant);
 
-    expect(RecordsMembersBeforeRemoval::$members)->toBe(1)
-        ->and($tenant->members()->count())->toBe(0);
+    expect($members)->toBe(1)
+        ->and(DB::table('tenant_user')->where('tenant_id', $tenant->getKey())->count())->toBe(0);
 });

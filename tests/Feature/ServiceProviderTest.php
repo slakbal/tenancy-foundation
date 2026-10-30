@@ -1,6 +1,6 @@
 <?php
 
-use Slakbal\TenancyFoundation\Notifications\AccountCancelled;
+use Slakbal\TenancyFoundation\Notifications\Tenant\AccountCancelled;
 use Slakbal\TenancyFoundation\TenancyFoundationServiceProvider;
 
 test('config sections published by an older version still receive the new default keys', function () {

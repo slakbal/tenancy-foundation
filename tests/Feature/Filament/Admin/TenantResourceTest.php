@@ -11,13 +11,13 @@ use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Enums\TenantStatus;
-use Slakbal\TenancyFoundation\Events\TenantReactivated;
+use Slakbal\TenancyFoundation\Events\Tenant\TenantReactivated;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ListTenants;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\TenantResource;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
-use Slakbal\TenancyFoundation\Notifications\AccountCancelled;
+use Slakbal\TenancyFoundation\Notifications\Tenant\AccountCancelled;
 use Slakbal\TenancyFoundation\Plugins\AdminPlugin;
 
 function tenantWithOwner(string $subdomain): Tenant

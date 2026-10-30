@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Slakbal\TenancyFoundation\Actions\Roles\AssignTenantRole;
 use Slakbal\TenancyFoundation\Actions\Tenant\CancelTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
@@ -8,22 +9,13 @@ use Slakbal\TenancyFoundation\Actions\Tenant\DeleteTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\ReactivateTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
+use Slakbal\TenancyFoundation\Events\Tenant\TenantCancelled;
+use Slakbal\TenancyFoundation\Events\Tenant\TenantDeleting;
 use Slakbal\TenancyFoundation\Jobs\DeleteDueTenants;
 use Slakbal\TenancyFoundation\Models\Invitation;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
 use Spatie\Permission\Models\Role;
-
-class RecordsLifecycleCleanup
-{
-    /** @var array<int, string> */
-    public static array $calls = [];
-
-    public function handle(Tenant $tenant): void
-    {
-        self::$calls[] = $tenant->subdomain;
-    }
-}
 
 function teamRows(string $table, Tenant $tenant): int
 {
@@ -42,11 +34,9 @@ function memberWithRole(Tenant $tenant, TenantRoles $role, bool $default = true)
 beforeEach(function () {
     $this->travelTo('2026-10-01 09:00:00');
     config(['tenancy-foundation.cancellation.grace_days' => 30]);
-    RecordsLifecycleCleanup::$calls = [];
-    config([
-        'tenancy-foundation.cleanup.cancelled' => [...config('tenancy-foundation.cleanup.cancelled'), RecordsLifecycleCleanup::class],
-        'tenancy-foundation.cleanup.deleting' => [...config('tenancy-foundation.cleanup.deleting'), RecordsLifecycleCleanup::class],
-    ]);
+    $this->seen = [];
+    Event::listen(TenantCancelled::class, fn (TenantCancelled $event) => $this->seen[] = 'cancelled:'.$event->tenant->subdomain);
+    Event::listen(TenantDeleting::class, fn (TenantDeleting $event) => $this->seen[] = 'deleting:'.$event->tenant->subdomain);
 
     $this->owner = User::factory()->create();
     $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
@@ -76,7 +66,7 @@ test('cancelling revokes pending invitations and keeps every member, role and th
         ->and($this->tenant->members()->withTrashed()->count())->toBe(5)
         ->and(teamRows('model_has_roles', $this->tenant))->toBe(5)
         ->and($this->other->fresh()->isCancelled())->toBeFalse()
-        ->and(RecordsLifecycleCleanup::$calls)->toBe(['acme']);
+        ->and($this->seen)->toBe(['cancelled:acme']);
 });
 
 test('the scheduled deletion removes the tenant with its data, deletes users who only belonged to it and keeps the rest', function () {
@@ -86,11 +76,11 @@ test('the scheduled deletion removes the tenant with its data, deletes users who
     expect(Tenant::query()->whereKey($this->tenant->getKey())->exists())->toBeTrue();
 
     $this->travelTo('2026-11-01 01:00:00');
-    RecordsLifecycleCleanup::$calls = [];
+    $this->seen = [];
     (new DeleteDueTenants)->handle(app(DeleteTenant::class));
 
     expect(Tenant::query()->whereKey($this->tenant->getKey())->exists())->toBeFalse()
-        ->and(RecordsLifecycleCleanup::$calls)->toBe(['acme'])
+        ->and($this->seen)->toBe(['deleting:acme'])
         ->and(Invitation::query()->where('tenant_id', $this->tenant->getKey())->count())->toBe(0)
         ->and(DB::table('tenant_user')->where('tenant_id', $this->tenant->getKey())->count())->toBe(0)
         ->and(teamRows('model_has_roles', $this->tenant))->toBe(0)

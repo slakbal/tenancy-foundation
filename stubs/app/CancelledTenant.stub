@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Listeners\Tenant;
+
+use Slakbal\TenancyFoundation\Events\Tenant\TenantCancelled;
+
+class CancelledTenant
+{
+    /**
+     * Action classes that run after a tenant was cancelled (for example revoking access tokens or pausing jobs).
+     * Laravel discovers this listener on its own.
+     *
+     * @return array<int, class-string>
+     */
+    protected function actions(): array
+    {
+        return [
+            //
+        ];
+    }
+
+    public function handle(TenantCancelled $event): void
+    {
+        foreach ($this->actions() as $action) {
+            app($action)->handle($event->tenant);
+        }
+    }
+}

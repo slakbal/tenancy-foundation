@@ -5,7 +5,7 @@ use Slakbal\TenancyFoundation\Actions\Tenant\CancelTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\ReactivateTenant;
 use Slakbal\TenancyFoundation\Enums\TenantStatus;
-use Slakbal\TenancyFoundation\Events\TenantReactivated;
+use Slakbal\TenancyFoundation\Events\Tenant\TenantReactivated;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
 

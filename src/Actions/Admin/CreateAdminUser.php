@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
-use Slakbal\TenancyFoundation\Events\AdminUserCreated;
+use Slakbal\TenancyFoundation\Events\Admin\AdminUserCreated;
 use Slakbal\TenancyFoundation\Support\AdminAccountGuard;
 
 readonly class CreateAdminUser

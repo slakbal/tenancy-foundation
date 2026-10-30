@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Password;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Filament\Pages\ResetPassword;
-use Slakbal\TenancyFoundation\Listeners\ActivateAdminOnPasswordReset;
+use Slakbal\TenancyFoundation\Listeners\Admin\ActivateAdminOnPasswordReset;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\User;
 

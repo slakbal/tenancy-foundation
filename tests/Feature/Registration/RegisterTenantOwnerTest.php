@@ -10,13 +10,13 @@ use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\RegisterTenantOwner;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
-use Slakbal\TenancyFoundation\Events\TenantRegistered;
+use Slakbal\TenancyFoundation\Events\Tenant\TenantRegistered;
 use Slakbal\TenancyFoundation\Filament\Pages\EmailVerificationPrompt;
 use Slakbal\TenancyFoundation\Filament\Pages\RegisterUser;
 use Slakbal\TenancyFoundation\Http\Responses\RegistrationResponse;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
-use Slakbal\TenancyFoundation\Notifications\WelcomeToTenant;
+use Slakbal\TenancyFoundation\Notifications\Tenant\WelcomeToTenant;
 use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function () {

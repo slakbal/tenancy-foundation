@@ -5,12 +5,12 @@ use Illuminate\Support\Facades\Notification as NotificationFacade;
 use Slakbal\TenancyFoundation\Actions\Invitation\CreateInvitation;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
-use Slakbal\TenancyFoundation\Events\InvitationIssued;
+use Slakbal\TenancyFoundation\Events\Invitation\InvitationIssued;
 use Slakbal\TenancyFoundation\Models\Invitation;
 use Slakbal\TenancyFoundation\Models\Role;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
-use Slakbal\TenancyFoundation\Notifications\InvitationCreated;
+use Slakbal\TenancyFoundation\Notifications\Invitation\InvitationCreated;
 
 beforeEach(function () {
     NotificationFacade::fake();

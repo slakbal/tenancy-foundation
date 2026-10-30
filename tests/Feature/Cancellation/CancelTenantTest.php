@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Slakbal\TenancyFoundation\Actions\Tenant\CancelTenant;
-use Slakbal\TenancyFoundation\Events\TenantCancelled;
+use Slakbal\TenancyFoundation\Events\Tenant\TenantCancelled;
 use Slakbal\TenancyFoundation\Models\Invitation;
 use Slakbal\TenancyFoundation\Models\Tenant;
 
