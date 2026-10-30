@@ -35,7 +35,7 @@ function invitationMember(array $permissions): array
 }
 
 beforeEach(function () {
-    [$this->tenant, $this->admin] = invitationMember([InvitationPermissions::INVITATION_VIEW_ANY, InvitationPermissions::INVITATION_DELETE]);
+    [$this->tenant, $this->admin] = invitationMember([InvitationPermissions::INVITATION_VIEW_ANY, InvitationPermissions::INVITATION_CREATE, InvitationPermissions::INVITATION_DELETE]);
 });
 
 test('the invitations table lists only the current tenant invitations', function () {

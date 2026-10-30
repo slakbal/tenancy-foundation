@@ -31,9 +31,9 @@ it('clears owner permission rows left behind by an earlier seed', function () {
     expect(tenantRolePermissions(TenantRoles::OWNER))->toBe([]);
 });
 
-it('limits the view only role to viewing users and invitations', function () {
+it('limits the view only role to viewing users and gives it no invitation access', function () {
     expect(tenantRolePermissions(TenantRoles::VIEW_ONLY))
-        ->toBe(collect([TenantPermissions::USER_VIEW, TenantPermissions::USER_VIEW_ANY, InvitationPermissions::INVITATION_VIEW, InvitationPermissions::INVITATION_VIEW_ANY])->pluck('value')->sort()->values()->all());
+        ->toBe(collect([TenantPermissions::USER_VIEW, TenantPermissions::USER_VIEW_ANY])->pluck('value')->sort()->values()->all());
 });
 
 it('leaves the invitation permissions out when the feature is off', function () {

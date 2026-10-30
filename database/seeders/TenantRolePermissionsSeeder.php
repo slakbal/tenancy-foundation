@@ -32,7 +32,6 @@ class TenantRolePermissionsSeeder extends Seeder
         return [
             TenantPermissions::USER_VIEW_ANY,
             TenantPermissions::USER_VIEW,
-            ...(config('tenancy-foundation.features.invitations') ? [InvitationPermissions::INVITATION_VIEW_ANY, InvitationPermissions::INVITATION_VIEW] : []),
         ];
     }
 

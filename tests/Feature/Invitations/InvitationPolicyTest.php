@@ -35,13 +35,26 @@ test('each invitation ability requires its permission', function (string $abilit
     expect($without->can($ability, $subject))->toBeFalse();
     expect($with->can($ability, $subject))->toBeTrue();
 })->with([
-    'viewAny' => ['viewAny', InvitationPermissions::INVITATION_VIEW_ANY, false],
-    'view' => ['view', InvitationPermissions::INVITATION_VIEW, true],
     'create' => ['create', InvitationPermissions::INVITATION_CREATE, false],
     'delete' => ['delete', InvitationPermissions::INVITATION_DELETE, true],
     'deleteAny' => ['deleteAny', InvitationPermissions::INVITATION_DELETE, false],
     'forceDelete' => ['forceDelete', InvitationPermissions::INVITATION_DELETE, true],
     'forceDeleteAny' => ['forceDeleteAny', InvitationPermissions::INVITATION_DELETE, false],
+]);
+
+test('viewing invitations also needs the create permission', function (string $ability, InvitationPermissions $viewPermission, bool $onRecord) {
+    $subject = $onRecord ? Invitation::factory()->for($this->tenant, 'tenant')->create() : Invitation::class;
+
+    $viewOnly = invitationUserWithPermission($this->tenant, $viewPermission);
+    $inviter = invitationUserWithPermission($this->tenant, $viewPermission);
+    Permission::findOrCreate(InvitationPermissions::INVITATION_CREATE->value, AuthGuard::TENANT->value);
+    $inviter->givePermissionTo(InvitationPermissions::INVITATION_CREATE);
+
+    expect($viewOnly->can($ability, $subject))->toBeFalse()
+        ->and($inviter->can($ability, $subject))->toBeTrue();
+})->with([
+    'viewAny' => ['viewAny', InvitationPermissions::INVITATION_VIEW_ANY, false],
+    'view' => ['view', InvitationPermissions::INVITATION_VIEW, true],
 ]);
 
 test('delete is denied once an invitation has been accepted, even with INVITATION_DELETE', function () {

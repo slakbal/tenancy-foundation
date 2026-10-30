@@ -8,6 +8,16 @@ use Slakbal\TenancyFoundation\Policies\AuthorisationPolicy;
 
 class InvitationPolicy extends AuthorisationPolicy
 {
+    public function viewAny($user): bool
+    {
+        return $user->can(InvitationPermissions::INVITATION_CREATE) && parent::viewAny($user);
+    }
+
+    public function view($user, $invitation): bool
+    {
+        return $user->can(InvitationPermissions::INVITATION_CREATE) && parent::view($user, $invitation);
+    }
+
     public function delete($user, $invitation): bool
     {
         if ($invitation instanceof Model && ! is_null($invitation->accepted_at)) {

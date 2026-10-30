@@ -12,9 +12,7 @@ use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\EmbeddedSchema;
 use Filament\Schemas\Components\Form;
-use Filament\Schemas\Components\Text;
 use Filament\Schemas\Schema;
-use Filament\Support\Enums\TextSize;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
@@ -130,23 +128,10 @@ class AcceptInvitation extends SimplePage
     public function content(Schema $schema): Schema
     {
         if (! $this->isAcceptable) {
-            return $schema->components([
-                Text::make(
-                    is_null($this->invitation->accepted_at)
-                        ? __('This invitation has expired')
-                        : __('This invitation was already accepted')
-                )->size(TextSize::Large),
-                Text::make(
-                    is_null($this->invitation->accepted_at)
-                        ? __('Ask the person who invited you to send a new invitation.')
-                        : __('You can sign in with your existing account.')
-                ),
-            ]);
+            return $schema->components([]);
         }
 
         return $schema->components([
-            Text::make(__('Join :tenant', ['tenant' => $this->invitation->tenant->name]))->size(TextSize::Large),
-            Text::make(__('You were invited as :email.', ['email' => $this->invitation->email])),
             $this->isExistingUser
                 ? $this->getAcceptActionComponent()
                 : $this->getFormContentComponent(),
@@ -177,7 +162,24 @@ class AcceptInvitation extends SimplePage
 
     public function getHeading(): string|Htmlable|null
     {
-        return null;
+        if (! $this->isAcceptable) {
+            return is_null($this->invitation->accepted_at)
+                ? __('This invitation has expired')
+                : __('This invitation was already accepted');
+        }
+
+        return __('Join :tenant', ['tenant' => $this->invitation->tenant->name]);
+    }
+
+    public function getSubHeading(): string|Htmlable|null
+    {
+        if (! $this->isAcceptable) {
+            return is_null($this->invitation->accepted_at)
+                ? __('Ask the person who invited you to send a new invitation.')
+                : __('You can sign in with your existing account.');
+        }
+
+        return __('You were invited as :email.', ['email' => $this->invitation->email]);
     }
 
     public static function routes(Panel $panel): void
