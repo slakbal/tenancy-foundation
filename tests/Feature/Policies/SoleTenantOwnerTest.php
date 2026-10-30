@@ -85,10 +85,10 @@ test('every previous owner is demoted when ownership is transferred', function (
 });
 
 test('an owner with a live legacy co-owner can be deleted', function () {
-    attachTenantMember($this->tenant, null, isOwner: true);
+    $coOwner = attachTenantMember($this->tenant, null, isOwner: true);
     Filament::setTenant($this->tenant, isQuiet: true);
 
-    expect($this->owner->can('delete', $this->owner))->toBeTrue();
+    expect($coOwner->can('delete', $this->owner))->toBeTrue();
 });
 
 test('ownership of another tenant decides whether the previous owner stays a sole owner', function (bool $coOwned) {

@@ -2,13 +2,13 @@
 
 namespace Slakbal\TenancyFoundation\Listeners\Contact;
 
-use Slakbal\TenancyFoundation\Models\Admin;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Notification;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Events\Contact\ContactRequestReceived;
+use Slakbal\TenancyFoundation\Models\Admin;
 use Spatie\Permission\PermissionRegistrar;
 
 class NotifyAdminsOfContactRequest implements ShouldQueue

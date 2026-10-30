@@ -1,11 +1,11 @@
 <?php
 
-use Slakbal\TenancyFoundation\Models\Admin;
 use Filament\Facades\Filament;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\TransferTenantOwnership;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
+use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\User;
 
 beforeEach(function () {

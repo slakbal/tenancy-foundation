@@ -2,7 +2,6 @@
 
 namespace Slakbal\TenancyFoundation\Plugins;
 
-use Slakbal\TenancyFoundation\Models\Admin;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Illuminate\Auth\Access\Response;
@@ -15,6 +14,7 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\TenantResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Filament\Pages\EditProfile;
 use Slakbal\TenancyFoundation\Filament\Pages\ResetPassword;
+use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Support\AdminAccountGuard;
 use Slakbal\TenancyFoundation\Support\PolicyResolver;
 use Slakbal\TenancyFoundation\Support\SoleOwnerGuard;

@@ -1,10 +1,10 @@
 <?php
 
-use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
+use Slakbal\TenancyFoundation\Models\Admin;
 use Spatie\Permission\Models\Role;
 
 function adminRolePermissions(AdminRoles $role): array

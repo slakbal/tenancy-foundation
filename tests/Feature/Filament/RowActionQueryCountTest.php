@@ -1,6 +1,5 @@
 <?php
 
-use Slakbal\TenancyFoundation\Models\Admin;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -13,6 +12,7 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\RelationManagers\
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\ViewUser;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\RelationManagers\TenantsRelationManager;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Pages\ListUsers as TenantListUsers;
+use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
 
