@@ -4,8 +4,10 @@ namespace Slakbal\TenancyFoundation\Plugins;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\HtmlString;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Filament\Pages\EditProfile;
 use Slakbal\TenancyFoundation\Filament\Pages\EditTenantProfile;
@@ -131,7 +133,13 @@ class TenantPlugin implements Plugin
             ->emailVerification(EmailVerificationPrompt::class)
             ->middleware([RedirectDeletedUserHome::class, EnsureUserHasTenant::class], isPersistent: true)
             ->resources([$this->userResource])
-            ->pages([$this->contactPage]);
+            ->pages([$this->contactPage])
+            ->renderHook(PanelsRenderHook::HEAD_END, fn (): HtmlString => $this->currentTenantLabelStyle());
+    }
+
+    protected function currentTenantLabelStyle(): HtmlString
+    {
+        return new HtmlString('<style>.fi-tenant-menu-trigger-current-tenant-label{color:var(--danger-600)}.dark .fi-tenant-menu-trigger-current-tenant-label{color:var(--danger-400)}</style>');
     }
 
     public function boot(Panel $panel): void

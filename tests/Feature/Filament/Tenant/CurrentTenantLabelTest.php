@@ -1,6 +1,7 @@
 <?php
 
 use Filament\Facades\Filament;
+use Filament\View\PanelsRenderHook;
 use Slakbal\TenancyFoundation\Actions\Roles\AssignTenantRole;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
@@ -51,7 +52,7 @@ test('the label shows owner for an owner and falls back to active for a guest', 
 });
 
 test('the tenant panel colours the current tenant label with the primary colour', function () {
-    $html = Filament::renderHook(Filament\View\PanelsRenderHook::HEAD_END)->toHtml();
+    $html = Filament::renderHook(PanelsRenderHook::HEAD_END)->toHtml();
 
     expect($html)->toContain('.fi-tenant-menu-trigger-current-tenant-label{color:var(--primary-600)}')
         ->and($html)->toContain('.dark .fi-tenant-menu-trigger-current-tenant-label{color:var(--primary-400)}');
