@@ -157,7 +157,7 @@ php artisan db:seed --class="Slakbal\TenancyFoundation\Database\Seeders\AdminRol
 php artisan db:seed --class="Slakbal\TenancyFoundation\Database\Seeders\TenantRolePermissionsSeeder"
 ```
 
-Create the first super admin:
+Admin roles live under the fixed team id `tenancy-foundation.admin_permissions_team_id` (default `0`, never a tenant id, so no placeholder tenant is needed). Create the first super admin:
 
 ```php
 setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));

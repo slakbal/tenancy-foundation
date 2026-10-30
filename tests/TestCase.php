@@ -64,6 +64,7 @@ abstract class TestCase extends Orchestra
         $app['config']->set('permission.teams', true);
         $app['config']->set('permission.team_foreign_key', 'tenant_id');
         $app['config']->set('tenancy-foundation.models.admin', Admin::class);
+        $app['config']->set('tenancy-foundation.admin_permissions_team_id', 0);
     }
 
     protected function defineDatabaseMigrations(): void

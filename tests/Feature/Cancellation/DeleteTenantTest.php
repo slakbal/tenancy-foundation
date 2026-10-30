@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Event;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\DeleteTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
+use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
+use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Events\Tenant\TenantDeleting;
 use Slakbal\TenancyFoundation\Models\Invitation;
@@ -145,4 +147,21 @@ test('listeners of the deleting event still see the members, the package removes
 
     expect($members)->toBe(1)
         ->and(DB::table('tenant_user')->where('tenant_id', $tenant->getKey())->count())->toBe(0);
+});
+
+test('admin rows and admin guard roles that carry the deleted tenant id stay, tenant rows go', function () {
+    $tenant = dueTenant();
+    $team = config('permission.column_names.team_foreign_key');
+
+    setPermissionsTeamId($tenant->getKey());
+    $admin = adminWithAccess(AdminRoles::SUPER_ADMIN, AdminPermissions::TENANT_VIEW_ANY);
+    $adminRole = Role::findOrCreate('scoped_admin_role', AuthGuard::ADMIN->value);
+    $adminRole->forceFill([$team => $tenant->getKey()])->save();
+
+    app(DeleteTenant::class)->handle($tenant);
+
+    expect(DB::table('model_has_roles')->where($team, $tenant->getKey())->where('model_type', $admin->getMorphClass())->count())->toBe(1)
+        ->and(DB::table('model_has_permissions')->where($team, $tenant->getKey())->where('model_type', $admin->getMorphClass())->count())->toBe(1)
+        ->and(Role::query()->whereKey($adminRole->getKey())->exists())->toBeTrue()
+        ->and(DB::table('model_has_roles')->where($team, $tenant->getKey())->where('model_type', '!=', $admin->getMorphClass())->count())->toBe(0);
 });
