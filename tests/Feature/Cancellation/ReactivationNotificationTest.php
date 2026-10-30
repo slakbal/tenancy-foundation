@@ -13,16 +13,18 @@ beforeEach(function () {
     app(CancelTenant::class)->handle($this->tenant);
 });
 
-test('reactivating a tenant notifies its owner but not its other members', function () {
+test('reactivating a tenant notifies every owner but not its other members', function () {
     Notification::fake();
+    $second = User::factory()->create();
+    $this->tenant->members()->attach($second, ['is_owner' => true, 'is_default_tenant' => true]);
     $member = User::factory()->create();
     $this->tenant->members()->attach($member, ['is_owner' => false, 'is_default_tenant' => true]);
 
     app(ReactivateTenant::class)->handle($this->tenant);
 
-    Notification::assertSentTo($this->owner, AccountReactivated::class);
+    Notification::assertSentTo([$this->owner, $second], AccountReactivated::class);
     Notification::assertNotSentTo($member, AccountReactivated::class);
-    Notification::assertCount(1);
+    Notification::assertCount(2);
 });
 
 test('the notification can be disabled through config', function () {

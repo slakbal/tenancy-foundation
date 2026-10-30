@@ -2,6 +2,7 @@
 
 use Filament\Facades\Filament;
 use Livewire\Livewire;
+use Slakbal\TenancyFoundation\Actions\Tenant\AddTenantOwner;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\TransferTenantOwnership;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
@@ -58,16 +59,30 @@ test('make owner shows only to owners and only for non owner members', function 
     'a non owner with every user permission' => ['a non owner with every user permission', false],
 ]);
 
-test('making a member the owner transfers ownership and demotes the previous owner', function () {
+test('making a member an owner keeps the existing owner', function () {
     actAsTenantUserIn($this->owner, $this->tenant);
 
     Livewire::test(ListUsers::class)
         ->callTableAction('makeOwner', $this->member)
         ->assertNotified();
 
-    expect($this->member->fresh()->ownedTenants->contains($this->tenant))->toBeTrue()
-        ->and($this->owner->fresh()->ownedTenants->contains($this->tenant))->toBeFalse()
-        ->and($this->tenant->members()->wherePivot('is_owner', true)->count())->toBe(1);
+    expect($this->member->fresh()->isOwner($this->tenant))->toBeTrue()
+        ->and($this->owner->fresh()->isOwner($this->tenant))->toBeTrue()
+        ->and($this->tenant->owners()->count())->toBe(2);
+});
+
+test('an owner can remove another owner but the last owner cannot be removed', function () {
+    app(AddTenantOwner::class)->handle($this->tenant, $this->member);
+    actAsTenantUserIn($this->owner, $this->tenant);
+
+    Livewire::test(ListUsers::class)
+        ->assertTableActionVisible('removeOwner', $this->member)
+        ->callTableAction('removeOwner', $this->member)
+        ->assertNotified();
+
+    expect($this->member->fresh()->isOwner($this->tenant))->toBeFalse();
+
+    Livewire::test(ListUsers::class)->assertTableActionHidden('removeOwner', $this->owner);
 });
 
 test('after the hand over the original owner can be deleted but the new sole owner cannot', function () {

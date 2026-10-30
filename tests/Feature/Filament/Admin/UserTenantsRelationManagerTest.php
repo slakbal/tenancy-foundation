@@ -5,6 +5,7 @@ use Filament\Facades\Filament;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\Roles\AssignTenantRole;
 use Slakbal\TenancyFoundation\Actions\Roles\SyncTenantRoles;
+use Slakbal\TenancyFoundation\Actions\Tenant\AddTenantOwner;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
@@ -71,7 +72,7 @@ it('reads the roles of a user per tenant', function () {
         ->and($roles->for(Tenant::factory()->create())->all())->toBe([]);
 });
 
-it('makes a member the owner of the tenant', function () {
+it('makes a member an owner of the tenant next to the existing owner', function () {
     tenantsActor(AdminPermissions::USER_UPDATE);
 
     tenantsManager($this->member)
@@ -79,15 +80,28 @@ it('makes a member the owner of the tenant', function () {
         ->assertNotified();
 
     expect($this->member->isOwner($this->tenant))->toBeTrue()
-        ->and($this->owner->fresh()->isOwner($this->tenant))->toBeFalse();
+        ->and($this->owner->fresh()->isOwner($this->tenant))->toBeTrue();
 });
 
-it('offers neither make owner nor a role change on a tenant the user owns', function () {
+it('offers neither make owner nor a role change on a tenant the user owns, and cannot remove the last owner', function () {
     tenantsActor(AdminPermissions::USER_UPDATE);
 
     tenantsManager($this->owner)
         ->assertActionHidden(TestAction::make('makeOwner')->table($this->tenant))
-        ->assertActionHidden(TestAction::make('manageTenantRoles')->table($this->tenant));
+        ->assertActionHidden(TestAction::make('manageTenantRoles')->table($this->tenant))
+        ->assertActionHidden(TestAction::make('removeOwner')->table($this->tenant));
+});
+
+it('removes an owner from the admin portal once another owner exists', function () {
+    tenantsActor(AdminPermissions::USER_UPDATE);
+    app(AddTenantOwner::class)->handle($this->tenant, $this->member);
+
+    tenantsManager($this->member)
+        ->callAction(TestAction::make('removeOwner')->table($this->tenant))
+        ->assertNotified();
+
+    expect($this->member->fresh()->isOwner($this->tenant))->toBeFalse()
+        ->and($this->owner->fresh()->isOwner($this->tenant))->toBeTrue();
 });
 
 it('sets several roles for a member inside that tenant only', function () {

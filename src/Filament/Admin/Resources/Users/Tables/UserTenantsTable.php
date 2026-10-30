@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\TenantResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\ManageTenantRolesAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\MakeUserTenantOwnerAction;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\RemoveUserTenantOwnerAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
 use Slakbal\TenancyFoundation\Support\UserTenantRoles;
 
@@ -79,7 +80,8 @@ class UserTenantsTable
                     ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
                     ->authorize('view')
                     ->url(fn (Model $record): string => TenantResource::getUrl('view', ['record' => $record])),
-                MakeUserTenantOwnerAction::make($user),
+                MakeUserTenantOwnerAction::make(user: $user),
+                RemoveUserTenantOwnerAction::make(user: $user),
                 ManageTenantRolesAction::make(user: $user),
             ]),
         ];

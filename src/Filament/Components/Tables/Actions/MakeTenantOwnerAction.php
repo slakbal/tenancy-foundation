@@ -6,7 +6,7 @@ use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Model;
-use Slakbal\TenancyFoundation\Actions\Tenant\TransferTenantOwnership;
+use Slakbal\TenancyFoundation\Actions\Tenant\AddTenantOwner;
 
 class MakeTenantOwnerAction
 {
@@ -22,7 +22,7 @@ class MakeTenantOwnerAction
     public static function make(?string $name = 'makeOwner'): Action
     {
         return static::base($name)
-            ->modalDescription(__('Ownership of this tenant is transferred to this user. You will no longer be the owner.'))
+            ->modalDescription(__('This user becomes an owner of this tenant, next to the existing owners.'))
             ->requiresConfirmation()
             ->visible(fn (Model $record): bool => static::canMakeOwner($record))
             ->action(function (Model $record): void {
@@ -30,10 +30,10 @@ class MakeTenantOwnerAction
                     return;
                 }
 
-                app(TransferTenantOwnership::class)->handle(Filament::getTenant(), $record, Filament::auth()->user());
+                app(AddTenantOwner::class)->handle(Filament::getTenant(), $record, Filament::auth()->user());
 
                 Notification::make()
-                    ->title(__(':name is now the owner of this tenant.', ['name' => $record->name]))
+                    ->title(__(':name is now an owner of this tenant.', ['name' => $record->name]))
                     ->success()
                     ->send();
             });

@@ -8,6 +8,7 @@ use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Table;
 use Slakbal\TenancyFoundation\Filament\Components\Resources\Users\UsersTable as BaseUsersTable;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\MakeTenantOwnerAction;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\RemoveTenantOwnerAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\WrappedBadgeColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Filters\RoleFilter;
@@ -57,6 +58,7 @@ class UsersTable extends BaseUsersTable
     {
         return [
             MakeTenantOwnerAction::make(),
+            RemoveTenantOwnerAction::make(),
             ...parent::rowActions(),
         ];
     }

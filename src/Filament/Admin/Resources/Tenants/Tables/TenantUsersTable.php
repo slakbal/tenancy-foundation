@@ -15,7 +15,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\MakeUserTenantOwnerAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\ManageTenantRolesAction;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\RemoveUserTenantOwnerAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\EmailColumn;
@@ -105,6 +107,8 @@ class TenantUsersTable
                     ->authorize('update')
                     ->color('primary')
                     ->url(fn (Model $record): string => UserResource::getUrl('edit', ['record' => $record])),
+                MakeUserTenantOwnerAction::make(tenant: $tenant),
+                RemoveUserTenantOwnerAction::make(tenant: $tenant),
                 ManageTenantRolesAction::make(tenant: $tenant),
                 ImpersonateUserAction::make(),
             ]),
