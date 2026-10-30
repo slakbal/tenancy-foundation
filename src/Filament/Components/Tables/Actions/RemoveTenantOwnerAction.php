@@ -40,6 +40,7 @@ class RemoveTenantOwnerAction
 
         return $tenant
             && $authenticated
+            && ! $record->trashed()
             && $authenticated->isOwner($tenant)
             && $record->isOwner($tenant)
             && ($tenant->owners_count ??= $tenant->owners()->count()) > 1;

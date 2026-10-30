@@ -29,6 +29,7 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\Deacti
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ResendAdminInvitationAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\SendAdminPasswordResetLinkAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\VerifiedColumn;
 
 class AdminUsersTable
 {
@@ -66,6 +67,7 @@ class AdminUsersTable
                 ->searchable()
                 ->sortable()
                 ->copyable(),
+            VerifiedColumn::make(),
             RoleBadgeColumn::make('roles.name', AdminRoles::class, __('Role')),
             TextColumn::make('status')
                 ->label(__('Status'))

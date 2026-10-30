@@ -16,6 +16,7 @@ use Filament\Tables\Columns\Column;
 use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\EmailColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\LastLoginColumns;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\NameColumn;
@@ -80,7 +81,7 @@ class UsersTable
     protected static function rowActions(): array
     {
         return [
-            EditAction::make(),
+            EditAction::make()->hidden(fn (Model $record): bool => $record->trashed()),
             DeleteAction::make(),
             RestoreAction::make(),
             ForceDeleteAction::make(),

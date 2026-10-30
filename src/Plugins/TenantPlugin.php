@@ -17,6 +17,7 @@ use Slakbal\TenancyFoundation\Filament\Tenant\Pages\ContactUs;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureTenantIsNotCancelled;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureUserHasTenant;
+use Slakbal\TenancyFoundation\Http\Middleware\RedirectDeletedUserHome;
 use Slakbal\TenancyFoundation\Http\Middleware\SyncTenantPermissionsContext;
 use Slakbal\TenancyFoundation\Support\PolicyResolver;
 use Slakbal\TenancyFoundation\Support\SoleOwnerGuard;
@@ -99,9 +100,10 @@ class TenantPlugin implements Plugin
             ->registration($this->registerUserPage)
             ->passwordReset(resetAction: ResetPassword::class)
             ->profile($this->profilePage)
+            ->emailChangeVerification(config('tenancy-foundation.email_change_verification', true))
             ->authPasswordBroker(AuthGuard::TENANT->getPasswordBroker())
             ->emailVerification(EmailVerificationPrompt::class)
-            ->middleware([EnsureUserHasTenant::class], isPersistent: true)
+            ->middleware([RedirectDeletedUserHome::class, EnsureUserHasTenant::class], isPersistent: true)
             ->resources([$this->userResource])
             ->pages([$this->contactPage]);
     }

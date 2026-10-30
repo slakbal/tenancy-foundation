@@ -47,6 +47,7 @@ class MakeTenantOwnerAction
 
         return $tenant
             && $authenticated
+            && ! $record->trashed()
             && $authenticated->isOwner($tenant)
             && ! $record->isOwner($tenant);
     }

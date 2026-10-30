@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Verified (email) icon column on the admin portal users, admin users, tenant users relation manager and tenant panel users tables (`Components\Tables\Columns\VerifiedColumn`, sortable).
+- `RedirectDeletedUserHome` (tenant panel, persistent): a user whose session is still signed in but whose account was deleted is sent to `app.url` and the session is cleared, instead of landing on a login redirect on the tenant subdomain.
+- Soft deleted users in the tenant users table only offer restore and force delete: edit (shared `UsersTable`, so the admin users table too), make owner, remove ownership and remove from tenant are hidden for trashed records.
+- Email change verification is on for both panels (`email_change_verification`, default `true`; `false` saves profile email changes directly). The old email stays until the link sent to the new address is used (valid one hour, marks the email verified); the old address gets a notice with a block link. Add the key to published configs.
+
 - Tenant panel user edit form (same layout as the admin forms: details and access sections, read-only status sidebar). Owners and admins with `user.update` change the name and the tenant roles (`Actions\Tenant\UpdateTenantUser`, owner role excluded via `TenantRoles::assignableOptions()`). The email is read-only; the roles section is hidden for owners and yourself; a user who belongs to other tenants keeps their name (read-only). Create is unchanged until the Phase 4 invite flow.
 - **Breaking:** the tenant profile page now lives at `/tenant-profile` (slug `tenant-profile`). It shared `/profile` with the user profile, so on a tenant domain the navbar profile link opened the tenant profile instead of the user profile.
 

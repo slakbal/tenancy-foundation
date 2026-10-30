@@ -9,6 +9,7 @@ use Filament\Tables\Table;
 use Slakbal\TenancyFoundation\Filament\Components\Resources\Users\UsersTable as BaseUsersTable;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\WrappedBadgeColumn;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\VerifiedColumn;
 
 class UsersTable extends BaseUsersTable
 {
@@ -28,6 +29,7 @@ class UsersTable extends BaseUsersTable
         $columns = parent::columns();
 
         array_splice($columns, 2, 0, [
+            VerifiedColumn::make(),
             WrappedBadgeColumn::make('ownedTenants.name')->label(__('Owner of')),
             WrappedBadgeColumn::make('memberTenants.name')->label(__('Member of')),
         ]);

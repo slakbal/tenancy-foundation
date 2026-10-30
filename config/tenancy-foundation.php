@@ -71,6 +71,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Email change verification
+    |--------------------------------------------------------------------------
+    |
+    | When true, a user or admin who changes their email on the profile page
+    | keeps the old address until they click a link sent to the new one (valid
+    | for an hour); the old address gets a notice with a link to block the
+    | change. Applies to both panels. Set to false to save changes directly.
+    |
+    */
+
+    'email_change_verification' => true,
+
+    /*
+    |--------------------------------------------------------------------------
     | Reserved subdomains
     |--------------------------------------------------------------------------
     |

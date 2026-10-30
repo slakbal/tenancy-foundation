@@ -88,3 +88,17 @@ test('an admin may remove a member but a view only member may not', function (ar
     'with the delete permission' => [[TenantPermissions::USER_DELETE], true],
     'without it' => [[], false],
 ]);
+
+test('a soft deleted user only offers restore and force delete', function () {
+    $this->shared->delete();
+    $this->single->delete();
+
+    Livewire::test(ListUsers::class)
+        ->filterTable('trashed', true)
+        ->assertTableActionVisible('restore', $this->single)
+        ->assertTableActionVisible('forceDelete', $this->single)
+        ->assertTableActionHidden('edit', $this->single)
+        ->assertTableActionHidden('delete', $this->single)
+        ->assertTableActionHidden('makeOwner', $this->single)
+        ->assertTableActionHidden('removeFromTenant', $this->shared);
+});

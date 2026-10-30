@@ -22,6 +22,7 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\RemoveUserT
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\EmailColumn;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\VerifiedColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\NameColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
 use Slakbal\TenancyFoundation\Support\TenantUserRoles;
@@ -52,6 +53,7 @@ class TenantUsersTable
         return [
             NameColumn::make('name')->label(__('Name')),
             EmailColumn::make('email'),
+            VerifiedColumn::make(),
             RoleBadgeColumn::make('tenant_roles')
                 ->state(fn (Model $record): array => $roles->for($record)->all())
                 ->placeholder(__('No role')),

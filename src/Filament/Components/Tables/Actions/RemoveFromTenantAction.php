@@ -40,6 +40,7 @@ class RemoveFromTenantAction
 
         return $tenant
             && $authenticated
+            && ! $record->trashed()
             && ! $authenticated->is($record)
             && $authenticated->can('removeMember', $record)
             && ! $record->isOwner($tenant)

@@ -1,6 +1,9 @@
 <?php
 
 use Filament\Facades\Filament;
+use Filament\Auth\Notifications\NoticeOfEmailChangeRequest;
+use Filament\Auth\Notifications\VerifyEmailChange;
+use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Filament\Pages\EditProfile;
@@ -37,3 +40,24 @@ it('requires the name on the profile form', function () {
         ->call('save')
         ->assertHasFormErrors(['name' => 'required']);
 });
+
+it('keeps the old email until the link sent to the new address is used', function (string $panel, string $model, AuthGuard $guard) {
+    Notification::fake();
+    Filament::setCurrentPanel(Filament::getPanel($panel));
+    $user = $model::factory()->create(['password' => 'password']);
+    $oldEmail = $user->email;
+    $this->actingAs($user, $guard->value);
+
+    Livewire::test(EditProfile::class)
+        ->fillForm(['email' => 'new@example.test', 'currentPassword' => 'password'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($user->refresh()->email)->toBe($oldEmail);
+    Notification::assertSentOnDemand(VerifyEmailChange::class, fn ($notification, $channels, $notifiable): bool => $notifiable->routes['mail'] === 'new@example.test'
+        || array_key_exists('new@example.test', (array) $notifiable->routes['mail']));
+    Notification::assertSentTo($user, NoticeOfEmailChangeRequest::class);
+})->with([
+    'admin' => ['admin', Admin::class, AuthGuard::ADMIN],
+    'tenant user' => ['app', User::class, AuthGuard::TENANT],
+]);

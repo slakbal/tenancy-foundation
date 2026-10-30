@@ -11,6 +11,7 @@ use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\MakeTenantOwner
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\RemoveFromTenantAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\RemoveTenantOwnerAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\VerifiedColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\WrappedBadgeColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Filters\RoleFilter;
 
@@ -34,6 +35,7 @@ class UsersTable extends BaseUsersTable
         $columns = parent::columns();
 
         array_splice($columns, 2, 0, [
+            VerifiedColumn::make(),
             RoleBadgeColumn::make(),
             WrappedBadgeColumn::make('ownedTenants.name')->label(__('Owner of')),
             WrappedBadgeColumn::make('memberTenants.name')->label(__('Member of')),
