@@ -20,7 +20,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Str;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ActivateAdminUserAction;
@@ -28,6 +27,7 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\Change
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\DeactivateAdminUserAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ResendAdminInvitationAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\SendAdminPasswordResetLinkAction;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\NameColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\VerifiedColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Filters\VerifiedFilter;
@@ -57,12 +57,7 @@ class AdminUsersTable
     protected static function columns(): array
     {
         return [
-            ...collect(config('tenancy-foundation.user_name_attributes'))
-                ->map(fn (string $attribute): Column => TextColumn::make($attribute)
-                    ->label(__(Str::of($attribute)->replace('_', ' ')->ucfirst()->toString()))
-                    ->searchable()
-                    ->sortable())
-                ->all(),
+            NameColumn::make('name')->label(__('Name')),
             TextColumn::make('email')
                 ->label(__('Email'))
                 ->searchable()

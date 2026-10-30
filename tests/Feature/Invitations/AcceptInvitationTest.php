@@ -69,12 +69,24 @@ test('an existing user is attached without a new account and keeps their default
     $first->members()->attach($existing, ['is_owner' => false, 'is_default_tenant' => true]);
     $second = Tenant::factory()->create();
 
-    $user = app(AcceptInvitation::class)->handle(invitedTo($second));
+    $user = app(AcceptInvitation::class)->handle(invitedTo($second), [], $existing);
 
     expect($user->is($existing))->toBeTrue()
         ->and($existing->tenants()->wherePivot('is_default_tenant', true)->pluck('tenants.id')->all())->toBe([$first->getKey()])
         ->and($second->members()->count())->toBe(1);
 });
+
+test('an existing account is only attached when the invited account itself accepts, not a guest or someone else', function (?string $actor) {
+    $existing = User::factory()->create(['email' => 'new@example.test']);
+    $tenant = Tenant::factory()->create();
+    $invitation = invitedTo($tenant);
+
+    expect(fn () => app(AcceptInvitation::class)->handle($invitation, [], $actor ? User::factory()->create() : null))
+        ->toThrow(InvalidInvitation::class);
+
+    expect($tenant->members()->count())->toBe(0)
+        ->and($invitation->fresh()->accepted_at)->toBeNull();
+})->with(['a guest' => [null], 'another user' => ['other']]);
 
 test('the owner role cannot be given and a current member cannot be invited', function () {
     $tenant = Tenant::factory()->create();

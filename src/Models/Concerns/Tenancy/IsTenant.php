@@ -2,10 +2,13 @@
 
 namespace Slakbal\TenancyFoundation\Models\Concerns\Tenancy;
 
+use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Str;
+use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Enums\TenantStatus;
 use Slakbal\TenancyFoundation\Models\TenantUser;
 
@@ -54,7 +57,16 @@ trait IsTenant
 
     public function getCurrentTenantLabel(): string
     {
-        return __('Active');
+        $user = Filament::auth()->user();
+
+        if ($user === null || ! Filament::getTenant()?->is($this)) {
+            return __('Active');
+        }
+
+        $roles = $user->roles->pluck('name')
+            ->map(fn (string $name): string => TenantRoles::tryFrom($name)?->getLabel() ?? Str::headline($name));
+
+        return $roles->isEmpty() ? __('Active') : $roles->implode(', ');
     }
 
     public function owners(): BelongsToMany

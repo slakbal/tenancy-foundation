@@ -42,6 +42,8 @@ class AcceptInvitation extends SimplePage
 
     public bool $isAcceptable = true;
 
+    public bool $isOtherAccount = false;
+
     public static function routeName(): string
     {
         return 'filament.'.FilamentPanel::TENANT->getPanelId().'.invitations.accept';
@@ -58,6 +60,27 @@ class AcceptInvitation extends SimplePage
         if ($this->isAcceptable && ! $this->isExistingUser) {
             $this->form->fill();
         }
+
+        if ($this->isAcceptable && $this->isExistingUser) {
+            $this->requireInvitedAccount();
+        }
+    }
+
+    protected function requireInvitedAccount(): void
+    {
+        $authenticated = Filament::auth()->user();
+
+        if ($authenticated === null) {
+            session()->put('url.intended', request()->fullUrl());
+
+            Notification::make()->title(__('Sign in to accept this invitation.'))->info()->send();
+
+            $this->redirect(Filament::getLoginUrl());
+
+            return;
+        }
+
+        $this->isOtherAccount = strcasecmp($authenticated->email, $this->invitation->email) !== 0;
     }
 
     public function form(Schema $schema): Schema
@@ -106,14 +129,16 @@ class AcceptInvitation extends SimplePage
         $registrationData = $this->isExistingUser ? [] : $this->form->getState();
 
         try {
-            $user = app(AcceptInvitationAction::class)->handle($this->invitation, $registrationData);
+            $user = app(AcceptInvitationAction::class)->handle($this->invitation, $registrationData, Filament::auth()->user());
         } catch (InvalidInvitation $exception) {
             Notification::make()->title($exception->getMessage())->danger()->send();
 
             return null;
         }
 
-        Filament::auth()->login($user);
+        if (! $this->isExistingUser) {
+            Filament::auth()->login($user);
+        }
 
         Notification::make()
             ->title(__('Invitation accepted'))
@@ -127,7 +152,7 @@ class AcceptInvitation extends SimplePage
 
     public function content(Schema $schema): Schema
     {
-        if (! $this->isAcceptable) {
+        if (! $this->isAcceptable || $this->isOtherAccount) {
             return $schema->components([]);
         }
 
@@ -168,6 +193,10 @@ class AcceptInvitation extends SimplePage
                 : __('This invitation was already accepted');
         }
 
+        if ($this->isOtherAccount) {
+            return __('This invitation is for another account');
+        }
+
         return __('Join :tenant', ['tenant' => $this->invitation->tenant->name]);
     }
 
@@ -177,6 +206,10 @@ class AcceptInvitation extends SimplePage
             return is_null($this->invitation->accepted_at)
                 ? __('Ask the person who invited you to send a new invitation.')
                 : __('You can sign in with your existing account.');
+        }
+
+        if ($this->isOtherAccount) {
+            return __('Sign out, then open the link again with the invited account :email.', ['email' => $this->invitation->email]);
         }
 
         return __('You were invited as :email.', ['email' => $this->invitation->email]);

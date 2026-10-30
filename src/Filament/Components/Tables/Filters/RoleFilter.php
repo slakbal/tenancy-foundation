@@ -16,7 +16,7 @@ class RoleFilter
     public static function make(): SelectFilter
     {
         return SelectFilter::make('role')
-            ->label(__('Tenant role'))
+            ->label(__('Role'))
             ->multiple()
             ->options(fn (): array => [self::NONE => __('No role'), ...static::roles()])
             ->query(function (Builder $query, array $data): Builder {

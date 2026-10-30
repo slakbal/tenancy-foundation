@@ -87,7 +87,7 @@ class TenantUsersTable
     {
         return [
             SelectFilter::make('role')
-                ->label(__('Tenant role'))
+                ->label(__('Role'))
                 ->options(collect(TenantRoles::cases())->mapWithKeys(fn (TenantRoles $role): array => [$role->value => $role->getLabel()])->all())
                 ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
                     ? $query->whereKey($roles->userIdsWithRole($data['value']))

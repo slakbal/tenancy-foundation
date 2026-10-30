@@ -240,5 +240,9 @@
     "You cannot change your own status.": "You cannot change your own status.",
     "The status of an owner cannot be changed.": "The status of an owner cannot be changed.",
     "Your access has been deactivated.": "Your access has been deactivated.",
-    "Contact the owner of your tenant. You have been signed out.": "Contact the owner of your tenant. You have been signed out."
+    "Contact the owner of your tenant. You have been signed out.": "Contact the owner of your tenant. You have been signed out.",
+    "Sign in with the invited account to accept this invitation.": "Sign in with the invited account to accept this invitation.",
+    "Sign in to accept this invitation.": "Sign in to accept this invitation.",
+    "This invitation is for another account": "This invitation is for another account",
+    "Sign out, then open the link again with the invited account :email.": "Sign out, then open the link again with the invited account :email."
 }

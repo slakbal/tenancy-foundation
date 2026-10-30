@@ -41,7 +41,7 @@ test('visiting a valid invitation link shows the accept page with a registration
 test('visiting a valid invitation link for an already-registered email skips the registration fields', function () {
     $tenant = Tenant::factory()->create();
     $role = Role::findOrCreate(TenantRoles::VIEW_ONLY->value, AuthGuard::TENANT->value);
-    User::factory()->create(['email' => 'existing@example.com']);
+    $existing = User::factory()->create(['email' => 'existing@example.com']);
 
     $invitation = Invitation::factory()->create([
         'tenant_id' => $tenant->id,
@@ -50,6 +50,9 @@ test('visiting a valid invitation link for an already-registered email skips the
         'accepted_at' => null,
         'expires_at' => now()->addDays(7),
     ]);
+
+    Tenant::factory()->create()->members()->attach($existing, ['is_owner' => false, 'is_default_tenant' => true]);
+    $this->actingAs($existing, AuthGuard::TENANT->value);
 
     $response = $this->get(invitationAcceptUrl($invitation));
 
@@ -103,6 +106,8 @@ test('accepting an invitation for an existing user attaches them without requiri
         'expires_at' => now()->addDays(7),
     ]);
 
+    $this->actingAs($existingUser, AuthGuard::TENANT->value);
+
     Livewire::test(AcceptInvitation::class, ['invitation' => $invitation])
         ->call('accept');
 
@@ -113,6 +118,43 @@ test('accepting an invitation for an existing user attaches them without requiri
 
     $invitation->refresh();
     expect($invitation->accepted_at)->not->toBeNull();
+});
+
+test('an existing account has to sign in first: a guest is sent to the login and the link is remembered', function () {
+    $tenant = Tenant::factory()->create();
+    $invitation = Invitation::factory()->create(['tenant_id' => $tenant->id, 'email' => 'already-here@example.com', 'accepted_at' => null, 'expires_at' => now()->addDays(7)]);
+    User::factory()->create(['email' => 'already-here@example.com']);
+
+    $this->get(invitationAcceptUrl($invitation))->assertRedirect();
+
+    $this->assertGuest(AuthGuard::TENANT->value);
+    expect(session('url.intended'))->toContain('invitations/accept')
+        ->and($tenant->members()->count())->toBe(0);
+});
+
+test('a guest who calls accept for an existing account is not logged in and not attached', function () {
+    $tenant = Tenant::factory()->create();
+    $invitation = Invitation::factory()->create(['tenant_id' => $tenant->id, 'email' => 'already-here@example.com', 'accepted_at' => null, 'expires_at' => now()->addDays(7)]);
+    User::factory()->create(['email' => 'already-here@example.com']);
+
+    Livewire::test(AcceptInvitation::class, ['invitation' => $invitation])->call('accept');
+
+    $this->assertGuest(AuthGuard::TENANT->value);
+    expect($tenant->members()->count())->toBe(0)
+        ->and($invitation->fresh()->accepted_at)->toBeNull();
+});
+
+test('a user signed in as someone else sees a notice and cannot accept an invitation for another account', function () {
+    $tenant = Tenant::factory()->create();
+    $invitation = Invitation::factory()->create(['tenant_id' => $tenant->id, 'email' => 'already-here@example.com', 'accepted_at' => null, 'expires_at' => now()->addDays(7)]);
+    User::factory()->create(['email' => 'already-here@example.com']);
+    $this->actingAs(User::factory()->create(), AuthGuard::TENANT->value);
+
+    Livewire::test(AcceptInvitation::class, ['invitation' => $invitation])
+        ->assertSee(__('This invitation is for another account'))
+        ->call('accept');
+
+    expect($tenant->members()->count())->toBe(0);
 });
 
 test('an already-accepted invitation shows the already-accepted message and cannot be accepted twice', function () {
@@ -231,7 +273,8 @@ test('visiting the accept page loads the tenant and role at most once each', fun
 test('accepting an invitation loads the tenant, role and user once each', function () {
     $tenant = Tenant::factory()->create();
     $role = Role::findOrCreate(TenantRoles::VIEW_ONLY->value, AuthGuard::TENANT->value);
-    User::factory()->create(['email' => 'queries-existing@example.com']);
+    $existing = User::factory()->create(['email' => 'queries-existing@example.com']);
+    $this->actingAs($existing, AuthGuard::TENANT->value);
     $invitation = Invitation::factory()->create([
         'tenant_id' => $tenant->id,
         'role_id' => $role->id,

@@ -14,14 +14,14 @@ readonly class AcceptInvitation
     /**
      * @param  array<string, string>  $registrationData
      */
-    public function handle(Model $invitation, array $registrationData = []): Model
+    public function handle(Model $invitation, array $registrationData = [], ?Model $actor = null): Model
     {
-        return DB::transaction(function () use ($invitation, $registrationData): Model {
+        return DB::transaction(function () use ($invitation, $registrationData, $actor): Model {
             $current = $invitation->newQuery()->lockForUpdate()->findOrFail($invitation->getKey());
 
             throw_unless($this->isPending($current), InvalidInvitation::notPending());
 
-            $user = $this->resolveUser($invitation, $registrationData);
+            $user = $this->resolveUser($invitation, $registrationData, $actor);
 
             $invitation->tenant->members()->syncWithoutDetaching([
                 $user->getKey() => [
@@ -51,13 +51,14 @@ readonly class AcceptInvitation
     /**
      * @param  array<string, string>  $registrationData
      */
-    protected function resolveUser(Model $invitation, array $registrationData): Model
+    protected function resolveUser(Model $invitation, array $registrationData, ?Model $actor): Model
     {
         $userModel = config('tenancy-foundation.models.user');
 
         $user = $userModel::withTrashed()->where('email', $invitation->email)->first();
 
         throw_if($user?->trashed(), InvalidInvitation::deletedAccount());
+        throw_if($user && ! $actor?->is($user), InvalidInvitation::signInRequired());
 
         return $user ?? tap($userModel::query()->create([
             ...Arr::only($registrationData, config('tenancy-foundation.user_name_attributes')),
