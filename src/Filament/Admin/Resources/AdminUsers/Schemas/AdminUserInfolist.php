@@ -30,7 +30,6 @@ class AdminUserInfolist
     {
         return [
             static::detailsSection(),
-            static::accessSection(),
         ];
     }
 
@@ -69,33 +68,6 @@ class AdminUserInfolist
         ];
     }
 
-    public static function accessSection(): Section
-    {
-        return Section::make(__('Access'))
-            ->icon(Heroicon::OutlinedShieldCheck)
-            ->schema(static::accessEntries())
-            ->columns(2);
-    }
-
-    /**
-     * @return array<int, Component>
-     */
-    protected static function accessEntries(): array
-    {
-        return [
-            TextEntry::make('roles.name')
-                ->label(__('Role'))
-                ->badge()
-                ->formatStateUsing(fn (string $state): string => AdminRoles::tryFrom($state)?->getLabel() ?? Str::headline($state))
-                ->color(fn (string $state): string => AdminRoles::tryFrom($state)?->getColor() ?? 'gray')
-                ->icon(fn (string $state): ?string => AdminRoles::tryFrom($state)?->getIcon())
-                ->placeholder('-'),
-            TextEntry::make('status')
-                ->label(__('Status'))
-                ->badge(),
-        ];
-    }
-
     public static function statusSection(): Section
     {
         return Section::make(__('Status'))
@@ -114,6 +86,14 @@ class AdminUserInfolist
                 ->label(__('Status'))
                 ->inlineLabel()
                 ->badge(),
+            TextEntry::make('roles.name')
+                ->label(__('Role'))
+                ->inlineLabel()
+                ->badge()
+                ->formatStateUsing(fn (string $state): string => AdminRoles::tryFrom($state)?->getLabel() ?? Str::headline($state))
+                ->color(fn (string $state): string => AdminRoles::tryFrom($state)?->getColor() ?? 'gray')
+                ->icon(fn (string $state): ?string => AdminRoles::tryFrom($state)?->getIcon())
+                ->placeholder('-'),
             TextEntry::make('last_login_at')
                 ->label(__('Last login'))
                 ->inlineLabel()

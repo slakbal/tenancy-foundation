@@ -14,6 +14,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
+use Slakbal\TenancyFoundation\Enums\MemberStatus;
 use Slakbal\TenancyFoundation\Filament\Components\Resources\Users\UserForm as BaseUserForm;
 use Slakbal\TenancyFoundation\Filament\Components\Schemas\UserNameSchema;
 
@@ -117,6 +118,11 @@ class UserForm extends BaseUserForm
     protected static function statusEntries(): array
     {
         return [
+            TextEntry::make('membership_status')
+                ->label(__('Status'))
+                ->inlineLabel()
+                ->badge()
+                ->state(fn (Model $record): ?MemberStatus => $record->memberStatus()),
             TextEntry::make('tenant_role')
                 ->label(__('Roles'))
                 ->inlineLabel()

@@ -18,6 +18,16 @@ class UserResource extends BaseUserResource
     // Explicitly set a distinct slug for Admin perspective on users
     protected static ?string $slug = 'all-users';
 
+    public static function getModelLabel(): string
+    {
+        return __('Tenant User');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Tenant Users');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return UserForm::configure($schema);

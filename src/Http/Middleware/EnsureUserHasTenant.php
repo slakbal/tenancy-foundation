@@ -42,6 +42,19 @@ class EnsureUserHasTenant
             return redirect()->to(Filament::getLoginUrl());
         }
 
+        if ($user->hasNoAccessibleTenants()) {
+            $this->signOut($request);
+
+            Notification::make()
+                ->title(__('Your access has been deactivated.'))
+                ->body(__('Contact the owner of your tenant. You have been signed out.'))
+                ->warning()
+                ->persistent()
+                ->send();
+
+            return redirect()->to(Filament::getLoginUrl());
+        }
+
         return $next($request);
     }
 

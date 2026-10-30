@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
+use Slakbal\TenancyFoundation\Enums\MemberStatus;
 use Slakbal\TenancyFoundation\Models\TenantUser;
 
 // Base Class e.g. User model should implement: HasTenants, HasDefaultTenant contracts
@@ -25,7 +26,7 @@ trait IsTenantUser
         return $this instanceof self
             && $panel->getAuthGuard() === AuthGuard::TENANT->getAuthGuard()
             && $this->guard_name === AuthGuard::TENANT->value
-            && ! $this->hasOnlyCancelledTenants();
+            && ! $this->hasNoAccessibleTenants();
 
         // todo also do checks so that e.g. models have a specific role or permission to access the admin panel, e.g. 'admin' role or 'access admin panel' permission
     }
@@ -37,11 +38,8 @@ trait IsTenantUser
     {
         $this->loadTenantsOnce();
 
-        if ($this->tenants->isEmpty()) {
-            return false;
-        }
-
-        return $this->tenants->contains('id', $tenant->getKey());
+        return $this->tenants->contains(fn (Model $member): bool => $member->getKey() === $tenant->getKey()
+            && $member->pivot->status === MemberStatus::ACTIVE);
     }
 
     /**
@@ -51,7 +49,7 @@ trait IsTenantUser
     {
         return $this->belongsToMany(config('tenancy-foundation.models.tenant'), 'tenant_user', 'user_id', 'tenant_id')
             ->using(TenantUser::class)
-            ->withPivot(['id', 'is_owner', 'is_default_tenant'])
+            ->withPivot(['id', 'is_owner', 'is_default_tenant', 'status'])
             ->withTimestamps();
     }
 
@@ -127,9 +125,30 @@ trait IsTenantUser
         return $this->tenants->isNotEmpty() && $this->tenants->every->isCancelled();
     }
 
+    public function hasNoAccessibleTenants(): bool
+    {
+        $this->loadTenantsOnce();
+
+        return $this->tenants->isNotEmpty() && $this->accessibleTenants()->isEmpty();
+    }
+
+    public function memberStatus(?Model $tenant = null): ?MemberStatus
+    {
+        $tenant ??= Filament::getTenant();
+
+        return $tenant === null ? null : $this->loadTenantsOnce()->tenants->firstWhere('id', $tenant->getKey())?->pivot->status;
+    }
+
     public function getTenants(Panel $panel): Collection
     {
-        return $this->tenants->reject->isCancelled()->values();
+        return $this->accessibleTenants();
+    }
+
+    protected function accessibleTenants(): Collection
+    {
+        return $this->tenants
+            ->reject(fn (Model $tenant): bool => $tenant->isCancelled() || $tenant->pivot->status !== MemberStatus::ACTIVE)
+            ->values();
     }
 
     /**

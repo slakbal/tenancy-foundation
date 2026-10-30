@@ -66,7 +66,7 @@ trait IsTenant
     {
         return $this->belongsToMany(config('tenancy-foundation.models.user'))
             ->using(TenantUser::class)
-            ->withPivot(['id', 'is_owner', 'is_default_tenant']) // Register pivot attributes
+            ->withPivot(['id', 'is_owner', 'is_default_tenant', 'status']) // Register pivot attributes
             ->withTimestamps();
     }
 }

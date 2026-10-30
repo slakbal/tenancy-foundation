@@ -87,6 +87,19 @@ test('marking the email verified sets the timestamp and then hides the action', 
     expect($this->user->fresh()->email_verified_at)->not->toBeNull();
 });
 
+test('a super admin only gets the mark verified action while the email is unverified', function () {
+    signInAdmin(AdminRoles::SUPER_ADMIN);
+    $this->user->forceFill(['email_verified_at' => now()])->save();
+
+    Livewire::test(ViewUser::class, ['record' => $this->user->getRouteKey()])
+        ->assertActionHidden('markEmailVerified');
+
+    $unverified = User::factory()->unverified()->create();
+
+    Livewire::test(ViewUser::class, ['record' => $unverified->getRouteKey()])
+        ->assertActionVisible('markEmailVerified');
+});
+
 test('the users table sends the reset link for support but not for a deleted user', function () {
     Notification::fake();
     signInAdmin(AdminRoles::SUPPORT);

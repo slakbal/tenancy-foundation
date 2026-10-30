@@ -10,6 +10,7 @@ use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Actions\Tenant\UpdateTenantUser;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ChangeMemberStatusAction;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
 
 class EditUser extends EditRecord
@@ -19,6 +20,8 @@ class EditUser extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            ChangeMemberStatusAction::deactivate(),
+            ChangeMemberStatusAction::activate(),
             DeleteAction::make(),
             ForceDeleteAction::make(),
             RestoreAction::make(),

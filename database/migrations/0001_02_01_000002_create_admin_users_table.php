@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Slakbal\TenancyFoundation\Enums\AdminStatus;
 
 return new class extends Migration
 {
@@ -22,7 +23,7 @@ return new class extends Migration
             $table->text('two_factor_recovery_codes')->nullable();
             $table->timestamp('two_factor_confirmed_at')->nullable();
             $table->string('locale')->nullable();
-            $table->string('status')->default('pending')->index();
+            $table->string('status')->default(AdminStatus::PENDING)->index();
             $table->timestamp('last_login_at')->nullable()->index();
             $table->string('last_login_ip')->nullable();
             $table->rememberToken();

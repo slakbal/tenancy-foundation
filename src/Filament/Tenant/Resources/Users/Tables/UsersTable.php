@@ -3,9 +3,17 @@
 namespace Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Tables;
 
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Tables\Columns\Column;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\BaseFilter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Slakbal\TenancyFoundation\Enums\MemberStatus;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ChangeMemberStatusAction;
 use Slakbal\TenancyFoundation\Filament\Components\Resources\Users\UsersTable as BaseUsersTable;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\MakeTenantOwnerAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\RemoveFromTenantAction;
@@ -36,6 +44,10 @@ class UsersTable extends BaseUsersTable
 
         array_splice($columns, 2, 0, [
             VerifiedColumn::make(),
+            TextColumn::make('membership_status')
+                ->label(__('Status'))
+                ->badge()
+                ->state(fn (Model $record): ?MemberStatus => $record->memberStatus()),
             RoleBadgeColumn::make(),
             WrappedBadgeColumn::make('ownedTenants.name')->label(__('Owner of')),
             WrappedBadgeColumn::make('memberTenants.name')->label(__('Member of')),
@@ -51,6 +63,15 @@ class UsersTable extends BaseUsersTable
     {
         return [
             RoleFilter::make(),
+            SelectFilter::make('membership_status')
+                ->label(__('Status'))
+                ->options(MemberStatus::class)
+                ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
+                    ? $query->whereIn($query->qualifyColumn('id'), DB::table('tenant_user')
+                        ->select('user_id')
+                        ->where('tenant_id', Filament::getTenant()->getKey())
+                        ->where('status', $data['value']))
+                    : $query),
             ...parent::filters(),
         ];
     }
@@ -61,6 +82,8 @@ class UsersTable extends BaseUsersTable
     protected static function rowActions(): array
     {
         return [
+            ChangeMemberStatusAction::deactivate(),
+            ChangeMemberStatusAction::activate(),
             MakeTenantOwnerAction::make(),
             RemoveTenantOwnerAction::make(),
             RemoveFromTenantAction::make(),

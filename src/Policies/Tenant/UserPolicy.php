@@ -22,6 +22,16 @@ class UserPolicy extends AuthorisationPolicy
         return $user->can(TenantPermissions::USER_DELETE);
     }
 
+    public function activate($user, $model): bool
+    {
+        return $user->can(TenantPermissions::USER_UPDATE);
+    }
+
+    public function deactivate($user, $model): bool
+    {
+        return $user->can(TenantPermissions::USER_UPDATE);
+    }
+
     protected function permissionMap(): array
     {
         return [

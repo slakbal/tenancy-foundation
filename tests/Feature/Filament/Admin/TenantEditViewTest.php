@@ -1,5 +1,6 @@
 <?php
 
+use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\Roles\AssignTenantRole;
@@ -16,6 +17,8 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\TenantResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
 use Slakbal\TenancyFoundation\Models\Admin;
+use Slakbal\TenancyFoundation\Models\Invitation;
+use Slakbal\TenancyFoundation\Models\Role;
 use Slakbal\TenancyFoundation\Models\User;
 
 function tenantPageAdmin(AdminPermissions ...$permissions): Admin
@@ -165,6 +168,46 @@ test('the users tab is hidden without the user view permission', function () {
     tenantPageAdmin(AdminPermissions::TENANT_VIEW, AdminPermissions::USER_VIEW_ANY);
 
     expect(UsersRelationManager::canViewForRecord($this->tenant, ViewTenant::class))->toBeTrue();
+});
+
+test('an admin with the user create permission invites a user into the tenant from the users tab, with no inviter', function () {
+    tenantPageAdmin(AdminPermissions::TENANT_VIEW, AdminPermissions::USER_VIEW_ANY);
+
+    $manager = fn () => Livewire::test(UsersRelationManager::class, ['ownerRecord' => $this->tenant, 'pageClass' => ViewTenant::class]);
+
+    $manager()->assertActionHidden(TestAction::make('create_invite')->table());
+
+    tenantPageAdmin(AdminPermissions::TENANT_VIEW, AdminPermissions::USER_VIEW_ANY, AdminPermissions::USER_CREATE);
+    $role = Role::findOrCreate(TenantRoles::VIEW_ONLY->value, AuthGuard::TENANT->value);
+
+    $manager()
+        ->assertActionVisible(TestAction::make('create_invite')->table())
+        ->callAction(TestAction::make('create_invite')->table(), ['email' => 'New@Acme.test', 'role_id' => $role->getKey()])
+        ->assertHasNoActionErrors();
+
+    $invitation = Invitation::query()->where('tenant_id', $this->tenant->getKey())->sole();
+
+    expect($invitation->email)->toBe('new@acme.test')
+        ->and($invitation->invited_by)->toBeNull()
+        ->and($invitation->role_id)->toBe($role->getKey());
+});
+
+test('inviting an existing member from the users tab is refused with a message', function () {
+    tenantPageAdmin(AdminPermissions::TENANT_VIEW, AdminPermissions::USER_VIEW_ANY, AdminPermissions::USER_CREATE);
+    $role = Role::findOrCreate(TenantRoles::VIEW_ONLY->value, AuthGuard::TENANT->value);
+
+    Livewire::test(UsersRelationManager::class, ['ownerRecord' => $this->tenant, 'pageClass' => ViewTenant::class])
+        ->callAction(TestAction::make('create_invite')->table(), ['email' => 'owner@acme.test', 'role_id' => $role->getKey()]);
+
+    expect(Invitation::query()->count())->toBe(0);
+});
+
+test('the invite action is gone when the invitations feature is off', function () {
+    config(['tenancy-foundation.features.invitations' => false]);
+    tenantPageAdmin(AdminPermissions::TENANT_VIEW, AdminPermissions::USER_VIEW_ANY, AdminPermissions::USER_CREATE);
+
+    Livewire::test(UsersRelationManager::class, ['ownerRecord' => $this->tenant, 'pageClass' => ViewTenant::class])
+        ->assertActionHidden(TestAction::make('create_invite')->table());
 });
 
 test('a cancelled tenant can still be viewed and edited', function () {

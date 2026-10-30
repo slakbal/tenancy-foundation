@@ -43,10 +43,13 @@ class InvitationsTable
                 ->color(fn (Model $record): string => $record->accepted_at ? 'success' : 'warning'),
             TextColumn::make('creator.name')
                 ->label(__('Invited by'))
-                ->state(fn (Model $record): string => collect(config('tenancy-foundation.user_name_attributes'))
-                    ->map(fn (string $attribute): mixed => $record->creator?->getAttribute($attribute))
-                    ->filter()
-                    ->implode(' ')),
+                ->state(fn (Model $record): string => $record->creator
+                    ? collect(config('tenancy-foundation.user_name_attributes'))
+                        ->map(fn (string $attribute): mixed => $record->creator->getAttribute($attribute))
+                        ->filter()
+                        ->implode(' ')
+                    : __('Support team'))
+                ->color(fn (Model $record): ?string => $record->creator ? null : 'gray'),
             TextColumn::make('expires_at')
                 ->label(__('Expires'))
                 ->dateTime()

@@ -7,7 +7,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\EditTenant;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ListTenants;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ViewTenant;
@@ -60,11 +59,6 @@ class TenantResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return TenantInfolist::configure($schema);
-    }
-
-    public static function getRecordRouteBindingEloquentQuery(): Builder
-    {
-        return parent::getRecordRouteBindingEloquentQuery()->with('owners');
     }
 
     public static function getRelations(): array

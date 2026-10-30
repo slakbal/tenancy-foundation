@@ -106,11 +106,6 @@ class TenantInfolist
                 ->label(__('Status'))
                 ->inlineLabel()
                 ->badge(),
-            TextEntry::make('owners.name')
-                ->label(__('Owners'))
-                ->inlineLabel()
-                ->badge()
-                ->placeholder('-'),
             TextEntry::make('created_at')
                 ->label(__('Created'))
                 ->inlineLabel()

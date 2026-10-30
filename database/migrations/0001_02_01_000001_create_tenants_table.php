@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Slakbal\TenancyFoundation\Enums\MemberStatus;
 
 return new class extends Migration
 {
@@ -25,6 +26,7 @@ return new class extends Migration
             $table->foreignIdFor(config('tenancy-foundation.models.tenant'))->constrained()->cascadeOnDelete();
             $table->boolean('is_owner')->default(false);
             $table->boolean('is_default_tenant')->default(false);
+            $table->string('status')->default(MemberStatus::ACTIVE)->index();
             $table->timestamp('accepted_invite_at')->nullable();
             $table->timestamps();
 

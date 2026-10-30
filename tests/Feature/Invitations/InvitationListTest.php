@@ -106,3 +106,12 @@ test('the invited by column still shows an inviter who has left the tenant, with
     expect($creatorQueries)->not->toBeEmpty()
         ->and(collect($creatorQueries)->filter(fn (string $sql): bool => str_contains($sql, 'tenant_user')))->toBeEmpty();
 });
+
+test('an invitation made from the admin portal without an inviter shows the support team', function () {
+    $invitation = Invitation::factory()->for($this->tenant, 'tenant')->create(['invited_by' => null]);
+
+    Livewire::test(ListInvitations::class)
+        ->loadTable()
+        ->assertCanSeeTableRecords([$invitation])
+        ->assertSee(__('Support team'));
+});

@@ -223,5 +223,22 @@
     "The owner role cannot be given through an invitation.": "The owner role cannot be given through an invitation.",
     ":email already belongs to this tenant.": ":email already belongs to this tenant.",
     "This invitation was already accepted or has expired.": "This invitation was already accepted or has expired.",
-    "The account of this email was deleted. Ask an admin to restore it.": "The account of this email was deleted. Ask an admin to restore it."
+    "The account of this email was deleted. Ask an admin to restore it.": "The account of this email was deleted. Ask an admin to restore it.",
+    "Invite user": "Invite user",
+    "Send invitation": "Send invitation",
+    "Support team": "Support team",
+    "Admin User": "Admin User",
+    "Admin Users": "Admin Users",
+    "Tenant User": "Tenant User",
+    "Tenant Users": "Tenant Users",
+    "Deactivate :name?": "Deactivate :name?",
+    "Activate :name?": "Activate :name?",
+    ":name has been activated.": ":name has been activated.",
+    ":name has been deactivated.": ":name has been deactivated.",
+    "The user is locked out of this tenant until reactivated. Their other tenants are not affected.": "The user is locked out of this tenant until reactivated. Their other tenants are not affected.",
+    "The user can use this tenant again.": "The user can use this tenant again.",
+    "You cannot change your own status.": "You cannot change your own status.",
+    "The status of an owner cannot be changed.": "The status of an owner cannot be changed.",
+    "Your access has been deactivated.": "Your access has been deactivated.",
+    "Contact the owner of your tenant. You have been signed out.": "Contact the owner of your tenant. You have been signed out."
 }

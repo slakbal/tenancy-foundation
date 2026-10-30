@@ -22,6 +22,7 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\RemoveUserT
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\SendUserPasswordResetLinkAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\InviteUserAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\EmailColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\NameColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
@@ -39,6 +40,7 @@ class TenantUsersTable
             ->defaultSort('name')
             ->columns(static::columns($roles))
             ->filters(static::filters($roles))
+            ->headerActions(static::headerActions($tenant))
             ->recordActions(static::recordActions($tenant));
     }
 
@@ -97,6 +99,16 @@ class TenantUsersTable
                     true: fn (Builder $query): Builder => $query->where('tenant_user.is_owner', true),
                     false: fn (Builder $query): Builder => $query->where('tenant_user.is_owner', false),
                 ),
+        ];
+    }
+
+    /**
+     * @return array<int, Action>
+     */
+    protected static function headerActions(Model $tenant): array
+    {
+        return [
+            InviteUserAction::make($tenant),
         ];
     }
 

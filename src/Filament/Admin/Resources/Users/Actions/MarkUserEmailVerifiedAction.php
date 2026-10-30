@@ -16,6 +16,7 @@ class MarkUserEmailVerifiedAction
             ->icon(Heroicon::OutlinedCheckBadge)
             ->color('success')
             ->authorize('markEmailVerified')
+            ->visible(fn (Model $record): bool => $record->email_verified_at === null && ! $record->trashed())
             ->requiresConfirmation()
             ->modalHeading(fn (Model $record): string => __('Mark :email as verified?', ['email' => $record->email]))
             ->action(function (Model $record): void {

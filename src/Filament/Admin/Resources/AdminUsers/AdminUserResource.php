@@ -35,12 +35,12 @@ class AdminUserResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return __('Admin');
+        return __('Admin User');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Admins');
+        return __('Admin Users');
     }
 
     public static function getNavigationGroup(): string|UnitEnum|null
