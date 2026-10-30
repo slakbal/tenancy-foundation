@@ -41,12 +41,16 @@ test('the guard ignores arguments that are not a model that can own a tenant', f
         ->and(SoleOwnerGuard::denial('delete', $this->tenant))->toBeNull();
 });
 
-test('the denial message names the user from the configured name attributes', function () {
-    config(['tenancy-foundation.user_name_attributes' => ['first_name', 'last_name']]);
-    $user = (new User)->forceFill(['id' => $this->owner->getKey(), 'first_name' => 'Jane', 'last_name' => 'Owner']);
+test('the denial message names the user and the tenants they solely own', function (array $nameAttributes, array $attributes) {
+    config(['tenancy-foundation.user_name_attributes' => $nameAttributes]);
+    $user = (new User)->forceFill(['id' => $this->owner->getKey(), ...$attributes]);
 
-    expect(SoleOwnerGuard::denial('delete', $user)->message())->toContain('Jane Owner');
-});
+    expect(SoleOwnerGuard::denial('delete', $user)->message())
+        ->toBe(__(':name is the only owner of :tenants and cannot be deleted. Make another member an owner first.', ['name' => 'Jane Owner', 'tenants' => 'Acme']));
+})->with([
+    'the default name attribute' => [['name'], ['name' => 'Jane Owner']],
+    'configured first and last name' => [['first_name', 'last_name'], ['first_name' => 'Jane', 'last_name' => 'Owner']],
+]);
 
 test('the denial message falls back to the email when no name is set', function () {
     config(['tenancy-foundation.user_name_attributes' => ['first_name', 'last_name']]);

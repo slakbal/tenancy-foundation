@@ -1,6 +1,10 @@
 <?php
 
+use Slakbal\TenancyFoundation\Actions\Tenant\CancelTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
+use Slakbal\TenancyFoundation\Enums\TenantStatus;
 use Slakbal\TenancyFoundation\Models\Tenant;
+use Slakbal\TenancyFoundation\Models\User;
 
 beforeEach(function () {
     $this->travelTo('2026-10-28 12:00:00');
@@ -25,4 +29,14 @@ test('the active scope leaves cancelled tenants out', function () {
     Tenant::factory()->create(['cancelled_at' => now()]);
 
     expect(Tenant::query()->active()->pluck('id')->all())->toBe([$active->getKey()]);
+});
+
+test('owners lists only the owning members and status follows cancellation', function () {
+    $owner = User::factory()->create();
+    $tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $owner);
+    $tenant->members()->attach(User::factory()->create(), ['is_owner' => false, 'is_default_tenant' => true]);
+
+    expect($tenant->owners->pluck('id')->all())->toBe([$owner->getKey()])
+        ->and($tenant->status)->toBe(TenantStatus::ACTIVE)
+        ->and(app(CancelTenant::class)->handle($tenant)->status)->toBe(TenantStatus::CANCELLED);
 });

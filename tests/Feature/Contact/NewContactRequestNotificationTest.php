@@ -61,7 +61,8 @@ test('admins who may view contact requests and super admins are notified, others
     Notification::assertNotSentTo([$other, $nobody], NewContactRequest::class);
 });
 
-test('the notification is stored for the filament bell and links to the request', function () {
+test('the notification is stored for the filament bell and links to the request in the admin panel', function () {
+    Filament::setCurrentPanel(Filament::getPanel('app'));
     $viewer = contactNotifiableAdmin(AdminPermissions::CONTACT_REQUEST_VIEW);
 
     $request = receiveContact();
@@ -75,25 +76,25 @@ test('the notification is stored for the filament bell and links to the request'
         ->and($stored->read_at)->toBeNull();
 });
 
-test('the request url points at the admin panel even when another panel is current', function () {
-    Filament::setCurrentPanel(Filament::getPanel('app'));
+test('notifications can be switched off through config', function (array $config) {
     $viewer = contactNotifiableAdmin(AdminPermissions::CONTACT_REQUEST_VIEW);
+    config($config);
 
-    $request = receiveContact();
+    receiveContact();
 
-    expect($viewer->notifications()->sole()->data['actions'][0]['url'])->toContain('/admin/contact-requests/'.$request->ulid.'/edit');
-});
+    expect($viewer->notifications()->count())->toBe(0);
+})->with([
+    'admins not notified' => [['tenancy-foundation.contact_requests.notify_admins' => false]],
+    'no notification class' => [['tenancy-foundation.notifications.contact_received' => null]],
+]);
 
-test('notifications can be switched off or replaced through config', function () {
+test('the notification can be replaced through config', function () {
     $viewer = contactNotifiableAdmin(AdminPermissions::CONTACT_REQUEST_VIEW);
+    config(['tenancy-foundation.notifications.contact_received' => CustomNewContactRequest::class]);
 
-    config(['tenancy-foundation.contact_requests.notify_admins' => false]);
     receiveContact();
-    expect($viewer->notifications()->count())->toBe(0);
 
-    config(['tenancy-foundation.contact_requests.notify_admins' => true, 'tenancy-foundation.notifications.contact_received' => null]);
-    receiveContact();
-    expect($viewer->notifications()->count())->toBe(0);
+    expect($viewer->notifications()->sole()->type)->toBe(CustomNewContactRequest::class);
 });
 
 test('the admin panel has database notifications enabled', function () {
@@ -108,3 +109,5 @@ test('the permission team context is restored after notifying', function () {
 
     expect(getPermissionsTeamId())->toBe(99);
 });
+
+class CustomNewContactRequest extends NewContactRequest {}

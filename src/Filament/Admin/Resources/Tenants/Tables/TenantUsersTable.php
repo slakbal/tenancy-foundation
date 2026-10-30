@@ -15,6 +15,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\ManageTenantRolesAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\EmailColumn;
@@ -32,7 +33,7 @@ class TenantUsersTable
             ->defaultSort('name')
             ->columns(static::columns($roles))
             ->filters(static::filters($roles))
-            ->recordActions(static::recordActions());
+            ->recordActions(static::recordActions($tenant));
     }
 
     protected static function modifyQuery(Table $table): Table
@@ -94,7 +95,7 @@ class TenantUsersTable
     /**
      * @return array<int, Action>
      */
-    protected static function recordActions(): array
+    protected static function recordActions(Model $tenant): array
     {
         return [
             ActionGroup::make([
@@ -104,6 +105,7 @@ class TenantUsersTable
                     ->authorize('update')
                     ->color('primary')
                     ->url(fn (Model $record): string => UserResource::getUrl('edit', ['record' => $record])),
+                ManageTenantRolesAction::make(tenant: $tenant),
                 ImpersonateUserAction::make(),
             ]),
         ];

@@ -27,23 +27,16 @@ beforeEach(function () {
     Filament::bootCurrentPanel();
 });
 
-test('a user whose only tenant is cancelled cannot access the tenant panel', function () {
-    $user = userWithTenants(['gone' => true]);
+test('only a user whose tenants are all cancelled is kept out of the tenant panel', function (array $tenants, bool $onlyCancelled) {
+    $user = userWithTenants($tenants);
 
-    expect($user->hasOnlyCancelledTenants())->toBeTrue()
-        ->and($user->canAccessPanel(Filament::getPanel('app')))->toBeFalse();
-});
-
-test('a user with at least one active tenant can still access the panel', function () {
-    $user = userWithTenants(['gone' => true, 'live' => false]);
-
-    expect($user->hasOnlyCancelledTenants())->toBeFalse()
-        ->and($user->canAccessPanel(Filament::getPanel('app')))->toBeTrue();
-});
-
-test('a user without any tenant is not treated as cancelled', function () {
-    expect(User::factory()->create()->hasOnlyCancelledTenants())->toBeFalse();
-});
+    expect($user->hasOnlyCancelledTenants())->toBe($onlyCancelled)
+        ->and($user->canAccessPanel(Filament::getPanel('app')))->toBe(! $onlyCancelled);
+})->with([
+    'only tenant cancelled' => [['gone' => true], true],
+    'one active tenant left' => [['gone' => true, 'live' => false], false],
+    'no tenant at all' => [[], false],
+]);
 
 test('cancelled tenants are left out of the tenant switcher', function () {
     $user = userWithTenants(['gone' => true, 'live' => false]);
@@ -51,23 +44,15 @@ test('cancelled tenants are left out of the tenant switcher', function () {
     expect($user->getTenants(Filament::getPanel('app'))->pluck('subdomain')->all())->toBe(['live']);
 });
 
-test('the default tenant skips a cancelled default and falls back to an active one', function () {
-    $user = userWithTenants(['gone' => true, 'live' => false], ['gone']);
+test('the default tenant is the active default, else another active tenant, else none', function (array $tenants, ?array $default, ?string $expected) {
+    $user = userWithTenants($tenants, $default);
 
-    expect($user->getDefaultTenant(Filament::getPanel('app'))->subdomain)->toBe('live');
-});
-
-test('the default tenant is null when everything is cancelled', function () {
-    $user = userWithTenants(['gone' => true, 'gone2' => true]);
-
-    expect($user->getDefaultTenant(Filament::getPanel('app')))->toBeNull();
-});
-
-test('an active default tenant is still preferred', function () {
-    $user = userWithTenants(['first' => false, 'second' => false], ['second']);
-
-    expect($user->getDefaultTenant(Filament::getPanel('app'))->subdomain)->toBe('second');
-});
+    expect($user->getDefaultTenant(Filament::getPanel('app'))?->subdomain)->toBe($expected);
+})->with([
+    'cancelled default falls back to an active one' => [['gone' => true, 'live' => false], ['gone'], 'live'],
+    'everything cancelled' => [['gone' => true, 'gone2' => true], null, null],
+    'active default is preferred' => [['first' => false, 'second' => false], ['second'], 'second'],
+]);
 
 test('a request to a cancelled tenant is sent to another active tenant of the user', function () {
     $user = userWithTenants(['gone' => true, 'live' => false]);

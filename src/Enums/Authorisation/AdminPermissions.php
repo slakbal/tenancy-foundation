@@ -38,4 +38,5 @@ enum AdminPermissions: string
     case USER_DELETE = 'user.delete';
     case USER_RESTORE = 'user.restore';
     case USER_FORCE_DELETE = 'user.force_delete';
+    case USER_SEND_PASSWORD_RESET = 'user.send_password_reset';
 }

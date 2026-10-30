@@ -24,6 +24,7 @@ use Slakbal\TenancyFoundation\Tests\Concerns\InteractsWithTenancy;
 use Slakbal\TenancyFoundation\Tests\Support\AdminPanelProvider;
 use Slakbal\TenancyFoundation\Tests\Support\TenantPanelProvider;
 use Spatie\Permission\PermissionServiceProvider;
+use STS\FilamentImpersonate\FilamentImpersonateServiceProvider;
 
 abstract class TestCase extends Orchestra
 {
@@ -45,6 +46,7 @@ abstract class TestCase extends Orchestra
             WidgetsServiceProvider::class,
             FilamentServiceProvider::class,
             FilamentTurnstileServiceProvider::class,
+            FilamentImpersonateServiceProvider::class,
             PermissionServiceProvider::class,
             TenancyFoundationServiceProvider::class,
             AdminPanelProvider::class,

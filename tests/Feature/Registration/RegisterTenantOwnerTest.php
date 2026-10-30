@@ -55,7 +55,8 @@ test('the action creates the user, the tenant, the owner membership and the owne
     expect($user->fresh()->hasRole(TenantRoles::OWNER->value))->toBeTrue();
 });
 
-test('the action rolls back the user when the tenant cannot be created', function () {
+test('the action rolls back the user and produces no event when the tenant cannot be created', function () {
+    Event::fake([TenantRegistered::class]);
     Tenant::factory()->create(['subdomain' => 'acme']);
 
     expect(fn () => app(RegisterTenantOwner::class)->handle(
@@ -64,22 +65,22 @@ test('the action rolls back the user when the tenant cannot be created', functio
     ))->toThrow(UniqueConstraintViolationException::class);
 
     expect(User::query()->where('email', 'jane@example.com')->exists())->toBeFalse();
+    Event::assertNotDispatched(TenantRegistered::class);
 });
 
 test('creating a tenant for an existing user without tenants makes it their default and keeps later ones non-default', function () {
     $user = User::factory()->create();
 
-    $first = app(CreateTenant::class)->handle(['name' => 'One', 'subdomain' => 'one'], $user);
-    $second = app(CreateTenant::class)->handle(['name' => 'Two', 'subdomain' => 'two'], $user);
+    app(CreateTenant::class)->handle(['name' => 'One', 'subdomain' => 'one'], $user);
+    app(CreateTenant::class)->handle(['name' => 'Two', 'subdomain' => 'two'], $user);
 
     $pivots = $user->tenants()->get()->keyBy('subdomain');
 
     expect((bool) $pivots['one']->pivot->is_default_tenant)->toBeTrue()
-        ->and((bool) $pivots['two']->pivot->is_default_tenant)->toBeFalse()
-        ->and($first->isNot($second))->toBeTrue();
+        ->and((bool) $pivots['two']->pivot->is_default_tenant)->toBeFalse();
 });
 
-test('the wizard registers a tenant owner, logs them in, sends the verification email and redirects to the verification prompt', function () {
+test('the wizard registers a tenant owner, logs them in, sends the verification and welcome emails and redirects to the verification prompt', function () {
     Notification::fake();
     $data = registrationData();
 
@@ -99,6 +100,7 @@ test('the wizard registers a tenant owner, logs them in, sends the verification 
         ->and(Filament::auth()->check())->toBeTrue();
 
     Notification::assertSentTo($user, VerifyEmail::class);
+    Notification::assertSentTo($user, WelcomeToTenant::class);
 });
 
 test('the wizard does not advance past the tenant step with a taken, reserved or malformed subdomain', function (string $subdomain) {
@@ -174,63 +176,13 @@ test('the welcome notification can be disabled through config', function () {
     Notification::assertNotSentTo($user, WelcomeToTenant::class);
 });
 
-test('no event or welcome notification is produced when the registration rolls back', function () {
-    Event::fake([TenantRegistered::class]);
-    Tenant::factory()->create(['subdomain' => 'acme']);
-
-    try {
-        app(RegisterTenantOwner::class)->handle(
-            ['name' => 'Acme School', 'subdomain' => 'acme'],
-            ['name' => 'Jane Owner', 'email' => 'jane@example.com', 'password' => 'secret-password'],
-        );
-    } catch (UniqueConstraintViolationException) {
-    }
-
-    Event::assertNotDispatched(TenantRegistered::class);
-});
-
-test('the wizard sends both the verification email and the welcome email', function () {
-    Notification::fake();
-    $data = registrationData();
-
-    Livewire::test(RegisterUser::class)
-        ->fillForm(['tenant' => $data['tenant']])
-        ->goToNextWizardStep()
-        ->fillForm($data['user'])
-        ->call('register');
-
-    $user = User::query()->where('email', 'jane@example.com')->firstOrFail();
-
-    Notification::assertSentTo($user, VerifyEmail::class);
-    Notification::assertSentTo($user, WelcomeToTenant::class);
-});
-
 test('the tenant and user form components can be overridden by a subclass', function () {
-    $page = new class extends RegisterUser
-    {
-        public function tenantComponentNames(): array
-        {
-            return collect($this->getTenantFormComponents())->map(fn ($component) => $component->getName())->all();
-        }
-
-        protected function getTenantFormComponents(): array
-        {
-            return [...parent::getTenantFormComponents(), TextInput::make('region')];
-        }
-
-        public function userComponentNames(): array
-        {
-            return collect($this->getUserFormComponents())->map(fn ($component) => $component->getName())->all();
-        }
-
-        protected function getUserFormComponents(): array
-        {
-            return [...parent::getUserFormComponents(), TextInput::make('phone')];
-        }
-    };
-
-    expect($page->tenantComponentNames())->toBe(['name', 'subdomain', 'region'])
-        ->and($page->userComponentNames())->toContain('email', 'phone');
+    Livewire::test(RegisterUserWithExtraFields::class)
+        ->assertFormFieldExists('tenant.name')
+        ->assertFormFieldExists('tenant.subdomain')
+        ->assertFormFieldExists('tenant.region')
+        ->assertFormFieldExists('email')
+        ->assertFormFieldExists('phone');
 });
 
 test('the verification prompt tells the user to refresh once verified', function () {
@@ -240,3 +192,16 @@ test('the verification prompt tells the user to refresh once verified', function
     Livewire::test(EmailVerificationPrompt::class)
         ->assertSee('refresh this page');
 });
+
+class RegisterUserWithExtraFields extends RegisterUser
+{
+    protected function getTenantFormComponents(): array
+    {
+        return [...parent::getTenantFormComponents(), TextInput::make('region')];
+    }
+
+    protected function getUserFormComponents(): array
+    {
+        return [...parent::getUserFormComponents(), TextInput::make('phone')];
+    }
+}

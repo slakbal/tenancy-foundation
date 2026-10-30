@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Slakbal\TenancyFoundation\Actions\Tenant\CancelTenant;
 use Slakbal\TenancyFoundation\Events\TenantCancelled;
@@ -10,21 +11,21 @@ beforeEach(function () {
     config(['tenancy-foundation.cancellation.grace_days' => 30]);
 });
 
-test('cancelling marks the tenant as cancelled now and schedules its deletion at the end of the day', function () {
+test('cancelling marks the tenant as cancelled now', function () {
     $tenant = app(CancelTenant::class)->handle(Tenant::factory()->create());
 
     expect($tenant->cancelled_at->toDateTimeString())->toBe('2026-10-28 09:30:00')
-        ->and($tenant->scheduled_for_deletion_at->toDateTimeString())->toBe('2026-11-27 23:59:59')
         ->and($tenant->fresh()->isCancelled())->toBeTrue();
 });
 
-test('the number of days comes from the config', function (int|string $days, string $expected) {
+test('deletion is scheduled at the end of the day after the configured number of days', function (int|string $days, string $expected) {
     config(['tenancy-foundation.cancellation.grace_days' => $days]);
 
     $tenant = app(CancelTenant::class)->handle(Tenant::factory()->create());
 
     expect($tenant->scheduled_for_deletion_at->toDateTimeString())->toBe($expected);
 })->with([
+    'a month' => [30, '2026-11-27 23:59:59'],
     'same day' => [0, '2026-10-28 23:59:59'],
     'a week' => [7, '2026-11-04 23:59:59'],
     'as a string from the env' => ['14', '2026-11-11 23:59:59'],
@@ -33,7 +34,13 @@ test('the number of days comes from the config', function (int|string $days, str
 test('cancelling dispatches the event once after the commit', function () {
     Event::fake([TenantCancelled::class]);
 
-    $tenant = app(CancelTenant::class)->handle(Tenant::factory()->create());
+    $tenant = Tenant::factory()->create();
+
+    DB::transaction(function () use ($tenant): void {
+        app(CancelTenant::class)->handle($tenant);
+
+        Event::assertNotDispatched(TenantCancelled::class);
+    });
 
     Event::assertDispatchedTimes(TenantCancelled::class, 1);
     Event::assertDispatched(TenantCancelled::class, fn (TenantCancelled $event): bool => $event->tenant->is($tenant));

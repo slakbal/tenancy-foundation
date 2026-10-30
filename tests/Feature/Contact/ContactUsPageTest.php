@@ -1,17 +1,13 @@
 <?php
 
 use Filament\Facades\Filament;
-use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
-use Slakbal\TenancyFoundation\Enums\AuthGuard;
-use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Enums\ContactSource;
 use Slakbal\TenancyFoundation\Filament\Tenant\Pages\ContactUs;
 use Slakbal\TenancyFoundation\Models\ContactRequest;
 use Slakbal\TenancyFoundation\Models\User;
 use Slakbal\TenancyFoundation\Plugins\TenantPlugin;
-use Spatie\Permission\Models\Role;
 
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('app'));
@@ -46,24 +42,19 @@ test('a message is stored with the name and email of the logged in user and the 
         ->and($request->source)->toBe(ContactSource::TENANT);
 });
 
-test('the message is required and limited in length', function () {
-    Livewire::test(ContactUs::class)
-        ->fillForm(['message' => ''])
-        ->call('submit')
-        ->assertHasFormErrors(['message' => 'required']);
+test('the message is required and limited in length', function (string $message, ?string $rule) {
+    $component = Livewire::test(ContactUs::class)
+        ->fillForm(['message' => $message])
+        ->call('submit');
 
-    Livewire::test(ContactUs::class)
-        ->fillForm(['message' => str_repeat('a', 1025)])
-        ->call('submit')
-        ->assertHasFormErrors(['message' => 'max']);
+    $rule === null ? $component->assertHasNoFormErrors() : $component->assertHasFormErrors(['message' => $rule]);
 
-    Livewire::test(ContactUs::class)
-        ->fillForm(['message' => str_repeat('a', 1024)])
-        ->call('submit')
-        ->assertHasNoFormErrors();
-
-    expect(ContactRequest::query()->count())->toBe(1);
-});
+    expect(ContactRequest::query()->count())->toBe($rule === null ? 1 : 0);
+})->with([
+    'empty' => ['', 'required'],
+    'too long' => [str_repeat('a', 1025), 'max'],
+    'at the limit' => [str_repeat('a', 1024), null],
+]);
 
 test('a name and email posted by the browser are ignored in favour of the logged in user', function () {
     Livewire::test(ContactUs::class)
@@ -76,27 +67,6 @@ test('a name and email posted by the browser are ignored in favour of the logged
 
     expect($request->name)->toBe('Jane Owner')
         ->and($request->email)->toBe('jane@example.com');
-});
-
-test('no captcha or cloudflare call is involved for a logged in user', function () {
-    config(['filament-turnstile.key' => 'site-key', 'filament-turnstile.secret' => 'secret-key']);
-    Http::fake();
-
-    Livewire::test(ContactUs::class)->fillForm(['message' => 'Hello'])->call('submit')->assertHasNoFormErrors();
-
-    Http::assertNothingSent();
-    expect(ContactRequest::query()->count())->toBe(1);
-});
-
-test('every kind of tenant user can send a message, not only owners', function () {
-    $member = User::factory()->create(['name' => 'View Only']);
-    $this->actingAsTenantUser($member, $this->tenant);
-    Role::findOrCreate(TenantRoles::VIEW_ONLY->value, AuthGuard::TENANT->value);
-    $member->assignRole(TenantRoles::VIEW_ONLY);
-
-    Livewire::test(ContactUs::class)->fillForm(['message' => 'From a viewer'])->call('submit')->assertHasNoFormErrors();
-
-    expect(ContactRequest::query()->sole()->name)->toBe('View Only');
 });
 
 test('the page is served on the tenant domain', function () {

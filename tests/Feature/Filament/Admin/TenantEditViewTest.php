@@ -17,19 +17,11 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\User;
-use Spatie\Permission\Models\Permission;
 
 function tenantPageAdmin(AdminPermissions ...$permissions): Admin
 {
-    $admin = Admin::factory()->create();
-
-    foreach ([AdminPermissions::TENANT_VIEW_ANY, ...$permissions] as $permission) {
-        Permission::findOrCreate($permission->value, AuthGuard::ADMIN->value);
-        $admin->givePermissionTo($permission);
-    }
-
+    $admin = adminWithAccess(AdminPermissions::TENANT_VIEW_ANY, ...$permissions);
     test()->actingAs($admin, AuthGuard::ADMIN->value);
-    setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
 
     return $admin;
 }
@@ -99,7 +91,12 @@ test('the edit form validates the name, a unique subdomain and the email', funct
         ->assertHasNoFormErrors();
 });
 
-test('a tenant can be cancelled and reactivated from the view page', function () {
+test('a tenant can be cancelled and reactivated from the view page, but only with the permission', function () {
+    tenantPageAdmin(AdminPermissions::TENANT_VIEW);
+
+    Livewire::test(ViewTenant::class, ['record' => $this->tenant->getRouteKey()])
+        ->assertActionHidden('cancel');
+
     tenantPageAdmin(AdminPermissions::TENANT_VIEW, AdminPermissions::TENANT_CANCEL, AdminPermissions::TENANT_REACTIVATE);
 
     Livewire::test(ViewTenant::class, ['record' => $this->tenant->getRouteKey()])
@@ -115,13 +112,6 @@ test('a tenant can be cancelled and reactivated from the view page', function ()
         ->callAction('reactivate');
 
     expect($this->tenant->refresh()->isCancelled())->toBeFalse();
-});
-
-test('the cancel action is not offered without its permission', function () {
-    tenantPageAdmin(AdminPermissions::TENANT_VIEW);
-
-    Livewire::test(ViewTenant::class, ['record' => $this->tenant->getRouteKey()])
-        ->assertActionHidden('cancel');
 });
 
 test('the list rows link to the view and edit pages', function () {
@@ -200,15 +190,15 @@ test('the page header edit and view actions are labelled buttons, not icon butto
     }
 });
 
-test('leaving an impersonation goes back to the page the admin started from', function () {
+test('leaving an impersonation goes back to the page the admin started from, or the users list', function (bool $withReferer) {
     $page = TenantResource::getUrl('view', ['record' => $this->tenant]);
-    request()->headers->set('referer', $page);
 
-    expect(ImpersonateUserAction::make()->getBackTo())->toBe($page);
-});
+    $withReferer
+        ? request()->headers->set('referer', $page)
+        : request()->headers->remove('referer');
 
-test('leaving an impersonation falls back to the users list without a referer', function () {
-    request()->headers->remove('referer');
-
-    expect(ImpersonateUserAction::make()->getBackTo())->toBe(UserResource::getUrl('index'));
-});
+    expect(ImpersonateUserAction::make()->getBackTo())->toBe($withReferer ? $page : UserResource::getUrl('index'));
+})->with([
+    'with a referer' => true,
+    'without a referer' => false,
+]);

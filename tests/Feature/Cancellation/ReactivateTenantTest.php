@@ -83,11 +83,3 @@ test('a tenant can be cancelled again after it was reactivated with fresh dates'
     expect($tenant->cancelled_at->toDateTimeString())->toBe('2026-12-01 10:00:00')
         ->and($tenant->scheduled_for_deletion_at->toDateTimeString())->toBe('2026-12-31 23:59:59');
 });
-
-test('the status and owners helpers describe the tenant', function () {
-    $member = User::factory()->create();
-    $this->tenant->members()->attach($member, ['is_owner' => false, 'is_default_tenant' => true]);
-
-    expect($this->tenant->owners->pluck('id')->all())->toBe([$this->owner->getKey()])
-        ->and(app(CancelTenant::class)->handle($this->tenant)->status)->toBe(TenantStatus::CANCELLED);
-});

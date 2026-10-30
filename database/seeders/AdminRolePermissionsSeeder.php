@@ -50,6 +50,7 @@ class AdminRolePermissionsSeeder extends Seeder
                 AdminPermissions::TENANT_VIEW->value,
                 AdminPermissions::USER_VIEW_ANY->value,
                 AdminPermissions::USER_VIEW->value,
+                AdminPermissions::USER_SEND_PASSWORD_RESET->value,
                 AdminPermissions::IMPERSONATE_USER->value,
                 AdminPermissions::CONTACT_REQUEST_VIEW_ANY->value,
                 AdminPermissions::CONTACT_REQUEST_VIEW->value,

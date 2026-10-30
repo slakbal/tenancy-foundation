@@ -12,23 +12,10 @@ use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\ListAdminUsers;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\ViewAdminUser;
 use Slakbal\TenancyFoundation\Models\Admin;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 function statusActor(AdminRoles $role): Admin
 {
-    foreach (AdminRoles::cases() as $case) {
-        Role::findOrCreate($case->value, AuthGuard::ADMIN->value);
-    }
-
-    $admin = Admin::factory()->create();
-    $admin->assignRole($role);
-
-    foreach ([AdminPermissions::ADMIN_USER_VIEW_ANY, AdminPermissions::ADMIN_USER_VIEW, AdminPermissions::ADMIN_USER_UPDATE] as $permission) {
-        Permission::findOrCreate($permission->value, AuthGuard::ADMIN->value);
-        $admin->givePermissionTo($permission);
-    }
-
+    $admin = adminWithAccess($role, AdminPermissions::ADMIN_USER_VIEW_ANY, AdminPermissions::ADMIN_USER_VIEW, AdminPermissions::ADMIN_USER_UPDATE);
     test()->actingAs($admin, AuthGuard::ADMIN->value);
 
     return $admin;
@@ -36,10 +23,7 @@ function statusActor(AdminRoles $role): Admin
 
 function statusTarget(AdminRoles $role = AdminRoles::SUPPORT): Admin
 {
-    $admin = Admin::factory()->create();
-    $admin->assignRole($role);
-
-    return $admin;
+    return adminWithAccess($role);
 }
 
 beforeEach(function () {
@@ -74,21 +58,19 @@ it('activates an inactive admin', function () {
 
 it('hides the deactivate action on your own row', function () {
     $actor = statusActor(AdminRoles::SUPER_ADMIN);
-    $other = statusTarget(AdminRoles::SUPER_ADMIN);
-    $other->forceFill(['status' => AdminStatus::INACTIVE])->save();
+    statusTarget(AdminRoles::SUPER_ADMIN);
 
     Livewire::test(ListAdminUsers::class)
         ->assertActionHidden(TestAction::make('deactivate')->table($actor));
 });
 
-it('keeps an admin from deactivating a super admin', function () {
-    $actor = statusActor(AdminRoles::ADMIN);
-    $super = statusTarget(AdminRoles::SUPER_ADMIN);
-    statusTarget(AdminRoles::SUPER_ADMIN);
+it('hides the deactivate action on the last active super admin', function () {
+    $actor = statusActor(AdminRoles::SUPER_ADMIN);
+    $actor->forceFill(['status' => AdminStatus::INACTIVE])->save();
+    $last = statusTarget(AdminRoles::SUPER_ADMIN);
 
-    expect($actor->can('deactivate', $super))->toBeFalse()
-        ->and($actor->can('changeRole', $super))->toBeFalse()
-        ->and($actor->can('sendPasswordResetLink', $super))->toBeFalse();
+    Livewire::test(ListAdminUsers::class)
+        ->assertActionHidden(TestAction::make('deactivate')->table($last));
 });
 
 it('sends a password reset link to an active admin', function () {

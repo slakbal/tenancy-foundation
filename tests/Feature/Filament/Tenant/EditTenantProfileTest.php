@@ -2,7 +2,6 @@
 
 use Filament\Facades\Filament;
 use Filament\Forms\Components\TextInput;
-use Filament\Schemas\Components\Section;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
@@ -11,6 +10,14 @@ use Slakbal\TenancyFoundation\Filament\Components\Schemas\TenantDetailsSchema;
 use Slakbal\TenancyFoundation\Filament\Pages\EditTenantProfile;
 use Slakbal\TenancyFoundation\Models\User;
 use Spatie\Permission\Models\Permission;
+
+class ExtendedTenantProfile extends EditTenantProfile
+{
+    protected function getTenantProfileFormComponents(): array
+    {
+        return [...parent::getTenantProfileFormComponents(), TextInput::make('billing_email')];
+    }
+}
 
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('app'));
@@ -24,37 +31,10 @@ beforeEach(function () {
     Filament::setTenant($this->tenant);
 });
 
-test('the profile page edits the name of the tenant', function () {
-    Livewire::test(EditTenantProfile::class)
-        ->assertFormFieldExists('name')
-        ->assertFormFieldExists('subdomain')
-        ->fillForm(['name' => 'Acme Renamed'])
-        ->call('save')
-        ->assertHasNoFormErrors();
-
-    expect($this->tenant->fresh()->name)->toBe('Acme Renamed');
-});
-
 test('a subclass can extend the profile form through the components hook', function () {
-    $page = new class extends EditTenantProfile
-    {
-        public function components(): array
-        {
-            return $this->getTenantProfileFormComponents();
-        }
-
-        protected function getTenantProfileFormComponents(): array
-        {
-            return [...parent::getTenantProfileFormComponents(), TextInput::make('billing_email')];
-        }
-    };
-
-    $components = $page->components();
-
-    expect($components)->toHaveCount(2)
-        ->and($components[0])->toBeInstanceOf(Section::class)
-        ->and($components[0]->getHeading())->toBe('Tenant details')
-        ->and($components[1]->getName())->toBe('billing_email');
+    Livewire::test(ExtendedTenantProfile::class)
+        ->assertFormFieldExists('name')
+        ->assertFormFieldExists('billing_email');
 });
 
 test('the subdomain is shown read only with the same prefix and suffix as at registration', function () {
@@ -64,8 +44,9 @@ test('the subdomain is shown read only with the same prefix and suffix as at reg
             && $field->getSuffixLabel() === '.'.config('tenancy-foundation.domain'));
 });
 
-test('the subdomain cannot be changed even when the request is tampered with', function () {
+test('the name can be edited but the subdomain cannot, even when the request is tampered with', function () {
     Livewire::test(EditTenantProfile::class)
+        ->assertFormFieldExists('name')
         ->fillForm(['name' => 'Acme Renamed', 'subdomain' => 'hacked'])
         ->call('save')
         ->assertHasNoFormErrors();
@@ -76,6 +57,8 @@ test('the subdomain cannot be changed even when the request is tampered with', f
 
 test('the full tenant url can be copied to the clipboard', function () {
     $url = TenantDetailsSchema::url('acme');
+
+    expect($url)->toBe(appDomainScheme().'acme.'.config('tenancy-foundation.domain'));
 
     $html = Livewire::test(EditTenantProfile::class)->html();
 

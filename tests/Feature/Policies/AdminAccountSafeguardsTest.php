@@ -2,31 +2,18 @@
 
 use Filament\Facades\Filament;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
-use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Support\AdminAccountGuard;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 function safeguardAdmin(?AdminRoles $role = null, bool $withAdminUserPermissions = false): Admin
 {
-    $admin = Admin::factory()->create();
+    $permissions = $withAdminUserPermissions
+        ? [AdminPermissions::ADMIN_USER_UPDATE, AdminPermissions::ADMIN_USER_DELETE, AdminPermissions::ADMIN_USER_RESTORE, AdminPermissions::ADMIN_USER_FORCE_DELETE]
+        : [];
 
-    if ($role) {
-        Role::findOrCreate($role->value, AuthGuard::ADMIN->value);
-        $admin->assignRole($role);
-    }
-
-    if ($withAdminUserPermissions) {
-        foreach ([AdminPermissions::ADMIN_USER_UPDATE, AdminPermissions::ADMIN_USER_DELETE, AdminPermissions::ADMIN_USER_RESTORE, AdminPermissions::ADMIN_USER_FORCE_DELETE] as $permission) {
-            Permission::findOrCreate($permission->value, AuthGuard::ADMIN->value);
-            $admin->givePermissionTo($permission);
-        }
-    }
-
-    return $admin;
+    return adminWithAccess(...array_filter([$role, ...$permissions]));
 }
 
 beforeEach(function () {
@@ -53,7 +40,7 @@ it('lets a super admin delete another admin', function () {
         ->and($super->can('delete', safeguardAdmin(AdminRoles::SUPER_ADMIN)))->toBeTrue();
 });
 
-it('protects the last active super admin from deletion', function () {
+it('protects the last active super admin from being deleted, deactivated or demoted', function (string $ability) {
     $last = safeguardAdmin(AdminRoles::SUPER_ADMIN);
     $inactiveSuper = safeguardAdmin(AdminRoles::SUPER_ADMIN);
     $inactiveSuper->forceFill(['status' => AdminStatus::INACTIVE])->save();
@@ -61,9 +48,8 @@ it('protects the last active super admin from deletion', function () {
     $deletedSuper->delete();
 
     expect(AdminAccountGuard::isLastActiveSuperAdmin($last))->toBeTrue()
-        ->and($inactiveSuper->can('delete', $last))->toBeFalse()
-        ->and($inactiveSuper->can('forceDelete', $last))->toBeFalse();
-});
+        ->and($inactiveSuper->can($ability, $last))->toBeFalse();
+})->with(['delete', 'forceDelete', 'deactivate', 'changeRole']);
 
 it('does not treat a super admin as last while another active one exists', function () {
     $first = safeguardAdmin(AdminRoles::SUPER_ADMIN);
@@ -78,7 +64,7 @@ it('keeps admins with permissions away from super admins', function (string $abi
     safeguardAdmin(AdminRoles::SUPER_ADMIN);
 
     expect($admin->can($ability, $super))->toBeFalse();
-})->with(['update', 'delete', 'restore', 'forceDelete']);
+})->with(['update', 'delete', 'restore', 'forceDelete', 'deactivate', 'changeRole', 'sendPasswordResetLink']);
 
 it('lets admins with permissions manage other admins', function (string $ability) {
     $admin = safeguardAdmin(AdminRoles::ADMIN, withAdminUserPermissions: true);

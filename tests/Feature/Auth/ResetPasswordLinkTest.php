@@ -7,41 +7,51 @@ use Slakbal\TenancyFoundation\Filament\Pages\ResetPassword;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\User;
 
-it('shows the form for a valid admin link', function () {
-    Filament::setCurrentPanel(Filament::getPanel('admin'));
-    $admin = Admin::factory()->create();
-    $token = Password::broker('admins')->createToken($admin);
+dataset('reset panels', [
+    'admin panel' => ['admin', Admin::class, 'admins'],
+    'tenant panel' => ['app', User::class, 'users'],
+]);
 
-    Livewire::test(ResetPassword::class, ['email' => $admin->email, 'token' => $token])
+it('shows the form for a valid link', function (string $panel, string $model, string $broker) {
+    Filament::setCurrentPanel(Filament::getPanel($panel));
+    $user = $model::factory()->create();
+    $token = Password::broker($broker)->createToken($user);
+
+    Livewire::test(ResetPassword::class, ['email' => $user->email, 'token' => $token])
         ->assertNoRedirect()
         ->assertSuccessful();
-});
+})->with('reset panels');
 
-it('sends an expired or replaced admin link to the request page with a message', function () {
-    Filament::setCurrentPanel(Filament::getPanel('admin'));
-    $admin = Admin::factory()->create();
-    $old = Password::broker('admins')->createToken($admin);
-    Password::broker('admins')->createToken($admin);
+it('sends a replaced link to the request page with a message', function (string $panel, string $model, string $broker) {
+    Filament::setCurrentPanel(Filament::getPanel($panel));
+    $user = $model::factory()->create();
+    $old = Password::broker($broker)->createToken($user);
+    Password::broker($broker)->createToken($user);
 
-    Livewire::test(ResetPassword::class, ['email' => $admin->email, 'token' => $old])
+    Livewire::test(ResetPassword::class, ['email' => $user->email, 'token' => $old])
         ->assertRedirect(Filament::getRequestPasswordResetUrl())
         ->assertNotified(__('This link is invalid or has expired.'));
-});
+})->with('reset panels');
 
-it('sends an unknown email or token to the request page', function () {
-    Filament::setCurrentPanel(Filament::getPanel('admin'));
+it('sends an expired link to the request page with a message', function (string $panel, string $model, string $broker) {
+    Filament::setCurrentPanel(Filament::getPanel($panel));
+    $user = $model::factory()->create();
+    $token = Password::broker($broker)->createToken($user);
+
+    $this->travel((int) config("auth.passwords.{$broker}.expire", 60) + 1)->minutes();
+
+    Livewire::test(ResetPassword::class, ['email' => $user->email, 'token' => $token])
+        ->assertRedirect(Filament::getRequestPasswordResetUrl())
+        ->assertNotified(__('This link is invalid or has expired.'));
+})->with('reset panels');
+
+it('sends an unknown email or token to the request page', function (string $panel, string $model, string $broker) {
+    Filament::setCurrentPanel(Filament::getPanel($panel));
+    $user = $model::factory()->create();
 
     Livewire::test(ResetPassword::class, ['email' => 'nobody@example.com', 'token' => 'abc'])
         ->assertRedirect(Filament::getRequestPasswordResetUrl());
-});
-
-it('does the same for tenant users on the tenant panel', function () {
-    Filament::setCurrentPanel(Filament::getPanel('app'));
-    $user = User::factory()->create();
-    $token = Password::broker('users')->createToken($user);
-
-    Livewire::test(ResetPassword::class, ['email' => $user->email, 'token' => $token])->assertNoRedirect();
 
     Livewire::test(ResetPassword::class, ['email' => $user->email, 'token' => 'wrong'])
         ->assertRedirect(Filament::getRequestPasswordResetUrl());
-});
+})->with('reset panels');

@@ -10,10 +10,8 @@ use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ListTenants;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\ListUsers as AdminListUsers;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Pages\ListUsers as TenantListUsers;
-use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
-use Spatie\Permission\Models\Permission;
 
 function listQueryCount(string $page): int
 {
@@ -31,7 +29,7 @@ function listQueryCount(string $page): int
 function assertListQueryCountIsConstant(string $page, Closure $addRows): void
 {
     $addRows(1);
-    listQueryCount($page);
+    listQueryCount($page); // warm-up: first render fills one-off caches
 
     $withFewRows = listQueryCount($page);
 
@@ -46,10 +44,7 @@ test('the admin users list runs the same number of queries regardless of row cou
     Filament::bootCurrentPanel();
     setPermissionsTeamId(1);
 
-    $admin = Admin::factory()->create();
-    Permission::findOrCreate(AdminPermissions::USER_VIEW_ANY->value, AuthGuard::ADMIN->value);
-    $admin->givePermissionTo(AdminPermissions::USER_VIEW_ANY);
-    $this->actingAs($admin, AuthGuard::ADMIN->value);
+    $this->actingAs(adminWithAccess(AdminPermissions::USER_VIEW_ANY), AuthGuard::ADMIN->value);
 
     assertListQueryCountIsConstant(AdminListUsers::class, function (int $rows): void {
         User::factory()->count($rows)->create()->each(
@@ -63,12 +58,8 @@ test('the tenant users list runs the same number of queries regardless of row co
     Filament::bootCurrentPanel();
 
     $tenant = Tenant::factory()->create();
-    $viewer = User::factory()->create();
-    $tenant->members()->attach($viewer, ['is_owner' => false, 'is_default_tenant' => true]);
-
     setPermissionsTeamId($tenant->getKey());
-    Permission::findOrCreate(TenantPermissions::USER_VIEW_ANY->value, AuthGuard::TENANT->value);
-    $viewer->givePermissionTo(TenantPermissions::USER_VIEW_ANY);
+    $viewer = tenantMemberWithPermission($tenant, TenantPermissions::USER_VIEW_ANY);
 
     $this->actingAs($viewer, AuthGuard::TENANT->value);
     Filament::setTenant($tenant);
@@ -87,7 +78,7 @@ test('the admin tenants list runs the same number of queries regardless of row c
     Filament::bootCurrentPanel();
     setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
 
-    $this->actingAs(adminWithPermission(AdminPermissions::TENANT_VIEW_ANY), AuthGuard::ADMIN->value);
+    $this->actingAs(adminWithAccess(AdminPermissions::TENANT_VIEW_ANY), AuthGuard::ADMIN->value);
 
     assertListQueryCountIsConstant(ListTenants::class, function (int $rows): void {
         static $created = 0;

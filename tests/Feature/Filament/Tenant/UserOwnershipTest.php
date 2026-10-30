@@ -1,7 +1,6 @@
 <?php
 
 use Filament\Facades\Filament;
-use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\TransferTenantOwnership;
@@ -24,14 +23,14 @@ beforeEach(function () {
     $this->tenant->members()->attach($this->member->getKey(), ['is_owner' => false, 'is_default_tenant' => true]);
 });
 
-function actAs(User $user, $tenant): void
+function actAsTenantUserIn(User $user, $tenant): void
 {
     test()->actingAs($user, AuthGuard::TENANT->value);
     Filament::setTenant($tenant);
 }
 
 test('the sole owner has no delete action while other users do', function () {
-    actAs($this->owner, $this->tenant);
+    actAsTenantUserIn($this->owner, $this->tenant);
 
     Livewire::test(ListUsers::class)
         ->assertTableActionHidden('delete', $this->owner)
@@ -46,7 +45,7 @@ test('make owner shows only to owners and only for non owner members', function 
         $this->member->givePermissionTo(TenantPermissions::cases());
     }
 
-    actAs($actor === 'an owner' ? $this->owner : $this->member, $this->tenant);
+    actAsTenantUserIn($actor === 'an owner' ? $this->owner : $this->member, $this->tenant);
 
     $list = Livewire::test(ListUsers::class)
         ->assertTableActionHidden('makeOwner', $this->owner);
@@ -60,7 +59,7 @@ test('make owner shows only to owners and only for non owner members', function 
 ]);
 
 test('making a member the owner transfers ownership and demotes the previous owner', function () {
-    actAs($this->owner, $this->tenant);
+    actAsTenantUserIn($this->owner, $this->tenant);
 
     Livewire::test(ListUsers::class)
         ->callTableAction('makeOwner', $this->member)
@@ -73,7 +72,7 @@ test('making a member the owner transfers ownership and demotes the previous own
 
 test('after the hand over the original owner can be deleted but the new sole owner cannot', function () {
     app(TransferTenantOwnership::class)->handle($this->tenant, $this->member, $this->owner);
-    actAs($this->member, $this->tenant);
+    actAsTenantUserIn($this->member, $this->tenant);
 
     Livewire::test(ListUsers::class)
         ->callTableAction('delete', $this->owner);
@@ -84,8 +83,8 @@ test('after the hand over the original owner can be deleted but the new sole own
         ->assertTableActionHidden('delete', $this->member);
 });
 
-test('bulk delete skips a sole owner and still deletes the other selected users', function (bool $withMember) {
-    actAs($this->owner, $this->tenant);
+test('bulk delete skips a sole owner and deletes only the other selected users', function (bool $withMember) {
+    actAsTenantUserIn($this->owner, $this->tenant);
 
     Livewire::test(ListUsers::class)
         ->callTableBulkAction('delete', $withMember ? [$this->owner, $this->member] : [$this->owner])
@@ -99,7 +98,7 @@ test('bulk delete skips a sole owner and still deletes the other selected users'
 ]);
 
 test('the edit page hides delete for a sole owner and shows it for others', function () {
-    actAs($this->owner, $this->tenant);
+    actAsTenantUserIn($this->owner, $this->tenant);
 
     Livewire::test(EditUser::class, ['record' => $this->owner->getRouteKey()])
         ->assertActionHidden('delete');
@@ -111,7 +110,7 @@ test('the edit page hides delete for a sole owner and shows it for others', func
 test('bulk force delete also skips a sole owner', function () {
     $this->owner->delete();
     $this->member->delete();
-    actAs($this->owner, $this->tenant);
+    actAsTenantUserIn($this->owner, $this->tenant);
 
     Livewire::test(ListUsers::class)
         ->filterTable('trashed', true)
@@ -119,14 +118,4 @@ test('bulk force delete also skips a sole owner', function () {
 
     expect(User::withTrashed()->find($this->owner->getKey()))->not->toBeNull()
         ->and(User::withTrashed()->find($this->member->getKey()))->toBeNull();
-});
-
-test('the refusal message names the owner by their full name', function () {
-    $owner = User::factory()->create(['name' => 'Jane Owner']);
-    app(CreateTenant::class)->handle(['name' => 'Janes', 'subdomain' => 'janes'], $owner);
-
-    $response = Gate::forUser($owner)->inspect('delete', $owner);
-
-    expect($response->denied())->toBeTrue()
-        ->and($response->message())->toBe(__(':name is the only owner of a tenant and cannot be deleted. Make another member an owner first.', ['name' => 'Jane Owner']));
 });

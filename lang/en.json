@@ -38,7 +38,6 @@
     "Owner of": "Owner of",
     "Member of": "Member of",
     "Make owner": "Make owner",
-    ":name is the only owner of a tenant and cannot be deleted. Make another member an owner first.": ":name is the only owner of a tenant and cannot be deleted. Make another member an owner first.",
     "Make this user the owner?": "Make this user the owner?",
     "Ownership of this tenant is transferred to this user. You will no longer be the owner.": "Ownership of this tenant is transferred to this user. You will no longer be the owner.",
     ":name is now the owner of this tenant.": ":name is now the owner of this tenant.",
@@ -181,6 +180,12 @@
     "Open tenant": "Open tenant",
     "Make this user the owner of :tenant?": "Make this user the owner of :tenant?",
     "Ownership of this tenant is transferred to this user. The previous owner stays a member.": "Ownership of this tenant is transferred to this user. The previous owner stays a member.",
-    "Change the role in :tenant": "Change the role in :tenant",
-    "Role in :tenant updated.": "Role in :tenant updated."
+    ":name is the only owner of :tenants and cannot be deleted. Make another member an owner first.": ":name is the only owner of :tenants and cannot be deleted. Make another member an owner first.",
+    "Mark email verified": "Mark email verified",
+    "Mark :email as verified?": "Mark :email as verified?",
+    "Email of :email marked as verified.": "Email of :email marked as verified.",
+    "Manage roles": "Manage roles",
+    "Roles of :name in :tenant": "Roles of :name in :tenant",
+    "Roles": "Roles",
+    "Roles updated.": "Roles updated."
 }

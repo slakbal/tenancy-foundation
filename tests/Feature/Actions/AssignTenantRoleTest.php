@@ -45,6 +45,13 @@ test('assigning a role replaces the given one inside the tenant only', function 
     expect($this->owner->fresh()->hasRole(TenantRoles::OWNER))->toBeTrue();
 });
 
+test('assigning the same role twice does not duplicate it', function () {
+    app(AssignTenantRole::class)->handle($this->member, $this->tenant, TenantRoles::ADMIN);
+    app(AssignTenantRole::class)->handle($this->member, $this->tenant, TenantRoles::ADMIN);
+
+    expect($this->member->roles()->where('name', TenantRoles::ADMIN->value)->count())->toBe(1);
+});
+
 test('roles are created once and stay global', function () {
     app(AssignTenantRole::class)->handle($this->member, $this->tenant, TenantRoles::ADMIN);
 

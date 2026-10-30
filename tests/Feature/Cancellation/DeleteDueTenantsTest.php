@@ -14,15 +14,13 @@ function cancelledTenant(string $subdomain, string $scheduled): Tenant
 
 test('the job deletes tenants whose deletion moment has passed and nothing else', function () {
     $this->travelTo('2026-10-28 01:00:00');
-    $due = cancelledTenant('due', '2026-10-27 23:59:59');
-    $later = cancelledTenant('later', '2026-11-05 23:59:59');
-    $active = Tenant::factory()->create(['subdomain' => 'active']);
+    cancelledTenant('due', '2026-10-27 23:59:59');
+    cancelledTenant('later', '2026-11-05 23:59:59');
+    Tenant::factory()->create(['subdomain' => 'active']);
 
     (new DeleteDueTenants)->handle(app(DeleteTenant::class));
 
-    expect(Tenant::query()->pluck('subdomain')->sort()->values()->all())->toBe(['active', 'later'])
-        ->and(Tenant::query()->whereKey($due->getKey())->exists())->toBeFalse()
-        ->and(Tenant::query()->whereKey([$later->getKey(), $active->getKey()])->count())->toBe(2);
+    expect(Tenant::query()->pluck('subdomain')->sort()->values()->all())->toBe(['active', 'later']);
 });
 
 test('the job keeps going when one tenant fails to delete and picks it up again on the next run', function () {
@@ -46,11 +44,29 @@ test('the job keeps going when one tenant fails to delete and picks it up again 
     expect(Tenant::query()->whereKey($broken->getKey())->exists())->toBeFalse();
 });
 
-test('the deletion job is scheduled daily at the configured time', function () {
-    $event = collect(app(Schedule::class)->events())->first(fn ($event) => str_contains((string) $event->description, DeleteDueTenants::class));
+function deletionScheduleEvent(): ?object
+{
+    app()->forgetInstance(Schedule::class);
+
+    return collect(app(Schedule::class)->events())->first(fn ($event) => str_contains((string) $event->description, DeleteDueTenants::class));
+}
+
+test('the deletion job is scheduled daily at the configured time', function (string $time, string $expression) {
+    config(['tenancy-foundation.cancellation.deletion_time' => $time]);
+
+    $event = deletionScheduleEvent();
 
     expect($event)->not->toBeNull()
-        ->and($event->expression)->toBe('0 1 * * *')
+        ->and($event->expression)->toBe($expression)
         ->and($event->onOneServer)->toBeTrue()
         ->and($event->withoutOverlapping)->toBeTrue();
+})->with([
+    'default' => ['01:00', '0 1 * * *'],
+    'configured' => ['03:30', '30 3 * * *'],
+]);
+
+test('the deletion job is not scheduled when switched off', function () {
+    config(['tenancy-foundation.cancellation.schedule_deletion' => false]);
+
+    expect(deletionScheduleEvent())->toBeNull();
 });

@@ -110,7 +110,7 @@ test('a role held in another tenant is not shown in this tenant', function () {
         ->assertTableColumnStateSet('roles.name', [TenantRoles::VIEW_ONLY->value], $member);
 });
 
-function usersWithRoles(object $test): array
+function actAsViewerOfUsersWithRoles(object $test): array
 {
     Permission::findOrCreate(TenantPermissions::USER_VIEW_ANY->value, AuthGuard::TENANT->value);
     $test->viewer->givePermissionTo(TenantPermissions::USER_VIEW_ANY);
@@ -130,7 +130,7 @@ function usersWithRoles(object $test): array
 }
 
 test('the role filter lists the users matching the picked roles', function (array $picked, array $visible, array $hidden) {
-    $users = usersWithRoles($this) + ['viewer' => $this->viewer];
+    $users = actAsViewerOfUsersWithRoles($this) + ['viewer' => $this->viewer];
 
     $list = Livewire::test(ListUsers::class);
 
@@ -152,7 +152,7 @@ test('the role filter lists the users matching the picked roles', function (arra
 ]);
 
 test('the role filter only looks at roles in the current tenant', function () {
-    usersWithRoles($this);
+    actAsViewerOfUsersWithRoles($this);
     $member = User::factory()->create();
     $other = Tenant::factory()->create();
     $other->members()->attach($member, ['is_owner' => false, 'is_default_tenant' => false]);
@@ -170,7 +170,7 @@ test('the role filter only looks at roles in the current tenant', function () {
 });
 
 test('the role filter offers the tenant roles, custom roles and no role but nothing from other guards or tenants', function () {
-    usersWithRoles($this);
+    actAsViewerOfUsersWithRoles($this);
     $team = getPermissionsTeamId();
     setPermissionsTeamId(null);
     Role::findOrCreate('billing_manager', AuthGuard::TENANT->value);
@@ -189,7 +189,7 @@ test('the role filter offers the tenant roles, custom roles and no role but noth
 });
 
 test('the role filter works next to the trashed filter', function () {
-    $users = usersWithRoles($this);
+    $users = actAsViewerOfUsersWithRoles($this);
     $users['admin']->delete();
 
     Livewire::test(ListUsers::class)

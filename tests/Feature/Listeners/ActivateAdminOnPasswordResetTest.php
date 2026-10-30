@@ -1,9 +1,11 @@
 <?php
 
-use Filament\Auth\Pages\PasswordReset\ResetPassword;
+use Filament\Facades\Filament;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Password;
+use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
+use Slakbal\TenancyFoundation\Filament\Pages\ResetPassword;
 use Slakbal\TenancyFoundation\Listeners\ActivateAdminOnPasswordReset;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\User;
@@ -39,9 +41,9 @@ it('activates a pending admin through the reset password page', function () {
     $admin = Admin::factory()->pending()->create();
     $token = Password::broker('admins')->createToken($admin);
 
-    Filament\Facades\Filament::setCurrentPanel(Filament\Facades\Filament::getPanel('admin'));
+    Filament::setCurrentPanel(Filament::getPanel('admin'));
 
-    Livewire\Livewire::test(ResetPassword::class, ['email' => $admin->email, 'token' => $token])
+    Livewire::test(ResetPassword::class, ['email' => $admin->email, 'token' => $token])
         ->fillForm(['password' => 'a-new-password-1', 'passwordConfirmation' => 'a-new-password-1'])
         ->call('resetPassword')
         ->assertHasNoFormErrors();

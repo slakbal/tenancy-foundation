@@ -55,8 +55,10 @@ test('a valid submission stores the contact request with the public source and r
         ->assertNotified(__('Thank you! Your message has been sent.'))
         ->assertSet('data.name', null);
 
-    expect(ContactRequest::query()->where('email', 'jane@example.com')->exists())->toBeTrue()
-        ->and(ContactRequest::query()->sole()->source)->toBe(ContactSource::PUBLIC);
+    $request = ContactRequest::query()->sole();
+
+    expect($request->email)->toBe('jane@example.com')
+        ->and($request->source)->toBe(ContactSource::PUBLIC);
 });
 
 test('required fields and a valid email are enforced', function () {
@@ -90,18 +92,17 @@ test('a captcha token that cloudflare rejects blocks the submission', function (
     expect(ContactRequest::query()->count())->toBe(0);
 });
 
-test('the message is limited to 1024 characters', function () {
+test('the message is limited to 1024 characters', function (int $length, bool $accepted) {
     fakeTurnstile(true);
 
-    Livewire::test(PublicContactForm::class)
-        ->fillForm(['name' => 'Jane Doe', 'email' => 'jane@example.com', 'message' => str_repeat('a', 1025), 'captcha' => 'token'])
-        ->call('submit')
-        ->assertHasFormErrors(['message' => 'max']);
+    $component = Livewire::test(PublicContactForm::class)
+        ->fillForm(['name' => 'Jane Doe', 'email' => 'jane@example.com', 'message' => str_repeat('a', $length), 'captcha' => 'token'])
+        ->call('submit');
 
-    Livewire::test(PublicContactForm::class)
-        ->fillForm(['name' => 'Jane Doe', 'email' => 'jane@example.com', 'message' => str_repeat('a', 1024), 'captcha' => 'token'])
-        ->call('submit')
-        ->assertHasNoFormErrors();
+    $accepted ? $component->assertHasNoFormErrors() : $component->assertHasFormErrors(['message' => 'max']);
 
-    expect(ContactRequest::query()->count())->toBe(1);
-});
+    expect(ContactRequest::query()->count())->toBe($accepted ? 1 : 0);
+})->with([
+    'too long' => [1025, false],
+    'at the limit' => [1024, true],
+]);

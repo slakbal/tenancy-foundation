@@ -17,6 +17,16 @@ class UserPolicy extends AuthorisationPolicy
     //        return $tenant->members()->where('users.id', $user->id)->wherePivot('is_owner', true)->exists();
     //    }
 
+    public function sendPasswordResetLink($user, $model): bool
+    {
+        return ! $model->trashed() && $user->can(AdminPermissions::USER_SEND_PASSWORD_RESET);
+    }
+
+    public function markEmailVerified($user, $model): bool
+    {
+        return $model->email_verified_at === null && ! $model->trashed() && $this->update($user, $model);
+    }
+
     protected function permissionMap(): array
     {
         return [

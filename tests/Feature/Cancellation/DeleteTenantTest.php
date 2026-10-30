@@ -29,18 +29,7 @@ test('a tenant that is not cancelled or not yet due cannot be deleted', function
     'cancelled but before its scheduled moment' => [fn (): Tenant => Tenant::factory()->create(['cancelled_at' => now(), 'scheduled_for_deletion_at' => now()->addDays(10)])],
 ]);
 
-test('a due tenant is deleted for good together with its memberships', function () {
-    $tenant = dueTenant();
-    $member = User::factory()->create();
-    $tenant->members()->attach($member, ['is_owner' => false, 'is_default_tenant' => true]);
-
-    app(DeleteTenant::class)->handle($tenant);
-
-    expect(Tenant::query()->whereKey($tenant->getKey())->exists())->toBeFalse()
-        ->and(DB::table('tenant_user')->where('tenant_id', $tenant->getKey())->count())->toBe(0);
-});
-
-test('users who only belonged to that tenant are deleted permanently', function () {
+test('a due tenant is deleted for good together with its memberships and the users who only belonged to it', function () {
     $owner = User::factory()->create();
     $tenant = dueTenant('acme', $owner);
     $member = User::factory()->create();
@@ -48,7 +37,9 @@ test('users who only belonged to that tenant are deleted permanently', function 
 
     app(DeleteTenant::class)->handle($tenant);
 
-    expect(User::withTrashed()->whereKey([$owner->getKey(), $member->getKey()])->count())->toBe(0);
+    expect(Tenant::query()->whereKey($tenant->getKey())->exists())->toBeFalse()
+        ->and(DB::table('tenant_user')->where('tenant_id', $tenant->getKey())->count())->toBe(0)
+        ->and(User::withTrashed()->whereKey([$owner->getKey(), $member->getKey()])->count())->toBe(0);
 });
 
 test('soft deleted members of that tenant are removed too', function () {

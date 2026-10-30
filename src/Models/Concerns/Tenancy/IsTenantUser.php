@@ -95,6 +95,15 @@ trait IsTenantUser
             ->value('is_sole_owner');
     }
 
+    public function soleOwnedTenants(): Collection
+    {
+        return $this->ownedTenants()->get()->filter(fn (Model $tenant): bool => ! $tenant->members()
+            ->wherePivot('is_owner', true)
+            ->where($this->getQualifiedKeyName(), '!=', $this->getKey())
+            ->whereNull($this->qualifyColumn('deleted_at'))
+            ->exists());
+    }
+
     public function isOwner(?Model $tenant = null): bool
     {
         $tenant ??= Filament::getTenant();

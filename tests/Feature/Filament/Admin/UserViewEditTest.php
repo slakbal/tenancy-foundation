@@ -9,17 +9,10 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\ViewUser;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
-use Spatie\Permission\Models\Permission;
 
 function userViewActor(AdminPermissions ...$permissions): Admin
 {
-    $admin = Admin::factory()->create();
-
-    foreach ([AdminPermissions::USER_VIEW_ANY, AdminPermissions::USER_VIEW, ...$permissions] as $permission) {
-        Permission::findOrCreate($permission->value, AuthGuard::ADMIN->value);
-        $admin->givePermissionTo($permission);
-    }
-
+    $admin = adminWithAccess(AdminPermissions::USER_VIEW_ANY, AdminPermissions::USER_VIEW, ...$permissions);
     test()->actingAs($admin, AuthGuard::ADMIN->value);
 
     return $admin;
@@ -40,7 +33,7 @@ it('shows the user with the tenant count and last login on the view page', funct
         ->assertSuccessful()
         ->assertSee($user->email)
         ->assertSee('10.1.2.3')
-        ->assertSeeInOrder(['Tenants', '2']);
+        ->assertSchemaStateSet(['tenants_count' => 2]);
 });
 
 it('shows a deleted user as deleted', function () {

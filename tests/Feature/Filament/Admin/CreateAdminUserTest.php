@@ -23,20 +23,13 @@ use Spatie\Permission\Models\Role;
 
 function creatingAdmin(AdminRoles $role = AdminRoles::ADMIN, bool $mayCreate = true): Admin
 {
-    foreach (AdminRoles::cases() as $case) {
-        Role::findOrCreate($case->value, AuthGuard::ADMIN->value);
-    }
-
-    $admin = Admin::factory()->create();
-    $admin->assignRole($role);
+    $permissions = [AdminPermissions::ADMIN_USER_VIEW_ANY, AdminPermissions::ADMIN_USER_VIEW];
 
     if ($mayCreate) {
-        foreach ([AdminPermissions::ADMIN_USER_VIEW_ANY, AdminPermissions::ADMIN_USER_VIEW, AdminPermissions::ADMIN_USER_CREATE] as $permission) {
-            Permission::findOrCreate($permission->value, AuthGuard::ADMIN->value);
-            $admin->givePermissionTo($permission);
-        }
+        $permissions[] = AdminPermissions::ADMIN_USER_CREATE;
     }
 
+    $admin = adminWithAccess($role, ...$permissions);
     test()->actingAs($admin, AuthGuard::ADMIN->value);
 
     return $admin;
@@ -46,6 +39,10 @@ beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
     setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
+
+    foreach (AdminRoles::cases() as $role) {
+        Role::findOrCreate($role->value, AuthGuard::ADMIN->value);
+    }
 });
 
 it('creates a pending admin with the role and an unknown password', function () {
@@ -121,6 +118,7 @@ it('shows the create button only to admins who may create admins', function () {
     Livewire::test(ListAdminUsers::class)->assertActionVisible('create');
 
     creatingAdmin(mayCreate: false);
+    Livewire::test(ListAdminUsers::class)->assertActionHidden('create');
     Livewire::test(CreateAdminUserPage::class)->assertForbidden();
 });
 
@@ -185,30 +183,22 @@ it('resends the invitation to a pending admin from the table with a fresh link',
         ->and(Password::broker('admins')->tokenExists($pending, $token))->toBeFalse();
 });
 
-it('hides the resend action for admins who are not pending', function () {
-    resendingAdmin();
-    $active = Admin::factory()->create();
+it('hides the resend action when it cannot apply', function (bool $pending, bool $invitationsOn, bool $mayUpdate) {
+    resendingAdmin($mayUpdate);
+
+    if (! $invitationsOn) {
+        config(['tenancy-foundation.notifications.admin_invited' => null]);
+    }
+
+    $target = $pending ? Admin::factory()->pending()->create() : Admin::factory()->create();
 
     Livewire::test(ListAdminUsers::class)
-        ->assertActionHidden(TestAction::make('resendInvitation')->table($active));
-});
-
-it('hides the resend action when invitations are switched off', function () {
-    resendingAdmin();
-    config(['tenancy-foundation.notifications.admin_invited' => null]);
-    $pending = Admin::factory()->pending()->create();
-
-    Livewire::test(ListAdminUsers::class)
-        ->assertActionHidden(TestAction::make('resendInvitation')->table($pending));
-});
-
-it('does not let an admin without update permission resend an invitation', function () {
-    resendingAdmin(mayUpdate: false);
-    $pending = Admin::factory()->pending()->create();
-
-    Livewire::test(ListAdminUsers::class)
-        ->assertActionHidden(TestAction::make('resendInvitation')->table($pending));
-});
+        ->assertActionHidden(TestAction::make('resendInvitation')->table($target));
+})->with([
+    'an admin who is not pending' => [false, true, true],
+    'invitations switched off' => [true, false, true],
+    'no update permission' => [true, true, false],
+]);
 
 it('rejects an older invitation link once a new one has been sent', function () {
     $admin = Admin::factory()->pending()->create();

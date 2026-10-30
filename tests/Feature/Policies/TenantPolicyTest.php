@@ -20,8 +20,8 @@ beforeEach(function () {
 test('each ability requires its own permission, not TENANT_VIEW_ANY', function (string $ability, TenantPermissions $permission, bool $onRecord) {
     $subject = $onRecord ? $this->tenant : Tenant::class;
 
-    $withViewAny = tenantUserWithPermission($this->tenant, TenantPermissions::TENANT_VIEW_ANY);
-    $with = tenantUserWithPermission($this->tenant, $permission);
+    $withViewAny = tenantMemberWithPermission($this->tenant, TenantPermissions::TENANT_VIEW_ANY);
+    $with = tenantMemberWithPermission($this->tenant, $permission);
 
     expect($withViewAny->can($ability, $subject))->toBeFalse();
     expect($with->can($ability, $subject))->toBeTrue();
@@ -34,7 +34,7 @@ test('each ability requires its own permission, not TENANT_VIEW_ANY', function (
 
 test('viewAny requires TENANT_VIEW_ANY', function () {
     $withoutPermission = User::factory()->create();
-    $withPermission = tenantUserWithPermission($this->tenant, TenantPermissions::TENANT_VIEW_ANY);
+    $withPermission = tenantMemberWithPermission($this->tenant, TenantPermissions::TENANT_VIEW_ANY);
 
     expect($withoutPermission->can('viewAny', Tenant::class))->toBeFalse();
     expect($withPermission->can('viewAny', Tenant::class))->toBeTrue();

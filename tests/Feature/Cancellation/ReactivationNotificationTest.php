@@ -25,15 +25,20 @@ test('reactivating a tenant notifies its owner but not its other members', funct
     Notification::assertCount(1);
 });
 
-test('the notification can be disabled or swapped through config', function () {
+test('the notification can be disabled through config', function () {
     Notification::fake();
     config(['tenancy-foundation.notifications.reactivated' => null]);
-    app(ReactivateTenant::class)->handle($this->tenant);
-    Notification::assertNothingSent();
 
-    app(CancelTenant::class)->handle($this->tenant);
+    app(ReactivateTenant::class)->handle($this->tenant);
+
+    Notification::assertNothingSent();
+});
+
+test('the notification can be swapped through config', function () {
+    Notification::fake();
     $custom = new class($this->tenant) extends AccountReactivated {};
     config(['tenancy-foundation.notifications.reactivated' => $custom::class]);
+
     app(ReactivateTenant::class)->handle($this->tenant);
 
     Notification::assertSentTo($this->owner, $custom::class);

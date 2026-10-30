@@ -12,7 +12,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\TenantResource;
-use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\ChangeUserTenantRoleAction;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\ManageTenantRolesAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\MakeUserTenantOwnerAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
 use Slakbal\TenancyFoundation\Support\UserTenantRoles;
@@ -26,7 +26,7 @@ class UserTenantsTable
         return static::modifyQuery($table)
             ->defaultSort('name')
             ->columns(static::columns($roles))
-            ->recordActions(static::recordActions($user, $roles));
+            ->recordActions(static::recordActions($user));
     }
 
     protected static function modifyQuery(Table $table): Table
@@ -70,7 +70,7 @@ class UserTenantsTable
     /**
      * @return array<int, Action|ActionGroup>
      */
-    protected static function recordActions(Model $user, UserTenantRoles $roles): array
+    protected static function recordActions(Model $user): array
     {
         return [
             ActionGroup::make([
@@ -80,7 +80,7 @@ class UserTenantsTable
                     ->authorize('view')
                     ->url(fn (Model $record): string => TenantResource::getUrl('view', ['record' => $record])),
                 MakeUserTenantOwnerAction::make($user),
-                ChangeUserTenantRoleAction::make($user, $roles),
+                ManageTenantRolesAction::make(user: $user),
             ]),
         ];
     }

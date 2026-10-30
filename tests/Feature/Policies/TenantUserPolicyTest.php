@@ -16,8 +16,8 @@ beforeEach(function () {
 test('each ability requires its permission', function (string $ability, TenantPermissions $permission, bool $onRecord) {
     $subject = $onRecord ? User::factory()->create() : User::class;
 
-    $without = User::factory()->create();
-    $with = tenantUserWithPermission($this->tenant, $permission);
+    $without = tenantMemberWithPermission($this->tenant);
+    $with = tenantMemberWithPermission($this->tenant, $permission);
 
     expect($without->can($ability, $subject))->toBeFalse();
     expect($with->can($ability, $subject))->toBeTrue();
@@ -27,4 +27,6 @@ test('each ability requires its permission', function (string $ability, TenantPe
     'create' => ['create', TenantPermissions::USER_CREATE, false],
     'update' => ['update', TenantPermissions::USER_UPDATE, true],
     'delete' => ['delete', TenantPermissions::USER_DELETE, true],
+    'restoreAny' => ['restoreAny', TenantPermissions::USER_RESTORE, false],
+    'forceDeleteAny' => ['forceDeleteAny', TenantPermissions::USER_FORCE_DELETE, false],
 ]);

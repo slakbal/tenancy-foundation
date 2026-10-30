@@ -11,23 +11,11 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\EditAdmi
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\ListAdminUsers;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\ViewAdminUser;
 use Slakbal\TenancyFoundation\Models\Admin;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 function tableActor(AdminRoles $role, AdminPermissions ...$permissions): Admin
 {
-    foreach (AdminRoles::cases() as $case) {
-        Role::findOrCreate($case->value, AuthGuard::ADMIN->value);
-    }
-
-    $admin = Admin::factory()->create();
-    $admin->assignRole($role);
-
-    foreach ([AdminPermissions::ADMIN_USER_VIEW_ANY, AdminPermissions::ADMIN_USER_VIEW, ...$permissions] as $permission) {
-        Permission::findOrCreate($permission->value, AuthGuard::ADMIN->value);
-        $admin->givePermissionTo($permission);
-    }
-
+    $admin = adminWithAccess($role, AdminPermissions::ADMIN_USER_VIEW_ANY, AdminPermissions::ADMIN_USER_VIEW, ...$permissions);
     test()->actingAs($admin, AuthGuard::ADMIN->value);
 
     return $admin;
@@ -35,10 +23,7 @@ function tableActor(AdminRoles $role, AdminPermissions ...$permissions): Admin
 
 function tableTarget(AdminRoles $role = AdminRoles::SUPPORT): Admin
 {
-    $admin = Admin::factory()->create();
-    $admin->assignRole($role);
-
-    return $admin;
+    return adminWithAccess($role);
 }
 
 beforeEach(function () {
@@ -118,6 +103,7 @@ it('offers force delete only to a super admin and only on deleted admins', funct
         ->filterTable('trashed', true)
         ->assertActionHidden(TestAction::make('forceDelete')->table($deleted));
 
+    Role::findOrCreate(AdminRoles::SUPER_ADMIN->value, AuthGuard::ADMIN->value);
     $actor->syncRoles([AdminRoles::SUPER_ADMIN]);
     $actor->unsetRelation('roles');
     $live = tableTarget();
@@ -143,6 +129,10 @@ it('shows delete and restore in the page headers', function () {
         ->assertNotified();
 
     expect($target->fresh()->trashed())->toBeTrue();
+
+    Livewire::test(ViewAdminUser::class, ['record' => $target->getRouteKey()])
+        ->assertActionHidden('delete')
+        ->assertActionVisible('restore');
 });
 
 it('shows labels for the grouped row actions', function () {

@@ -19,20 +19,6 @@ use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
 use Slakbal\TenancyFoundation\Notifications\AccountCancelled;
 use Slakbal\TenancyFoundation\Plugins\AdminPlugin;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
-
-function adminWith(AdminPermissions ...$permissions): Admin
-{
-    $admin = Admin::factory()->create();
-
-    foreach ($permissions as $permission) {
-        Permission::findOrCreate($permission->value, AuthGuard::ADMIN->value);
-        $admin->givePermissionTo($permission);
-    }
-
-    return $admin;
-}
 
 function tenantWithOwner(string $subdomain): Tenant
 {
@@ -55,7 +41,7 @@ beforeEach(function () {
 
 function actAsManager(): Admin
 {
-    $admin = adminWith(AdminPermissions::TENANT_VIEW_ANY, AdminPermissions::TENANT_VIEW, AdminPermissions::TENANT_CANCEL, AdminPermissions::TENANT_REACTIVATE);
+    $admin = adminWithAccess(AdminPermissions::TENANT_VIEW_ANY, AdminPermissions::TENANT_VIEW, AdminPermissions::TENANT_CANCEL, AdminPermissions::TENANT_REACTIVATE);
     test()->actingAs($admin, AuthGuard::ADMIN->value);
 
     return $admin;
@@ -117,10 +103,7 @@ test('the due for deletion filter only shows tenants whose moment has passed', f
 
 test('cancelling is only offered for active tenants and reactivating only for cancelled ones', function (string $actor) {
     if ($actor === 'super admin') {
-        Role::findOrCreate(AdminRoles::SUPER_ADMIN->value, AuthGuard::ADMIN->value);
-        $admin = Admin::factory()->create();
-        $admin->assignRole(AdminRoles::SUPER_ADMIN);
-        $this->actingAs($admin, AuthGuard::ADMIN->value);
+        $this->actingAs(adminWithAccess(AdminRoles::SUPER_ADMIN), AuthGuard::ADMIN->value);
     } else {
         actAsManager();
     }
@@ -165,7 +148,7 @@ test('an admin can reactivate a cancelled tenant', function () {
 });
 
 test('the actions need their own permissions', function (array $permissions, bool $canCancel, bool $canReactivate) {
-    $this->actingAs(adminWith(...$permissions), AuthGuard::ADMIN->value);
+    $this->actingAs(adminWithAccess(...$permissions), AuthGuard::ADMIN->value);
 
     $list = Livewire::test(ListTenants::class);
 

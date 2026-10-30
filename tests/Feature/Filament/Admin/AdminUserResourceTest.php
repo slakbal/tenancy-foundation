@@ -14,23 +14,11 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\EditAdmi
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\ListAdminUsers;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Pages\ViewAdminUser;
 use Slakbal\TenancyFoundation\Models\Admin;
-use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 function adminUserActor(AdminRoles $role = AdminRoles::ADMIN, AdminPermissions ...$permissions): Admin
 {
-    foreach (AdminRoles::cases() as $case) {
-        Role::findOrCreate($case->value, AuthGuard::ADMIN->value);
-    }
-
-    $admin = Admin::factory()->create();
-    $admin->assignRole($role);
-
-    foreach ($permissions as $permission) {
-        Permission::findOrCreate($permission->value, AuthGuard::ADMIN->value);
-        $admin->givePermissionTo($permission);
-    }
-
+    $admin = adminWithAccess($role, ...$permissions);
     test()->actingAs($admin, AuthGuard::ADMIN->value);
 
     return $admin;
@@ -38,14 +26,7 @@ function adminUserActor(AdminRoles $role = AdminRoles::ADMIN, AdminPermissions .
 
 function adminUserTarget(AdminRoles $role = AdminRoles::SUPPORT): Admin
 {
-    foreach (AdminRoles::cases() as $case) {
-        Role::findOrCreate($case->value, AuthGuard::ADMIN->value);
-    }
-
-    $admin = Admin::factory()->create();
-    $admin->assignRole($role);
-
-    return $admin;
+    return adminWithAccess($role);
 }
 
 beforeEach(function () {
@@ -103,6 +84,11 @@ it('validates the email and keeps it unique', function () {
     $other = adminUserTarget();
 
     Livewire::test(EditAdminUser::class, ['record' => $target->getRouteKey()])
+        ->fillForm(['email' => 'not-an-email'])
+        ->call('save')
+        ->assertHasFormErrors(['email' => 'email']);
+
+    Livewire::test(EditAdminUser::class, ['record' => $target->getRouteKey()])
         ->fillForm(['email' => $other->email])
         ->call('save')
         ->assertHasFormErrors(['email' => 'unique']);
@@ -121,6 +107,7 @@ it('only offers the super admin role to a super admin', function () {
         ->mountAction(TestAction::make('changeRole')->table($target))
         ->assertFormFieldExists('role', fn ($field): bool => ! array_key_exists(AdminRoles::SUPER_ADMIN->value, $field->getOptions()));
 
+    Role::findOrCreate(AdminRoles::SUPER_ADMIN->value, AuthGuard::ADMIN->value);
     $actor->syncRoles([AdminRoles::SUPER_ADMIN]);
     $actor->unsetRelation('roles');
 

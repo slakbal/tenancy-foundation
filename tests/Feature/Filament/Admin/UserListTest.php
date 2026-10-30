@@ -9,7 +9,6 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
-use Spatie\Permission\Models\Permission;
 
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
@@ -19,9 +18,7 @@ beforeEach(function () {
 });
 
 test('an admin with USER_VIEW_ANY sees users from every tenant in the table', function () {
-    $admin = Admin::factory()->create();
-    Permission::findOrCreate(AdminPermissions::USER_VIEW_ANY->value, AuthGuard::ADMIN->value);
-    $admin->givePermissionTo(AdminPermissions::USER_VIEW_ANY);
+    $admin = adminWithAccess(AdminPermissions::USER_VIEW_ANY);
 
     $tenantA = Tenant::factory()->create();
     $tenantB = Tenant::factory()->create();
@@ -48,9 +45,7 @@ test('an admin without USER_VIEW_ANY is forbidden from the users list', function
 });
 
 test('searching the users table by name or email finds matching users', function () {
-    $admin = Admin::factory()->create();
-    Permission::findOrCreate(AdminPermissions::USER_VIEW_ANY->value, AuthGuard::ADMIN->value);
-    $admin->givePermissionTo(AdminPermissions::USER_VIEW_ANY);
+    $admin = adminWithAccess(AdminPermissions::USER_VIEW_ANY);
 
     $match = User::factory()->create(['name' => 'Zephyrine Quill', 'email' => 'zq@example.com']);
     $other = User::factory()->create(['name' => 'Bob Smith', 'email' => 'bob@example.com']);

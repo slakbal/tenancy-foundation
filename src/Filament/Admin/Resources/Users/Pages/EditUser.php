@@ -7,6 +7,9 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\MarkUserEmailVerifiedAction;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\SendUserPasswordResetLinkAction;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 
 class EditUser extends EditRecord
@@ -17,6 +20,9 @@ class EditUser extends EditRecord
     {
         return [
             ViewAction::make(),
+            ImpersonateUserAction::make(),
+            SendUserPasswordResetLinkAction::make(),
+            MarkUserEmailVerifiedAction::make(),
             DeleteAction::make(),
             ForceDeleteAction::make(),
             RestoreAction::make(),

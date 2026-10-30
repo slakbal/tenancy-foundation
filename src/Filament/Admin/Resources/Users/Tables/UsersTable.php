@@ -8,7 +8,6 @@ use Filament\Tables\Columns\Column;
 use Filament\Tables\Table;
 use Slakbal\TenancyFoundation\Filament\Components\Resources\Users\UsersTable as BaseUsersTable;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
-use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\MakeTenantOwnerAsAdminAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\WrappedBadgeColumn;
 
 class UsersTable extends BaseUsersTable
@@ -42,7 +41,6 @@ class UsersTable extends BaseUsersTable
     protected static function rowActions(): array
     {
         return [
-            MakeTenantOwnerAsAdminAction::make(),
             ImpersonateUserAction::make(), // see admin model for authorization method: canImpersonate
             ViewAction::make(),
             ...parent::rowActions(),

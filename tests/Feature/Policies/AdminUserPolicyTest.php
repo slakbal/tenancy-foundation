@@ -16,7 +16,7 @@ test('each ability requires its permission (tenant users, as seen by admins)', f
     $subject = $onRecord ? User::factory()->create() : User::class;
 
     $without = Admin::factory()->create();
-    $with = adminWithPermission($permission);
+    $with = adminWithAccess($permission);
 
     expect($without->can($ability, $subject))->toBeFalse();
     expect($with->can($ability, $subject))->toBeTrue();
@@ -24,5 +24,6 @@ test('each ability requires its permission (tenant users, as seen by admins)', f
     'viewAny' => ['viewAny', AdminPermissions::USER_VIEW_ANY, false],
     'view' => ['view', AdminPermissions::USER_VIEW, true],
     'create' => ['create', AdminPermissions::USER_CREATE, false],
+    'update' => ['update', AdminPermissions::USER_UPDATE, true],
     'delete' => ['delete', AdminPermissions::USER_DELETE, true],
 ]);

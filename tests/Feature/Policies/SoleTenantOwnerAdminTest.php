@@ -3,13 +3,9 @@
 use Filament\Facades\Filament;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\TransferTenantOwnership;
-use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
-use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\User;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 beforeEach(function () {
     $this->owner = User::factory()->create();
@@ -23,26 +19,20 @@ beforeEach(function () {
     setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
 });
 
-test('an admin cannot delete a sole tenant owner but can delete other users', function (string $actor) {
-    if ($actor === 'super admin') {
-        Role::findOrCreate(AdminRoles::SUPER_ADMIN->value, AuthGuard::ADMIN->value);
-        $admin = Admin::factory()->create();
-        $admin->assignRole(AdminRoles::SUPER_ADMIN);
-    } else {
-        Permission::findOrCreate(AdminPermissions::USER_DELETE->value, AuthGuard::ADMIN->value);
-        $admin = Admin::factory()->create();
-        $admin->givePermissionTo(AdminPermissions::USER_DELETE);
-    }
+test('an admin cannot delete a sole tenant owner but can delete other users', function (array $grants) {
+    $admin = adminWithAccess(...$grants);
 
     expect($admin->can('delete', $this->owner))->toBeFalse()
         ->and($admin->can('forceDelete', $this->owner))->toBeFalse()
-        ->and($admin->can('delete', $this->member))->toBeTrue();
-})->with(['super admin', 'admin with the delete permission']);
+        ->and($admin->can('delete', $this->member))->toBeTrue()
+        ->and($admin->can('forceDelete', $this->member))->toBeTrue();
+})->with([
+    'super admin' => [[AdminRoles::SUPER_ADMIN]],
+    'admin with the delete permissions' => [[AdminPermissions::USER_DELETE, AdminPermissions::USER_FORCE_DELETE]],
+]);
 
 test('an admin can delete the former owner once ownership was transferred', function () {
-    Role::findOrCreate(AdminRoles::SUPER_ADMIN->value, AuthGuard::ADMIN->value);
-    $admin = Admin::factory()->create();
-    $admin->assignRole(AdminRoles::SUPER_ADMIN);
+    $admin = adminWithAccess(AdminRoles::SUPER_ADMIN);
 
     app(TransferTenantOwnership::class)->handle($this->tenant, $this->member, $this->owner);
     setPermissionsTeamId(config('tenancy-foundation.admin_permissions_team_id'));
