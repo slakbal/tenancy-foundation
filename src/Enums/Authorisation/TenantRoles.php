@@ -12,6 +12,17 @@ enum TenantRoles: string implements HasColor, HasIcon, HasLabel
     case ADMIN = 'admin';
     case VIEW_ONLY = 'view_only';
 
+    /**
+     * @return array<string, string>
+     */
+    public static function assignableOptions(): array
+    {
+        return collect(self::cases())
+            ->reject(fn (self $role): bool => $role === self::OWNER)
+            ->mapWithKeys(fn (self $role): array => [$role->value => $role->getLabel()])
+            ->all();
+    }
+
     public function getLabel(): string
     {
         return match ($this) {

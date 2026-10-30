@@ -203,5 +203,9 @@
     ":name was removed from :tenant.": ":name was removed from :tenant.",
     ":name belongs to other tenants. Remove them from this tenant instead of deleting them.": ":name belongs to other tenants. Remove them from this tenant instead of deleting them.",
     "Remove :name from this tenant?": "Remove :name from this tenant?",
-    ":name was removed from this tenant.": ":name was removed from this tenant."
+    ":name was removed from this tenant.": ":name was removed from this tenant.",
+    "The name of the user. The sign in email is changed by the user on their own profile.": "The name of the user. The sign in email is changed by the user on their own profile.",
+    "This user belongs to other tenants, so only they can change their name.": "This user belongs to other tenants, so only they can change their name.",
+    "The roles decide what the user can do in this tenant.": "The roles decide what the user can do in this tenant.",
+    "The roles of an owner or of yourself cannot be changed here.": "The roles of an owner or of yourself cannot be changed here."
 }

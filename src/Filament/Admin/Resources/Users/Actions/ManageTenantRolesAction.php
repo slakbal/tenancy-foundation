@@ -26,10 +26,7 @@ class ManageTenantRolesAction
                 Select::make('roles')
                     ->multiple()
                     ->label(__('Roles'))
-                    ->options(collect(TenantRoles::cases())
-                        ->reject(fn (TenantRoles $role): bool => $role === TenantRoles::OWNER)
-                        ->mapWithKeys(fn (TenantRoles $role): array => [$role->value => $role->getLabel()])
-                        ->all())
+                    ->options(TenantRoles::assignableOptions())
                     ->required(),
             ])
             ->action(function (array $data, Model $record) use ($user, $tenant): void {

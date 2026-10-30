@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Tenant panel user edit form (same layout as the admin forms: details and access sections, read-only status sidebar). Owners and admins with `user.update` change the name and the tenant roles (`Actions\Tenant\UpdateTenantUser`, owner role excluded via `TenantRoles::assignableOptions()`). The email is read-only; the roles section is hidden for owners and yourself; a user who belongs to other tenants keeps their name (read-only). Create is unchanged until the Phase 4 invite flow.
 - **Breaking:** the tenant profile page now lives at `/tenant-profile` (slug `tenant-profile`). It shared `/profile` with the user profile, so on a tenant domain the navbar profile link opened the tenant profile instead of the user profile.
 
 - Admins have a `status` (`pending`, `active`, `inactive`) instead of an `active` flag (fresh migrate needed). Only pending and active, non soft deleted admins pass `canAccessPanel()`; a pending admin has a random password and becomes active, with the email marked verified, when the password reset link is used (`ActivateAdminOnPasswordReset`).
