@@ -9,8 +9,8 @@ use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\MarkUserEmailVerifiedAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\SendUserPasswordResetLinkAction;
-use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
 
 class EditUser extends EditRecord
 {

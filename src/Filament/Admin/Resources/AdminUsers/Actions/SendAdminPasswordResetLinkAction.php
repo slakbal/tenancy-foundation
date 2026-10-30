@@ -7,8 +7,8 @@ use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Actions\Auth\SendPasswordResetLink;
-use Slakbal\TenancyFoundation\Enums\FilamentPanel;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
+use Slakbal\TenancyFoundation\Enums\FilamentPanel;
 
 class SendAdminPasswordResetLinkAction
 {

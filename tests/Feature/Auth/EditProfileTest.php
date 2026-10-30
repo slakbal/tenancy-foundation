@@ -1,8 +1,8 @@
 <?php
 
-use Filament\Facades\Filament;
 use Filament\Auth\Notifications\NoticeOfEmailChangeRequest;
 use Filament\Auth\Notifications\VerifyEmailChange;
+use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;

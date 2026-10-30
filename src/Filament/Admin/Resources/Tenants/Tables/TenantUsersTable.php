@@ -22,9 +22,9 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\RemoveUserT
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\EmailColumn;
-use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\VerifiedColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\NameColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\VerifiedColumn;
 use Slakbal\TenancyFoundation\Support\TenantUserRoles;
 
 class TenantUsersTable
