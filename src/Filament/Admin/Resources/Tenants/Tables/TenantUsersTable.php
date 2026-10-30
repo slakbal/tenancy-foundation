@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\MakeUserTenantOwnerAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\ManageTenantRolesAction;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\RemoveUserFromTenantAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\RemoveUserTenantOwnerAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
@@ -40,7 +41,7 @@ class TenantUsersTable
 
     protected static function modifyQuery(Table $table): Table
     {
-        return $table;
+        return $table->modifyQueryUsing(fn (Builder $query): Builder => $query->withCount('tenants'));
     }
 
     /**
@@ -110,6 +111,7 @@ class TenantUsersTable
                 MakeUserTenantOwnerAction::make(tenant: $tenant),
                 RemoveUserTenantOwnerAction::make(tenant: $tenant),
                 ManageTenantRolesAction::make(tenant: $tenant),
+                RemoveUserFromTenantAction::make(tenant: $tenant),
                 ImpersonateUserAction::make(),
             ]),
         ];

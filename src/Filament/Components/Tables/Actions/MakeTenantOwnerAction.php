@@ -31,6 +31,7 @@ class MakeTenantOwnerAction
                 }
 
                 app(AddTenantOwner::class)->handle(Filament::getTenant(), $record, Filament::auth()->user());
+                unset(Filament::getTenant()->owners_count);
 
                 Notification::make()
                     ->title(__(':name is now an owner of this tenant.', ['name' => $record->name]))

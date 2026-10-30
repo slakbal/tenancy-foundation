@@ -14,7 +14,7 @@ class RemoveTenantOwnerAction
     public static function make(): Action
     {
         return Action::make('removeOwner')
-            ->label(__('Remove owner'))
+            ->label(__('Remove ownership'))
             ->icon(Heroicon::OutlinedShieldExclamation)
             ->color('danger')
             ->visible(fn (Model $record): bool => static::canRemoveOwner($record))
@@ -27,6 +27,7 @@ class RemoveTenantOwnerAction
                 }
 
                 app(RemoveTenantOwner::class)->handle(Filament::getTenant(), $record, Filament::auth()->user());
+                unset(Filament::getTenant()->owners_count);
 
                 Notification::make()->title(__(':name is no longer an owner of this tenant.', ['name' => $record->name]))->success()->send();
             });
@@ -41,6 +42,6 @@ class RemoveTenantOwnerAction
             && $authenticated
             && $authenticated->isOwner($tenant)
             && $record->isOwner($tenant)
-            && $tenant->owners()->count() > 1;
+            && ($tenant->owners_count ??= $tenant->owners()->count()) > 1;
     }
 }

@@ -184,3 +184,32 @@ it('replaces the roles of a tenant user from the tenant users tab and keeps the 
 
     expect((new UserTenantRoles($this->owner->fresh()))->for($this->tenant)->sort()->values()->all())->toBe([TenantRoles::OWNER->value, TenantRoles::VIEW_ONLY->value]);
 });
+
+it('offers remove from tenant only for non owner rows of a user with several tenants', function () {
+    tenantsActor(AdminPermissions::USER_UPDATE);
+
+    tenantsManager($this->member)->assertActionHidden(TestAction::make('removeFromTenant')->table($this->tenant));
+    tenantUsersManager($this->tenant)->assertActionHidden(TestAction::make('removeFromTenant')->table($this->member));
+
+    $second = app(CreateTenant::class)->handle(['name' => 'Second', 'subdomain' => 'second'], User::factory()->create());
+    $second->members()->attach($this->member, ['is_owner' => false, 'is_default_tenant' => false]);
+
+    tenantsManager($this->member->fresh())->assertActionVisible(TestAction::make('removeFromTenant')->table($this->tenant));
+    tenantUsersManager($this->tenant)
+        ->assertActionVisible(TestAction::make('removeFromTenant')->table($this->member))
+        ->assertActionHidden(TestAction::make('removeFromTenant')->table($this->owner));
+
+    tenantUsersManager($this->tenant)
+        ->callAction(TestAction::make('removeFromTenant')->table($this->member))
+        ->assertNotified();
+
+    expect($this->member->fresh()->tenants()->pluck('tenants.id')->all())->toBe([$second->getKey()]);
+});
+
+it('hides remove from tenant for an admin without update permission', function () {
+    $second = app(CreateTenant::class)->handle(['name' => 'Second', 'subdomain' => 'second'], User::factory()->create());
+    $second->members()->attach($this->member, ['is_owner' => false, 'is_default_tenant' => false]);
+    tenantsActor();
+
+    tenantUsersManager($this->tenant)->assertActionHidden(TestAction::make('removeFromTenant')->table($this->member));
+});

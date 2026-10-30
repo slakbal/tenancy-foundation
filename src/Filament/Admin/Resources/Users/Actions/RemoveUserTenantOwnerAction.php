@@ -14,19 +14,26 @@ class RemoveUserTenantOwnerAction
     public static function make(?Model $user = null, ?Model $tenant = null): Action
     {
         return Action::make('removeOwner')
-            ->label(__('Remove owner'))
+            ->label(__('Remove ownership'))
             ->icon(Heroicon::OutlinedShieldExclamation)
             ->color('danger')
             ->visible(fn (Model $record): bool => $record->pivot->is_owner
                 && Gate::allows('update', $user ?? $record)
-                && ($tenant ?? $record)->owners()->count() > 1)
+                && static::ownerCount($tenant ?? $record) > 1)
             ->requiresConfirmation()
             ->modalHeading(fn (Model $record): string => __('Remove :name as owner of :tenant?', ['name' => ($user ?? $record)->name, 'tenant' => ($tenant ?? $record)->name]))
             ->modalDescription(__('The user stays a member of the tenant as an admin.'))
             ->action(function (Model $record) use ($user, $tenant): void {
                 app(RemoveTenantOwner::class)->handle($tenant ?? $record, $user ?? $record);
+                $subject = $tenant ?? $record;
+                unset($subject->owners_count);
 
                 Notification::make()->title(__(':name is no longer an owner of :tenant.', ['name' => ($user ?? $record)->name, 'tenant' => ($tenant ?? $record)->name]))->success()->send();
             });
+    }
+
+    protected static function ownerCount(Model $tenant): int
+    {
+        return $tenant->owners_count ??= $tenant->owners()->count();
     }
 }

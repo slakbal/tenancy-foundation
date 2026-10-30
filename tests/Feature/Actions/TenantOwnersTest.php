@@ -1,8 +1,10 @@
 <?php
 
 use Illuminate\Auth\Access\AuthorizationException;
+use Slakbal\TenancyFoundation\Actions\Roles\AssignTenantRole;
 use Slakbal\TenancyFoundation\Actions\Tenant\AddTenantOwner;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
+use Slakbal\TenancyFoundation\Actions\Tenant\RemoveTenantMember;
 use Slakbal\TenancyFoundation\Actions\Tenant\RemoveTenantOwner;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Models\User;
@@ -50,4 +52,32 @@ test('an owner can step down once another owner exists but a non owner cannot re
     app(RemoveTenantOwner::class)->handle($this->tenant, $this->owner, $this->owner);
 
     expect($this->tenant->owners()->pluck('users.id')->all())->toBe([$this->member->getKey()]);
+});
+
+test('removing a member from one of several tenants detaches only that tenant and repairs the default', function () {
+    $second = app(CreateTenant::class)->handle(['name' => 'Second', 'subdomain' => 'second'], User::factory()->create());
+    $second->members()->attach($this->member, ['is_owner' => false, 'is_default_tenant' => false]);
+    app(AssignTenantRole::class)->handle($this->member, $this->tenant, TenantRoles::ADMIN);
+    app(AssignTenantRole::class)->handle($this->member, $second, TenantRoles::VIEW_ONLY);
+
+    app(RemoveTenantMember::class)->handle($this->tenant, $this->member);
+
+    $member = $this->member->fresh();
+    $roles = new UserTenantRoles($member);
+
+    expect($member->tenants()->pluck('tenants.id')->all())->toBe([$second->getKey()])
+        ->and((bool) $member->tenants()->first()->pivot->is_default_tenant)->toBeTrue()
+        ->and($roles->for($this->tenant)->all())->toBe([])
+        ->and($roles->for($second)->all())->toBe([TenantRoles::VIEW_ONLY->value]);
+});
+
+test('a member cannot be removed from their only tenant, an owner never, and a stranger not at all', function () {
+    $other = app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], User::factory()->create());
+    $other->members()->attach($this->owner, ['is_owner' => false, 'is_default_tenant' => false]);
+
+    expect(fn () => app(RemoveTenantMember::class)->handle($this->tenant, $this->member))->toThrow(AuthorizationException::class)
+        ->and(fn () => app(RemoveTenantMember::class)->handle($this->tenant, $this->owner))->toThrow(AuthorizationException::class)
+        ->and(fn () => app(RemoveTenantMember::class)->handle($other, $this->member))->toThrow(InvalidArgumentException::class)
+        ->and($this->member->fresh()->tenants()->count())->toBe(1)
+        ->and($this->owner->fresh()->isOwner($this->tenant))->toBeTrue();
 });

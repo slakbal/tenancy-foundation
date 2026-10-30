@@ -8,6 +8,7 @@ use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Table;
 use Slakbal\TenancyFoundation\Filament\Components\Resources\Users\UsersTable as BaseUsersTable;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\MakeTenantOwnerAction;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\RemoveFromTenantAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\RemoveTenantOwnerAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\WrappedBadgeColumn;
@@ -19,6 +20,7 @@ class UsersTable extends BaseUsersTable
     {
         return $table->modifyQueryUsing(fn ($query) => $query->withSoleOwnerFlag()->with([
             'roles',
+            'tenants',
             'ownedTenants',
             'memberTenants',
         ]));
@@ -59,6 +61,7 @@ class UsersTable extends BaseUsersTable
         return [
             MakeTenantOwnerAction::make(),
             RemoveTenantOwnerAction::make(),
+            RemoveFromTenantAction::make(),
             ...parent::rowActions(),
         ];
     }

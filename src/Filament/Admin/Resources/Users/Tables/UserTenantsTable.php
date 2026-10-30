@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\TenantResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\ManageTenantRolesAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\MakeUserTenantOwnerAction;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\RemoveUserFromTenantAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\RemoveUserTenantOwnerAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
 use Slakbal\TenancyFoundation\Support\UserTenantRoles;
@@ -32,7 +33,7 @@ class UserTenantsTable
 
     protected static function modifyQuery(Table $table): Table
     {
-        return $table;
+        return $table->modifyQueryUsing(fn (Builder $query): Builder => $query->withCount('owners'));
     }
 
     /**
@@ -83,6 +84,7 @@ class UserTenantsTable
                 MakeUserTenantOwnerAction::make(user: $user),
                 RemoveUserTenantOwnerAction::make(user: $user),
                 ManageTenantRolesAction::make(user: $user),
+                RemoveUserFromTenantAction::make(user: $user),
             ]),
         ];
     }

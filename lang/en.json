@@ -189,10 +189,19 @@
     "This user becomes an owner of the tenant, next to the existing owners.": "This user becomes an owner of the tenant, next to the existing owners.",
     ":name is now an owner of :tenant.": ":name is now an owner of :tenant.",
     "The user stays a member of the tenant as an admin.": "The user stays a member of the tenant as an admin.",
-    "Remove owner": "Remove owner",
+    "Remove ownership": "Remove ownership",
     "Remove :name as owner?": "Remove :name as owner?",
     ":name is no longer an owner of this tenant.": ":name is no longer an owner of this tenant.",
     "A tenant needs at least one owner. Make another member an owner first.": "A tenant needs at least one owner. Make another member an owner first.",
     "Remove :name as owner of :tenant?": "Remove :name as owner of :tenant?",
-    ":name is no longer an owner of :tenant.": ":name is no longer an owner of :tenant."
+    ":name is no longer an owner of :tenant.": ":name is no longer an owner of :tenant.",
+    "An owner cannot be removed from the tenant. Remove the ownership first.": "An owner cannot be removed from the tenant. Remove the ownership first.",
+    "A user cannot be removed from their only tenant.": "A user cannot be removed from their only tenant.",
+    "Remove from tenant": "Remove from tenant",
+    "Remove :name from :tenant?": "Remove :name from :tenant?",
+    "The user loses access to this tenant and keeps their other tenants.": "The user loses access to this tenant and keeps their other tenants.",
+    ":name was removed from :tenant.": ":name was removed from :tenant.",
+    ":name belongs to other tenants. Remove them from this tenant instead of deleting them.": ":name belongs to other tenants. Remove them from this tenant instead of deleting them.",
+    "Remove :name from this tenant?": "Remove :name from this tenant?",
+    ":name was removed from this tenant.": ":name was removed from this tenant."
 }

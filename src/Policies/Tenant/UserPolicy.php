@@ -17,6 +17,11 @@ class UserPolicy extends AuthorisationPolicy
     //        return $tenant->members()->where('users.id', $user->id)->wherePivot('is_owner', true)->exists();
     //    }
 
+    public function removeMember($user, $model): bool
+    {
+        return $user->can(TenantPermissions::USER_DELETE);
+    }
+
     protected function permissionMap(): array
     {
         return [

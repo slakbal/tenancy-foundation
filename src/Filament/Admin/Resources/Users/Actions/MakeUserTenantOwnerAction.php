@@ -23,6 +23,8 @@ class MakeUserTenantOwnerAction
             ->modalDescription(__('This user becomes an owner of the tenant, next to the existing owners.'))
             ->action(function (Model $record) use ($user, $tenant): void {
                 app(AddTenantOwner::class)->handle($tenant ?? $record, $user ?? $record);
+                $subject = $tenant ?? $record;
+                unset($subject->owners_count);
 
                 Notification::make()->title(__(':name is now an owner of :tenant.', ['name' => ($user ?? $record)->name, 'tenant' => ($tenant ?? $record)->name]))->success()->send();
             });

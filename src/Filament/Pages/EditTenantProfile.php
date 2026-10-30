@@ -16,6 +16,8 @@ use Slakbal\TenancyFoundation\Filament\Components\Schemas\TenantDetailsSchema;
 
 class EditTenantProfile extends BaseEditTenantProfile
 {
+    protected static ?string $slug = 'tenant-profile';
+
     protected function getCopyUrlAction(): Action
     {
         return Action::make('copyUrl')
