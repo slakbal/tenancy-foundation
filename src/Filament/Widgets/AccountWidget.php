@@ -32,7 +32,7 @@ class AccountWidget extends StatsOverviewWidget implements HasActions
 
     protected static bool $isLazy = false;
 
-    protected int | string | array $columnSpan = 1;
+    protected int|string|array $columnSpan = 1;
 
     public static function canView(): bool
     {

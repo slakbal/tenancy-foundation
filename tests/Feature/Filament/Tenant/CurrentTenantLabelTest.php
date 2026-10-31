@@ -51,9 +51,9 @@ test('the label shows owner for an owner and falls back to active for a guest', 
     expect($this->tenant->getCurrentTenantLabel())->toBe(TenantRoles::OWNER->getLabel());
 });
 
-test('the tenant panel colours the current tenant label with the primary colour', function () {
+test('the tenant panel colours the current tenant label with the danger colour', function () {
     $html = Filament::renderHook(PanelsRenderHook::HEAD_END)->toHtml();
 
-    expect($html)->toContain('.fi-tenant-menu-trigger-current-tenant-label{color:var(--primary-600)}')
-        ->and($html)->toContain('.dark .fi-tenant-menu-trigger-current-tenant-label{color:var(--primary-400)}');
+    expect($html)->toContain('.fi-tenant-menu-trigger-current-tenant-label{color:var(--danger-600)}')
+        ->and($html)->toContain('.dark .fi-tenant-menu-trigger-current-tenant-label{color:var(--danger-400)}');
 });
