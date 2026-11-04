@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Listeners\Tenant;
+
+use Slakbal\TenancyFoundation\Events\Tenant\TenantUserCreated;
+
+class CreatedTenantUser
+{
+    /**
+     * Action classes that run after a user was created in a tenant (for example creating a learner profile, or sending an invitation to a staff member).
+     * Each receives the tenant, the new user and the submitted form data, inside the creation transaction. Laravel discovers this listener on its own.
+     *
+     * @return array<int, class-string>
+     */
+    protected function actions(): array
+    {
+        return [
+            //
+        ];
+    }
+
+    public function handle(TenantUserCreated $event): void
+    {
+        foreach ($this->actions() as $action) {
+            app($action)->handle($event->tenant, $event->user, $event->data);
+        }
+    }
+}

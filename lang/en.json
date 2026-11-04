@@ -244,5 +244,9 @@
     "Sign in with the invited account to accept this invitation.": "Sign in with the invited account to accept this invitation.",
     "Sign in to accept this invitation.": "Sign in to accept this invitation.",
     "This invitation is for another account": "This invitation is for another account",
-    "Sign out, then open the link again with the invited account :email.": "Sign out, then open the link again with the invited account :email."
+    "Sign out, then open the link again with the invited account :email.": "Sign out, then open the link again with the invited account :email.",
+    "This email already has an account.": "This email already has an account.",
+    "The owner role cannot be given when creating a user.": "The owner role cannot be given when creating a user.",
+    "This email already has an account. Invite them to this tenant from the Invitations page instead.": "This email already has an account. Invite them to this tenant from the Invitations page instead.",
+    ":email cannot be invited to this tenant.": ":email cannot be invited to this tenant."
 }

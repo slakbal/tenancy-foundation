@@ -217,6 +217,7 @@ class TenancyFoundationServiceProvider extends ServiceProvider
             __DIR__.'/../stubs/app/CancelledTenant.stub' => app_path('Listeners/Tenant/CancelledTenant.php'),
             __DIR__.'/../stubs/app/RegisteredTenant.stub' => app_path('Listeners/Tenant/RegisteredTenant.php'),
             __DIR__.'/../stubs/app/ReactivatedTenant.stub' => app_path('Listeners/Tenant/ReactivatedTenant.php'),
+            __DIR__.'/../stubs/app/CreatedTenantUser.stub' => app_path('Listeners/Tenant/CreatedTenantUser.php'),
         ], 'tenancy-foundation-stubs');
     }
 }

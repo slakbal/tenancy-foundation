@@ -13,6 +13,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
+use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenantUser;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Enums\MemberStatus;
 use Slakbal\TenancyFoundation\Filament\Components\Resources\Users\UserForm as BaseUserForm;
@@ -75,8 +76,13 @@ class UserForm extends BaseUserForm
                 ->all(),
             TextInput::make('email')
                 ->label(__('Email'))
-                ->disabled()
-                ->dehydrated(false)
+                ->email()
+                ->required(fn (string $operation): bool => $operation === 'create')
+                ->maxLength(255)
+                ->unique(config('tenancy-foundation.models.user'), 'email', ignoreRecord: true)
+                ->validationMessages(['unique' => fn (): string => CreateTenantUser::emailTakenMessage()])
+                ->disabled(fn (string $operation): bool => $operation !== 'create')
+                ->dehydrated(fn (string $operation): bool => $operation === 'create')
                 ->columnSpanFull(),
         ];
     }
@@ -87,7 +93,7 @@ class UserForm extends BaseUserForm
             ->description(__('The roles decide what the user can do in this tenant.'))
             ->icon(Heroicon::OutlinedShieldCheck)
             ->schema(static::accessFields())
-            ->visible(fn (?Model $record): bool => static::canChangeRoles($record));
+            ->visible(fn (?Model $record, string $operation): bool => $operation === 'create' || static::canChangeRoles($record));
     }
 
     /**

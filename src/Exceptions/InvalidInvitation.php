@@ -6,6 +6,11 @@ use RuntimeException;
 
 class InvalidInvitation extends RuntimeException
 {
+    public static function notAllowed(string $email): self
+    {
+        return new self(__(':email cannot be invited to this tenant.', ['email' => $email]));
+    }
+
     public static function ownerRole(): self
     {
         return new self(__('The owner role cannot be given through an invitation.'));

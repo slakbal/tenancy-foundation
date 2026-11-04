@@ -18,6 +18,8 @@ class CreateInvitation
         throw_if($role->name === TenantRoles::OWNER->value, InvalidInvitation::ownerRole());
         throw_if($tenant->members()->where('email', $email)->exists(), InvalidInvitation::alreadyMember($email));
 
+        throw_unless($tenant->canBeInvited($email, $role), InvalidInvitation::notAllowed($email));
+
         $invitation = DB::transaction(fn (): Model => config('tenancy-foundation.models.invitation')::query()->updateOrCreate(
             [
                 'tenant_id' => $tenant->getKey(),

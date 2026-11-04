@@ -1,11 +1,13 @@
 <?php
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification as NotificationFacade;
 use Slakbal\TenancyFoundation\Actions\Invitation\CreateInvitation;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Events\Invitation\InvitationIssued;
+use Slakbal\TenancyFoundation\Exceptions\InvalidInvitation;
 use Slakbal\TenancyFoundation\Models\Invitation;
 use Slakbal\TenancyFoundation\Models\Role;
 use Slakbal\TenancyFoundation\Models\Tenant;
@@ -82,4 +84,36 @@ test('the listener emails the invitee when the event fires', function () {
 
     NotificationFacade::assertSentOnDemand(InvitationCreated::class, fn ($notification, $channels, $notifiable): bool => $notifiable->routes['mail'] === 'invitee@example.com' && $notification->invitation->is($invitation));
     NotificationFacade::assertSentOnDemandTimes(InvitationCreated::class, 1);
+});
+
+test('the tenant model can refuse an email through canBeInvited and nothing is stored or sent', function () {
+    $tenant = new class extends Tenant
+    {
+        protected $table = 'tenants';
+
+        public function joiningTableSegment(): string
+        {
+            return 'tenant';
+        }
+
+        public function getForeignKey(): string
+        {
+            return 'tenant_id';
+        }
+
+        public function canBeInvited(string $email, Model $role): bool
+        {
+            return str_ends_with($email, '@school.test');
+        }
+    };
+    $tenant->forceFill(Tenant::factory()->make()->getAttributes())->save();
+    $role = createInvitationTestRole();
+
+    expect(fn () => (new CreateInvitation)->handle($tenant, null, 'Someone@gmail.com', $role))
+        ->toThrow(InvalidInvitation::class, 'someone@gmail.com cannot be invited to this tenant.');
+
+    expect(Invitation::query()->count())->toBe(0);
+    NotificationFacade::assertNothingSent();
+
+    expect((new CreateInvitation)->handle($tenant, null, 'Teacher@School.test', $role)->email)->toBe('teacher@school.test');
 });

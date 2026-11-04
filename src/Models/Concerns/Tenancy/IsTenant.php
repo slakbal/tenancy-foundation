@@ -6,6 +6,7 @@ use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
@@ -48,6 +49,11 @@ trait IsTenant
     protected function dueForDeletion(Builder $query): Builder
     {
         return $query->whereNotNull('cancelled_at')->where('scheduled_for_deletion_at', '<=', now());
+    }
+
+    public function canBeInvited(string $email, Model $role): bool
+    {
+        return true;
     }
 
     public function getFilamentName(): string

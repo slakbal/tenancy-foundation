@@ -26,9 +26,18 @@ trait IsTenantUser
         return $this instanceof self
             && $panel->getAuthGuard() === AuthGuard::TENANT->getAuthGuard()
             && $this->guard_name === AuthGuard::TENANT->value
+            && $this->canSignIn()
             && ! $this->hasNoAccessibleTenants();
 
         // todo also do checks so that e.g. models have a specific role or permission to access the admin panel, e.g. 'admin' role or 'access admin panel' permission
+    }
+
+    /**
+     * Override in the application to keep user types that must never sign in (for example a learner) out of the panel.
+     */
+    public function canSignIn(): bool
+    {
+        return true;
     }
 
     /**
