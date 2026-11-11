@@ -24,22 +24,12 @@ class SoleOwnerGuard
             && $model->isSoleOwnerOfAnyTenant();
 
         return $isSoleOwner
-            ? Response::deny(__(':name is the only owner of :tenants and cannot be deleted. Make another member an owner first.', ['name' => static::displayName($model), 'tenants' => static::tenantNames($model)]))
+            ? Response::deny(__(':name is the only owner of :tenants and cannot be deleted. Make another member an owner first.', ['name' => UserDisplayName::for($model), 'tenants' => static::tenantNames($model)]))
             : null;
     }
 
     protected static function tenantNames(Model $model): string
     {
         return $model->soleOwnedTenants()->pluck('name')->implode(', ');
-    }
-
-    protected static function displayName(Model $model): string
-    {
-        $name = collect(config('tenancy-foundation.user_name_attributes'))
-            ->map(fn (string $attribute): mixed => $model->getAttribute($attribute))
-            ->filter()
-            ->implode(' ');
-
-        return $name !== '' ? $name : (string) $model->getAttribute('email');
     }
 }

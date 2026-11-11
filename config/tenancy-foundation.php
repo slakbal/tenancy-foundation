@@ -13,6 +13,7 @@ use Slakbal\TenancyFoundation\Notifications\Contact\NewContactRequest;
 use Slakbal\TenancyFoundation\Notifications\Invitation\InvitationCreated;
 use Slakbal\TenancyFoundation\Notifications\Tenant\AccountCancelled;
 use Slakbal\TenancyFoundation\Notifications\Tenant\AccountReactivated;
+use Slakbal\TenancyFoundation\Notifications\Tenant\MemberRemoved;
 use Slakbal\TenancyFoundation\Notifications\Tenant\WelcomeToTenant;
 
 return [
@@ -151,6 +152,9 @@ return [
     |                   their contact request.
     | contact_received  Sent to the admin panel bell (database notification)
     |                   when a new contact request comes in.
+    | member_removed    Emailed to a user an admin removed from the tenant (not
+    |                   when they left on their own). The mail goes out even
+    |                   when the account was deleted with the removal.
     | invitation_created  Emailed to the invited person with a signed accept link
     |                   (only with features.invitations).
     |
@@ -163,6 +167,7 @@ return [
         'admin_invited' => AdminInvited::class,
         'contact_response' => ContactRequestResponded::class,
         'contact_received' => NewContactRequest::class,
+        'member_removed' => MemberRemoved::class,
         'invitation_created' => InvitationCreated::class,
     ],
 
