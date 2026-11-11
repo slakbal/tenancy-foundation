@@ -31,7 +31,6 @@ use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ManageTenantRol
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\RemoveFromTenantAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\RemoveTenantOwnerAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\RestoreMemberAction;
-use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\TransferOwnershipAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\VerifiedColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\WrappedBadgeColumn;
@@ -129,7 +128,6 @@ class UsersTable extends BaseUsersTable
             ChangeMemberStatusAction::activate(),
             MakeTenantOwnerAction::make(),
             RemoveTenantOwnerAction::make(),
-            TransferOwnershipAction::make(),
             RestoreMemberAction::make(),
             RemoveFromTenantAction::make(),
             LeaveTenantAction::make(),

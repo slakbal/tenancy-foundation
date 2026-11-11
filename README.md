@@ -280,7 +280,7 @@ Set the grace period with `TENANT_CANCELLATION_GRACE_DAYS` (default 30). The sch
 
 Tenant `UserPolicy` rules (owners bypass policies through the owner `Gate::before`, the actions repeat the guards that matter): nobody but an owner can update, delete, remove or re-role an owner, an admin cannot remove or re-role themselves, view only members have no write ability, and any non owner may `leave` as themselves.
 
-The tenant users resource has an infolist and view page (`Schemas\UserInfolist`, built on the shared `Components\Resources\Users\UserInfolist` with the protected hooks `mainComponents()`, `sideComponents()`, `detailsFields()` and `statusEntries()`), one row action group (view, edit, change role, activate, deactivate, make or remove owner, transfer ownership, restore, remove or delete, leave), an owner icon column, joined and last login columns, and an owner filter. Resend an invitation from the invitations list (`Actions\Invitation\ResendInvitation`).
+The tenant users resource has an infolist and view page (`Schemas\UserInfolist`, built on the shared `Components\Resources\Users\UserInfolist` with the protected hooks `mainComponents()`, `sideComponents()`, `detailsFields()` and `statusEntries()`), one row action group (view, edit, change role, activate, deactivate, make or remove owner, restore, remove or delete, leave), an owner icon column, joined and last login columns, and an owner filter. Resend an invitation from the invitations list (`Actions\Invitation\ResendInvitation`).
 
 ## Troubleshooting
 

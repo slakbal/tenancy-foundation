@@ -68,20 +68,6 @@ test('the role of a member is changed from the table, but never for an owner, yo
     Livewire::test(ListUsers::class)->assertTableActionHidden('changeRole', $this->admin);
 });
 
-test('only an owner transfers the ownership, which leaves the previous owner an admin', function () {
-    actionTestActAs($this->admin, $this->tenant);
-    Livewire::test(ListUsers::class)->assertTableActionHidden('transferOwnership', $this->member);
-
-    actionTestActAs($this->owner, $this->tenant);
-    Livewire::test(ListUsers::class)
-        ->callTableAction('transferOwnership', $this->member)
-        ->assertNotified();
-
-    expect($this->member->fresh()->isOwner($this->tenant))->toBeTrue()
-        ->and($this->owner->fresh()->isOwner($this->tenant))->toBeFalse()
-        ->and((new UserTenantRoles($this->owner->fresh()))->for($this->tenant)->all())->toBe([TenantRoles::ADMIN->value]);
-});
-
 test('deleting a user of only this tenant soft deletes them, drops the roles and dispatches the removal event with a queued notice', function () {
     Notification::fake();
     Event::fake([TenantMemberRemoved::class]);
