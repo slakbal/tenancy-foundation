@@ -9,6 +9,7 @@ use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
+use Slakbal\TenancyFoundation\Enums\MemberStatus;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\EditTenant;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ListTenants;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ViewTenant;
@@ -158,6 +159,19 @@ test('the users tab lists only the tenant members with their tenant role and own
         ->filterTable('is_owner', true)
         ->assertCanSeeTableRecords([$ownerRow])
         ->assertCanNotSeeTableRecords([$memberRow]);
+});
+
+test('the users tab shows the membership status of each member in this tenant', function () {
+    tenantPageAdmin(AdminPermissions::TENANT_VIEW, AdminPermissions::USER_VIEW_ANY);
+
+    $member = User::factory()->create(['email' => 'inactive@acme.test']);
+    $this->tenant->members()->attach($member, ['status' => MemberStatus::INACTIVE]);
+
+    $rows = $this->tenant->members()->get()->keyBy('email');
+
+    Livewire::test(UsersRelationManager::class, ['ownerRecord' => $this->tenant, 'pageClass' => ViewTenant::class])
+        ->assertTableColumnStateSet('membership_status', MemberStatus::ACTIVE, $rows['owner@acme.test'])
+        ->assertTableColumnStateSet('membership_status', MemberStatus::INACTIVE, $rows['inactive@acme.test']);
 });
 
 test('the users tab is hidden without the user view permission', function () {

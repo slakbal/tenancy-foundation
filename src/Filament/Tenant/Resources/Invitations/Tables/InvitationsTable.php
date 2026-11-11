@@ -11,6 +11,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Slakbal\TenancyFoundation\Actions\Invitation\ResendInvitation;
 use Slakbal\TenancyFoundation\Enums\Authorisation\InvitationPermissions;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\EmailColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\TimestampColumns;
@@ -68,6 +69,21 @@ class InvitationsTable
     protected static function rowActions(): array
     {
         return [
+            Action::make('resend')
+                ->label(__('Resend invitation'))
+                ->icon(Heroicon::OutlinedPaperAirplane)
+                ->authorize(InvitationPermissions::INVITATION_CREATE)
+                ->visible(fn (Model $record): bool => is_null($record->accepted_at))
+                ->requiresConfirmation()
+                ->modalDescription(__('A new link is emailed and the expiry starts again. The earlier link stops working.'))
+                ->action(function (Model $record): void {
+                    app(ResendInvitation::class)->handle($record);
+
+                    Notification::make()
+                        ->title(__('Invitation sent to :email.', ['email' => $record->email]))
+                        ->success()
+                        ->send();
+                }),
             Action::make('revoke')
                 ->label(__('Revoke'))
                 ->icon(Heroicon::OutlinedTrash)

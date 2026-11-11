@@ -39,12 +39,12 @@ beforeEach(function () {
     Filament::setTenant($this->tenant);
 });
 
-test('a user in only this tenant can be deleted but not removed, a shared user the other way round', function () {
+test('the remove action is labelled as a delete for a user of only this tenant and as a removal for a shared user', function () {
     Livewire::test(ListUsers::class)
-        ->assertTableActionVisible('delete', $this->single)
-        ->assertTableActionHidden('removeFromTenant', $this->single)
+        ->assertTableActionVisible('removeFromTenant', $this->single)
+        ->assertTableActionHasLabel('removeFromTenant', __('Delete user'), $this->single)
         ->assertTableActionVisible('removeFromTenant', $this->shared)
-        ->assertTableActionHidden('delete', $this->shared);
+        ->assertTableActionHasLabel('removeFromTenant', __('Remove from tenant'), $this->shared);
 });
 
 test('removing a shared user detaches only this tenant and the user is not deleted', function () {
@@ -89,16 +89,15 @@ test('an admin may remove a member but a view only member may not', function (ar
     'without it' => [[], false],
 ]);
 
-test('a soft deleted user only offers restore and force delete', function () {
+test('a soft deleted user only offers restore', function () {
     $this->shared->delete();
     $this->single->delete();
 
     Livewire::test(ListUsers::class)
         ->filterTable('trashed', true)
         ->assertTableActionVisible('restore', $this->single)
-        ->assertTableActionVisible('forceDelete', $this->single)
         ->assertTableActionHidden('edit', $this->single)
-        ->assertTableActionHidden('delete', $this->single)
+        ->assertTableActionHidden('removeFromTenant', $this->single)
         ->assertTableActionHidden('makeOwner', $this->single)
         ->assertTableActionHidden('removeFromTenant', $this->shared);
 });

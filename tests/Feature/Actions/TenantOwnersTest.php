@@ -71,12 +71,11 @@ test('removing a member from one of several tenants detaches only that tenant an
         ->and($roles->for($second)->all())->toBe([TenantRoles::VIEW_ONLY->value]);
 });
 
-test('a member cannot be removed from their only tenant, an owner never, and a stranger not at all', function () {
+test('an owner is never removed and a stranger not at all', function () {
     $other = app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], User::factory()->create());
     $other->members()->attach($this->owner, ['is_owner' => false, 'is_default_tenant' => false]);
 
-    expect(fn () => app(RemoveTenantMember::class)->handle($this->tenant, $this->member))->toThrow(AuthorizationException::class)
-        ->and(fn () => app(RemoveTenantMember::class)->handle($this->tenant, $this->owner))->toThrow(AuthorizationException::class)
+    expect(fn () => app(RemoveTenantMember::class)->handle($this->tenant, $this->owner))->toThrow(AuthorizationException::class)
         ->and(fn () => app(RemoveTenantMember::class)->handle($other, $this->member))->toThrow(InvalidArgumentException::class)
         ->and($this->member->fresh()->tenants()->count())->toBe(1)
         ->and($this->owner->fresh()->isOwner($this->tenant))->toBeTrue();

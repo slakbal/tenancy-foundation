@@ -28,7 +28,7 @@ class InvalidInvitation extends RuntimeException
 
     public static function deletedAccount(): self
     {
-        return new self(__('The account of this email was deleted. Ask an admin to restore it.'));
+        return new self(__('The account of this email was deleted. Restore the user from the users list instead.'));
     }
 
     public static function signInRequired(): self

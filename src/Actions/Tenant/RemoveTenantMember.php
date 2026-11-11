@@ -7,15 +7,21 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Slakbal\TenancyFoundation\Actions\Roles\SyncTenantRoles;
+use Slakbal\TenancyFoundation\Events\Tenant\TenantMemberRemoved;
 
 readonly class RemoveTenantMember
 {
     public function __construct(private SyncTenantRoles $syncTenantRoles) {}
 
-    public function handle(Model $tenant, Model $user): void
+    /**
+     * Removes a user from a tenant. A user with other tenants is detached; a user whose only tenant this is is soft
+     * deleted (the membership row stays, so restoring the user brings them back). Returns true when the account was deleted.
+     */
+    public function handle(Model $tenant, Model $user, ?Model $actor = null): bool
     {
-        DB::transaction(function () use ($tenant, $user): void {
-            $membership = $user->tenants()->get()->firstWhere('id', $tenant->getKey());
+        return DB::transaction(function () use ($tenant, $user, $actor): bool {
+            $tenants = $user->tenants()->get();
+            $membership = $tenants->firstWhere('id', $tenant->getKey());
 
             if (! $membership) {
                 throw new InvalidArgumentException('The user is not a member of the tenant.');
@@ -25,21 +31,26 @@ readonly class RemoveTenantMember
                 throw new AuthorizationException(__('An owner cannot be removed from the tenant. Remove the ownership first.'));
             }
 
-            $remaining = $user->tenants()->get()->reject(fn (Model $other): bool => $other->is($tenant));
-
-            if ($remaining->isEmpty()) {
-                throw new AuthorizationException(__('A user cannot be removed from their only tenant.'));
-            }
+            $remaining = $tenants->reject(fn (Model $other): bool => $other->is($tenant));
+            $accountDeleted = $remaining->isEmpty();
 
             $this->syncTenantRoles->handle($user, $tenant, []);
 
-            $user->tenants()->detach($tenant->getKey());
+            if ($accountDeleted) {
+                $user->delete();
+            } else {
+                $user->tenants()->detach($tenant->getKey());
 
-            if ($membership->pivot->is_default_tenant) {
-                $user->tenants()->updateExistingPivot($remaining->first()->getKey(), ['is_default_tenant' => true]);
+                if ($membership->pivot->is_default_tenant) {
+                    $user->tenants()->updateExistingPivot($remaining->first()->getKey(), ['is_default_tenant' => true]);
+                }
             }
 
             $user->unsetRelations();
+
+            DB::afterCommit(fn () => TenantMemberRemoved::dispatch($tenant, $user, $actor, $accountDeleted));
+
+            return $accountDeleted;
         });
     }
 }

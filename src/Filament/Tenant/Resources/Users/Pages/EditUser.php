@@ -2,15 +2,15 @@
 
 namespace Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Pages;
 
-use Filament\Actions\DeleteAction;
-use Filament\Actions\ForceDeleteAction;
-use Filament\Actions\RestoreAction;
+use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Actions\Tenant\UpdateTenantUser;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ChangeMemberStatusAction;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\RemoveFromTenantAction;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\RestoreMemberAction;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
 
 class EditUser extends EditRecord
@@ -20,11 +20,11 @@ class EditUser extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            ViewAction::make(),
             ChangeMemberStatusAction::deactivate(),
             ChangeMemberStatusAction::activate(),
-            DeleteAction::make(),
-            ForceDeleteAction::make(),
-            RestoreAction::make(),
+            RestoreMemberAction::make()->successRedirectUrl(fn (): string => static::getResource()::getUrl('view', ['record' => $this->getRecord()])),
+            RemoveFromTenantAction::make()->successRedirectUrl(fn (): string => static::getResource()::getUrl('index')),
         ];
     }
 

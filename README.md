@@ -193,6 +193,10 @@ The tenant panel exposes `/register`, a two-step wizard: tenant name and subdoma
 - **Business logic**: bind your own subclass of `RegisterTenantOwner` or `CreateTenant` in the container.
 - **Email verification** is enabled by the tenant plugin; the base `User` implements `MustVerifyEmail`.
 
+### Registration stays tenant plus owner only
+
+Tenant users never register themselves. `/register` always creates a new tenant together with its owner, and there is no open signup flag. Everyone else joins an existing tenant through an invitation (existing accounts sign in to accept it), through the plain create user form (`CreateTenantUser`) or from the admin panel. If a product ever needs open signup it has to be added in the application.
+
 ## Customising
 
 - **Models**: extend them and set `tenancy-foundation.models`. `Model::factory()` resolves the configured model.
@@ -224,21 +228,59 @@ The package owns the generic lifecycle; your application owns the cancel screen 
 | `AccountCancelled` mail to every owner (queued, `notifications.cancelled`, `null` disables it) | package |
 | Login blocking: a user whose tenants are all cancelled cannot sign in, cancelled tenants leave the switcher and default tenant, requests to a cancelled tenant go to another active tenant | package (`IsTenantUser`, `EnsureTenantIsNotCancelled`) |
 | `DeleteTenant` action and the `DeleteDueTenants` job, scheduled daily at `cancellation.deletion_time` (switch off with `cancellation.schedule_deletion`) | package |
-| What `DeleteTenant` removes | memberships, users who belong to no other tenant (force deleted), the tenant's role and permission assignments, the tenant |
-| Admin panel **Tenants** list (status, owner, members, cancelled and deletion dates, filters) with cancel and reactivate actions, `ReactivateTenant` action and `TenantReactivated` event. Permissions `tenant.view_any`, `tenant.view`, `tenant.cancel`, `tenant.reactivate` (re-run `AdminRolePermissionsSeeder`; swap the resource with `AdminPlugin::usingTenantResource()`) | package |
-| Cancel screen, password confirmation, and deleting **your own** models (subscriptions, invitations, addresses, ...) | application |
+| Admin panel **Tenants** list with cancel and reactivate actions, `ReactivateTenant` action. Permissions `tenant.view_any`, `tenant.view`, `tenant.cancel`, `tenant.reactivate` (re-run `AdminRolePermissionsSeeder`; swap the resource with `AdminPlugin::usingTenantResource()`) | package |
+| Cancel screen, password confirmation, and cleaning up **your own** models (subscriptions, addresses, ...) | application |
 
-`DeleteTenant` dispatches `TenantDeleting` inside its transaction before anything is removed. Listen to it in the application to delete the models only the application knows about; if a listener throws, nothing is deleted and the tenant is retried on the next run.
+### The four lifecycle events
+
+Every step of a tenant's life is an event. Each side that owns data has **one general listener per event** with a protected `actions()` list; every concern is its own action class with `handle(Model $tenant)`. To add behaviour, add a class and list it in `actions()`. Do not add a second listener, a config list or a closure.
+
+| Event | Dispatched by | Package listener (its own data) | Application listener (stub) |
+|---|---|---|---|
+| `Events\Tenant\TenantRegistered` (tenant, owner) | `RegisterTenantOwner`, `CreateTenant` flows, after commit | `SendWelcomeNotification` (`notifications.welcome`) | `RegisteredTenant` |
+| `Events\Tenant\TenantCancelled` (tenant) | `CancelTenant` | `CancelledTenant` runs `RevokePendingInvitations` (with `features.invitations`); `SendCancellationNotification` | `CancelledTenant` |
+| `Events\Tenant\TenantReactivated` (tenant) | `ReactivateTenant`, after commit | `SendReactivationNotification` (`notifications.reactivated`) | `ReactivatedTenant` |
+| `Events\Tenant\TenantDeleting` (tenant) | `DeleteTenant`, inside its transaction before anything is removed | `DeletedTenant` runs `DeleteTenantInvitations` (with `features.invitations`) | `DeletedTenant` |
+
+`DeleteTenant` itself always removes, last and in this order, the members (`DeleteTenantMembers`: memberships, plus users who belong to no other tenant, which are force deleted), the tenant's role and permission rows (`DeleteTenantPermissionData`) and the tenant. These core steps are called by the action after it dispatches `TenantDeleting`, so their order never depends on listener registration. Listeners run while the tenant and its members still exist; if one throws, nothing is deleted and the tenant is retried on the next run.
+
+The package registers its own listeners with `Event::listen` (packages are not scanned). The application's listeners live in `app/Listeners/Tenant` and are discovered by Laravel. Publish the starting points:
+
+```bash
+php artisan vendor:publish --tag=tenancy-foundation-stubs
+```
+
+This publishes `RegisteredTenant`, `CancelledTenant`, `ReactivatedTenant`, `DeletedTenant` and `CreatedTenantUser` (the plain create user flow). Each has an empty `actions()`; list your own action classes there:
 
 ```php
-// app/Listeners/DeleteTenantData.php (discovered automatically)
-public function handle(TenantDeleting $event): void
+// app/Listeners/Tenant/DeletedTenant.php
+protected function actions(): array
 {
-    Invitation::query()->where('tenant_id', $event->tenant->getKey())->delete();
+    return [
+        DeleteSubscriptionData::class,
+        DeleteTenantAddresses::class,
+    ];
 }
 ```
 
+Reactivating a tenant clears `cancelled_at` and `scheduled_for_deletion_at` only. The invitations that cancelling revoked are **not restored** (`RevokePendingInvitations` deletes them, so there is nothing to bring back); owners send fresh invitations after reactivating.
+
 Set the grace period with `TENANT_CANCELLATION_GRACE_DAYS` (default 30). The scheduler (`schedule:run`) and a queue worker must be running in production.
+
+## Removing, leaving and restoring tenant members
+
+`Actions\Tenant\RemoveTenantMember` is the one action behind the tenant panel "remove from tenant", "delete user" and "leave tenant" row actions:
+
+- A user who belongs to other tenants is detached from this one, loses this tenant's roles and keeps a default tenant.
+- A user whose **only** tenant this is gets their roles dropped and is **soft deleted** (the membership row stays, so restoring them brings them back). The row action is labelled "Delete user" and the confirmation says the account is deleted.
+- Owners are never removed (remove the ownership first), and nobody can force delete users from the tenant panel (`Tenant\UserPolicy::forceDelete` is `false` and `TenantForceDeleteGuard` blocks owners too).
+- It dispatches `Events\Tenant\TenantMemberRemoved($tenant, $user, $actor, $accountDeleted)` after commit. `SendMemberRemovedNotification` mails the removed user with `notifications.member_removed` (queued, `null` disables it) unless they left on their own.
+
+`Actions\Tenant\RestoreTenantMember` restores a soft deleted user, makes them an active member again and gives them a role when they have none. A removed user who still has an account is simply invited again (`CreateInvitation` / `AcceptInvitation`); a soft deleted account cannot be invited and has to be restored instead.
+
+Tenant `UserPolicy` rules (owners bypass policies through the owner `Gate::before`, the actions repeat the guards that matter): nobody but an owner can update, delete, remove or re-role an owner, an admin cannot remove or re-role themselves, view only members have no write ability, and any non owner may `leave` as themselves.
+
+The tenant users resource has an infolist and view page (`Schemas\UserInfolist`, built on the shared `Components\Resources\Users\UserInfolist` with the protected hooks `mainComponents()`, `sideComponents()`, `detailsFields()` and `statusEntries()`), one row action group (view, edit, change role, activate, deactivate, make or remove owner, restore, remove or delete, leave), an owner icon column, joined and last login columns, and an owner filter. Resend an invitation from the invitations list (`Actions\Invitation\ResendInvitation`).
 
 ## Troubleshooting
 

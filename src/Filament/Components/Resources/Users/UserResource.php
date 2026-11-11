@@ -9,6 +9,7 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Slakbal\TenancyFoundation\Support\UserDisplayName;
 use UnitEnum;
 
 abstract class UserResource extends Resource
@@ -43,12 +44,7 @@ abstract class UserResource extends Resource
             return null;
         }
 
-        $name = collect(config('tenancy-foundation.user_name_attributes'))
-            ->map(fn (string $attribute): mixed => $record->getAttribute($attribute))
-            ->filter()
-            ->implode(' ');
-
-        return $name !== '' ? $name : $record->getAttribute('email');
+        return UserDisplayName::for($record);
     }
 
     public static function getRelations(): array
