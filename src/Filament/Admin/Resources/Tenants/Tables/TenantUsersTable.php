@@ -6,7 +6,6 @@ use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Column;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Filters\SelectFilter;
@@ -66,11 +65,6 @@ class TenantUsersTable
             RoleBadgeColumn::make('tenant_roles')
                 ->state(fn (Model $record): array => $roles->for($record)->all())
                 ->placeholder(__('No role')),
-            IconColumn::make('is_owner')
-                ->label(__('Owner'))
-                ->state(fn (Model $record): bool => (bool) $record->pivot->is_owner)
-                ->boolean()
-                ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('tenant_user.is_owner', $direction)),
             TextColumn::make('joined_at')
                 ->label(__('Joined'))
                 ->state(fn (Model $record) => $record->pivot->created_at)

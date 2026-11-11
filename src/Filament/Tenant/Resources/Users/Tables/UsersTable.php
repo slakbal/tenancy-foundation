@@ -8,9 +8,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Facades\Filament;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Column;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Filters\SelectFilter;
@@ -54,7 +52,7 @@ class UsersTable extends BaseUsersTable
     protected static function columns(): array
     {
         $columns = collect(parent::columns())
-            ->reject(fn (Column $column): bool => $column->getName() === 'last_login_at')
+            ->reject(fn (Column $column): bool => in_array($column->getName(), ['created_at', 'last_login_at'], true))
             ->values()
             ->all();
 
@@ -65,13 +63,6 @@ class UsersTable extends BaseUsersTable
                 ->badge()
                 ->state(fn (Model $record): ?MemberStatus => $record->memberStatus()),
             RoleBadgeColumn::make(),
-            IconColumn::make('is_owner')
-                ->label(__('Owner'))
-                ->boolean()
-                ->trueIcon(Heroicon::OutlinedShieldCheck)
-                ->trueColor('warning')
-                ->falseIcon(null)
-                ->state(fn (Model $record): bool => $record->isOwner(Filament::getTenant())),
             WrappedBadgeColumn::make('ownedTenants.name')->label(__('Owner of')),
             WrappedBadgeColumn::make('memberTenants.name')->label(__('Member of')),
             TextColumn::make('joined_at')
@@ -86,7 +77,8 @@ class UsersTable extends BaseUsersTable
                 ->label(__('Last login'))
                 ->dateTime()
                 ->placeholder('-')
-                ->sortable(),
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
         ]);
 
         return $columns;
