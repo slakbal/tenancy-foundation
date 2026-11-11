@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class UserDisplayName
 {
     /**
-     * The name of a user built from the configured name attributes, falling back to the email.
+     * Meant for a model's `name` accessor: the name built from the configured
+     * `user_name_attributes`, falling back to the email.
      */
     public static function for(Model $user): string
     {

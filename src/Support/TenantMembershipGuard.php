@@ -24,7 +24,7 @@ class TenantMembershipGuard
             return null;
         }
 
-        return Response::deny(__(':name belongs to other tenants. Remove them from this tenant instead of deleting them.', ['name' => UserDisplayName::for($model)]));
+        return Response::deny(__(':name belongs to other tenants. Remove them from this tenant instead of deleting them.', ['name' => $model->name]));
     }
 
     public static function tenantCount(Model $user): int

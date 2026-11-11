@@ -10,7 +10,6 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Actions\Tenant\RestoreTenantMember;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
-use Slakbal\TenancyFoundation\Support\UserDisplayName;
 
 /**
  * Restores a deleted user and re-attaches them to the current tenant with a role, so they are not left roleless.
@@ -24,7 +23,7 @@ class RestoreMemberAction
             ->icon(Heroicon::OutlinedArrowUturnLeft)
             ->color('gray')
             ->visible(fn (Model $record): bool => $record->trashed() && Filament::auth()->user()?->can('restore', $record) === true)
-            ->modalHeading(fn (Model $record): string => __('Restore :name?', ['name' => UserDisplayName::for($record)]))
+            ->modalHeading(fn (Model $record): string => __('Restore :name?', ['name' => $record->name]))
             ->modalDescription(__('The user can sign in to this tenant again with the role below, unless they still have one.'))
             ->schema([
                 Select::make('role')
@@ -36,7 +35,7 @@ class RestoreMemberAction
             ->action(function (array $data, Model $record): void {
                 app(RestoreTenantMember::class)->handle(Filament::getTenant(), $record, TenantRoles::from($data['role']));
 
-                Notification::make()->title(__(':name was restored.', ['name' => UserDisplayName::for($record)]))->success()->send();
+                Notification::make()->title(__(':name was restored.', ['name' => $record->name]))->success()->send();
             });
     }
 }
