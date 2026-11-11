@@ -151,6 +151,7 @@ test('the users tab lists only the tenant members with their tenant role and own
         ->assertTableColumnStateSet('tenant_roles', [TenantRoles::OWNER->value], $ownerRow)
         ->assertTableColumnStateSet('tenant_roles', [TenantRoles::VIEW_ONLY->value], $memberRow)
         ->assertTableColumnDoesNotExist('is_owner')
+        ->assertTableFilterExists('is_owner')
         ->filterTable('role', TenantRoles::VIEW_ONLY->value)
         ->assertCanSeeTableRecords([$memberRow])
         ->assertCanNotSeeTableRecords([$ownerRow])
