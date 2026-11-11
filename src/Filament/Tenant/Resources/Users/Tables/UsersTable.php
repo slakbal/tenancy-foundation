@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Slakbal\TenancyFoundation\Actions\Tenant\RemoveTenantMember;
+use Slakbal\TenancyFoundation\Enums\Authorisation\TenantUserAbilities;
 use Slakbal\TenancyFoundation\Enums\MemberStatus;
 use Slakbal\TenancyFoundation\Filament\Components\Resources\Users\UsersTable as BaseUsersTable;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ChangeMemberStatusAction;
@@ -170,7 +171,7 @@ class UsersTable extends BaseUsersTable
             && ! $record->trashed()
             && ! $authenticated->is($record)
             && ! $record->isOwner($tenant)
-            && $authenticated->can('changeRole', $record);
+            && $authenticated->can(TenantUserAbilities::ChangeRole, $record);
     }
 
     protected static function membershipQuery(): \Illuminate\Database\Query\Builder

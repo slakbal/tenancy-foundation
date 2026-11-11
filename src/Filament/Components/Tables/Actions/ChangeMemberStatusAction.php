@@ -8,6 +8,7 @@ use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Actions\Tenant\ChangeTenantMemberStatus;
+use Slakbal\TenancyFoundation\Enums\Authorisation\TenantUserAbilities;
 use Slakbal\TenancyFoundation\Enums\MemberStatus;
 use Slakbal\TenancyFoundation\Support\UserDisplayName;
 
@@ -15,7 +16,7 @@ class ChangeMemberStatusAction
 {
     public static function deactivate(): Action
     {
-        return static::base('deactivate', MemberStatus::INACTIVE)
+        return static::base(TenantUserAbilities::Deactivate, MemberStatus::INACTIVE)
             ->label(__('Deactivate'))
             ->icon(Heroicon::OutlinedNoSymbol)
             ->color('warning')
@@ -25,7 +26,7 @@ class ChangeMemberStatusAction
 
     public static function activate(): Action
     {
-        return static::base('activate', MemberStatus::ACTIVE)
+        return static::base(TenantUserAbilities::Activate, MemberStatus::ACTIVE)
             ->label(__('Activate'))
             ->icon(Heroicon::OutlinedCheckCircle)
             ->color('success')
@@ -33,13 +34,13 @@ class ChangeMemberStatusAction
             ->modalDescription(__('The user can use this tenant again.'));
     }
 
-    protected static function base(string $name, MemberStatus $status): Action
+    protected static function base(TenantUserAbilities $ability, MemberStatus $status): Action
     {
-        return Action::make($name)
-            ->visible(fn (Model $record): bool => static::canChange($record, $name, $status))
+        return Action::make($ability->value)
+            ->visible(fn (Model $record): bool => static::canChange($record, $ability, $status))
             ->requiresConfirmation()
-            ->action(function (Model $record) use ($name, $status): void {
-                if (! static::canChange($record, $name, $status)) {
+            ->action(function (Model $record) use ($ability, $status): void {
+                if (! static::canChange($record, $ability, $status)) {
                     return;
                 }
 
@@ -54,7 +55,7 @@ class ChangeMemberStatusAction
             });
     }
 
-    protected static function canChange(Model $record, string $ability, MemberStatus $status): bool
+    protected static function canChange(Model $record, TenantUserAbilities $ability, MemberStatus $status): bool
     {
         $tenant = Filament::getTenant();
         $authenticated = Filament::auth()->user();

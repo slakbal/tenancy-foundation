@@ -8,6 +8,7 @@ use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Actions\Tenant\RemoveTenantMember;
+use Slakbal\TenancyFoundation\Enums\Authorisation\TenantUserAbilities;
 use Slakbal\TenancyFoundation\Support\TenantMembershipGuard;
 
 /**
@@ -51,6 +52,6 @@ class LeaveTenantAction
             && ! $record->trashed()
             && $authenticated->is($record)
             && ! $record->isOwner($tenant)
-            && $authenticated->can('leave', $record);
+            && $authenticated->can(TenantUserAbilities::Leave, $record);
     }
 }
