@@ -4,7 +4,7 @@ use Filament\Facades\Filament;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\Tenant\AddTenantOwner;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
-use Slakbal\TenancyFoundation\Actions\Tenant\TransferTenantOwnership;
+use Slakbal\TenancyFoundation\Actions\Tenant\RemoveTenantOwner;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Pages\EditUser;
@@ -85,8 +85,9 @@ test('an owner can remove another owner but the last owner cannot be removed', f
     Livewire::test(ListUsers::class)->assertTableActionHidden('removeOwner', $this->owner);
 });
 
-test('after the hand over the original owner can be deleted but the new sole owner cannot', function () {
-    app(TransferTenantOwnership::class)->handle($this->tenant, $this->member, $this->owner);
+test('after ownership is handed over the original owner can be deleted but the new sole owner cannot', function () {
+    app(AddTenantOwner::class)->handle($this->tenant, $this->member);
+    app(RemoveTenantOwner::class)->handle($this->tenant, $this->owner);
     actAsTenantUserIn($this->member, $this->tenant);
 
     Livewire::test(ListUsers::class)
