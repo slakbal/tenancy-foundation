@@ -35,7 +35,7 @@ test('visiting a valid invitation link shows the accept page with a registration
 
     $response->assertOk();
     $response->assertSee('wire:model="data.name"', false);
-    $response->assertSee('wire:model="data.password"', false);
+    $response->assertSee('wire:model.fill="data.password"', false);
 });
 
 test('visiting a valid invitation link for an already-registered email skips the registration fields', function () {
