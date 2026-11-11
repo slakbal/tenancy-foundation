@@ -88,6 +88,27 @@ test('the users table shows each user\'s role in the current tenant as a badge',
         ->assertTableColumnStateSet('roles.name', null, $none);
 });
 
+test('the users table has no owner icon or created at column and hides last login by default', function () {
+    Permission::findOrCreate(TenantPermissions::USER_VIEW_ANY->value, AuthGuard::TENANT->value);
+    $this->viewer->givePermissionTo(TenantPermissions::USER_VIEW_ANY);
+
+    $this->actingAs($this->viewer, AuthGuard::TENANT->value);
+    Filament::setTenant($this->tenant);
+
+    $component = Livewire::test(ListUsers::class)
+        ->assertTableColumnExists('joined_at')
+        ->assertTableColumnExists('last_login_at')
+        ->assertTableColumnExists('roles.name')
+        ->assertTableColumnDoesNotExist('is_owner')
+        ->assertTableColumnDoesNotExist('created_at')
+        ->assertTableFilterExists('is_owner');
+
+    $lastLogin = $component->instance()->getTable()->getColumn('last_login_at');
+
+    expect($lastLogin->isToggleable())->toBeTrue()
+        ->and($lastLogin->isToggledHiddenByDefault())->toBeTrue();
+});
+
 test('a role held in another tenant is not shown in this tenant', function () {
     Permission::findOrCreate(TenantPermissions::USER_VIEW_ANY->value, AuthGuard::TENANT->value);
     $this->viewer->givePermissionTo(TenantPermissions::USER_VIEW_ANY);
