@@ -24,7 +24,7 @@ class SoleOwnerGuard
             && $model->isSoleOwnerOfAnyTenant();
 
         return $isSoleOwner
-            ? Response::deny(__(':name is the only owner of :tenants and cannot be deleted. Make another member an owner first.', ['name' => UserDisplayName::for($model), 'tenants' => static::tenantNames($model)]))
+            ? Response::deny(__(':name is the only owner of :tenants and cannot be deleted. Make another member an owner first.', ['name' => $model->name, 'tenants' => static::tenantNames($model)]))
             : null;
     }
 

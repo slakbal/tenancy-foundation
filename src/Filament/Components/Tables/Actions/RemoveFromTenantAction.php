@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Actions\Tenant\RemoveTenantMember;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantUserAbilities;
 use Slakbal\TenancyFoundation\Support\TenantMembershipGuard;
-use Slakbal\TenancyFoundation\Support\UserDisplayName;
 
 /**
  * Removes a member from the current tenant. A member of other tenants is detached; a member whose only tenant this is
@@ -27,8 +26,8 @@ class RemoveFromTenantAction
             ->visible(fn (Model $record): bool => static::canRemove($record))
             ->requiresConfirmation()
             ->modalHeading(fn (Model $record): string => static::deletesAccount($record)
-                ? __('Delete :name?', ['name' => UserDisplayName::for($record)])
-                : __('Remove :name from this tenant?', ['name' => UserDisplayName::for($record)]))
+                ? __('Delete :name?', ['name' => $record->name])
+                : __('Remove :name from this tenant?', ['name' => $record->name]))
             ->modalDescription(fn (Model $record): string => static::deletesAccount($record)
                 ? __('This is the only tenant of the user, so their account is deleted. An admin can restore it later.')
                 : __('The user loses access to this tenant and keeps their other tenants.'))
@@ -41,8 +40,8 @@ class RemoveFromTenantAction
 
                 Notification::make()
                     ->title($deleted
-                        ? __(':name was deleted.', ['name' => UserDisplayName::for($record)])
-                        : __(':name was removed from this tenant.', ['name' => UserDisplayName::for($record)]))
+                        ? __(':name was deleted.', ['name' => $record->name])
+                        : __(':name was removed from this tenant.', ['name' => $record->name]))
                     ->success()
                     ->send();
             });

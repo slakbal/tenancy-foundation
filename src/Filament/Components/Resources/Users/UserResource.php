@@ -9,7 +9,6 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Slakbal\TenancyFoundation\Support\UserDisplayName;
 use UnitEnum;
 
 abstract class UserResource extends Resource
@@ -44,7 +43,7 @@ abstract class UserResource extends Resource
             return null;
         }
 
-        return UserDisplayName::for($record);
+        return $record->name;
     }
 
     public static function getRelations(): array

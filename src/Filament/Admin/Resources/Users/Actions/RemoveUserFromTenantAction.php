@@ -8,7 +8,6 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
 use Slakbal\TenancyFoundation\Actions\Tenant\RemoveTenantMember;
-use Slakbal\TenancyFoundation\Support\UserDisplayName;
 
 class RemoveUserFromTenantAction
 {
@@ -22,14 +21,14 @@ class RemoveUserFromTenantAction
                 && static::tenantCount($user ?? $record) > 1
                 && Gate::allows('update', $user ?? $record))
             ->requiresConfirmation()
-            ->modalHeading(fn (Model $record): string => __('Remove :name from :tenant?', ['name' => UserDisplayName::for($user ?? $record), 'tenant' => ($tenant ?? $record)->name]))
+            ->modalHeading(fn (Model $record): string => __('Remove :name from :tenant?', ['name' => ($user ?? $record)->name, 'tenant' => ($tenant ?? $record)->name]))
             ->modalDescription(__('The user loses access to this tenant and keeps their other tenants.'))
             ->action(function (Model $record) use ($user, $tenant): void {
                 app(RemoveTenantMember::class)->handle($tenant ?? $record, $user ?? $record);
                 $subject = $user ?? $record;
                 unset($subject->tenants_count);
 
-                Notification::make()->title(__(':name was removed from :tenant.', ['name' => UserDisplayName::for($user ?? $record), 'tenant' => ($tenant ?? $record)->name]))->success()->send();
+                Notification::make()->title(__(':name was removed from :tenant.', ['name' => ($user ?? $record)->name, 'tenant' => ($tenant ?? $record)->name]))->success()->send();
             });
     }
 

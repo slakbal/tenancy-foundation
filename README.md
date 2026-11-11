@@ -211,6 +211,8 @@ The package has no hard-coded name columns. `tenancy-foundation.user_name_attrib
 
 Declare `#[Fillable]` and any name accessor on your own `User` and `Admin` models.
 
+The package reads `$user->name` for display (modal headings, notifications, record titles), so the user model must expose a `name` attribute. With custom name attributes, add an accessor built with `Slakbal\TenancyFoundation\Support\UserDisplayName::for($this)`, which joins the configured attributes and falls back to the email.
+
 ## Users table
 
 Required columns: `ulid`, the name columns in `user_name_attributes`, `email`, `password`, `email_verified_at`, `last_login_at`, `last_login_ip`, `remember_token`, timestamps and soft deletes.
