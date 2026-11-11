@@ -10,7 +10,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 use Slakbal\TenancyFoundation\Database\Factories\InvitationFactory;
+use Slakbal\TenancyFoundation\Events\Invitation\InvitationIssued;
 use Slakbal\TenancyFoundation\Models\Concerns\HasUlidKey;
 use Slakbal\TenancyFoundation\Models\Concerns\Tenancy\BelongsToTenant;
 
@@ -42,6 +44,21 @@ class Invitation extends Model
     public function role(): BelongsTo
     {
         return $this->belongsTo(config('tenancy-foundation.models.role'));
+    }
+
+    /**
+     * Gives the invitation a fresh link and expiry, saves it and announces it so the invitee is mailed.
+     */
+    public function issue(): static
+    {
+        $this->forceFill([
+            'token' => Str::random(64),
+            'expires_at' => now()->addDays((int) config('tenancy-foundation.invitations.expiry_days')),
+        ])->save();
+
+        InvitationIssued::dispatch($this);
+
+        return $this;
     }
 
     public function prunable(): Builder
