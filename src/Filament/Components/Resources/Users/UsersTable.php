@@ -4,6 +4,7 @@ namespace Slakbal\TenancyFoundation\Filament\Components\Resources\Users;
 
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -31,13 +32,19 @@ class UsersTable
             ->columns(static::columns())
             ->filters(static::filters())
             ->recordActions(static::recordActions())
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make()->authorizeIndividualRecords('delete'),
-                    ForceDeleteBulkAction::make()->authorizeIndividualRecords('delete'),
-                    RestoreBulkAction::make(),
-                ]),
-            ]);
+            ->toolbarActions([BulkActionGroup::make(static::bulkActions())]);
+    }
+
+    /**
+     * @return array<int, Action|BulkAction>
+     */
+    protected static function bulkActions(): array
+    {
+        return [
+            DeleteBulkAction::make()->authorizeIndividualRecords('delete'),
+            ForceDeleteBulkAction::make()->authorizeIndividualRecords('delete'),
+            RestoreBulkAction::make(),
+        ];
     }
 
     /**

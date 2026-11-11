@@ -8,6 +8,7 @@ use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Actions\Tenant\RemoveTenantOwner;
+use Slakbal\TenancyFoundation\Support\UserDisplayName;
 
 class RemoveTenantOwnerAction
 {
@@ -19,7 +20,7 @@ class RemoveTenantOwnerAction
             ->color('danger')
             ->visible(fn (Model $record): bool => static::canRemoveOwner($record))
             ->requiresConfirmation()
-            ->modalHeading(fn (Model $record): string => __('Remove :name as owner?', ['name' => $record->name]))
+            ->modalHeading(fn (Model $record): string => __('Remove :name as owner?', ['name' => UserDisplayName::for($record)]))
             ->modalDescription(__('The user stays a member of this tenant as an admin.'))
             ->action(function (Model $record): void {
                 if (! static::canRemoveOwner($record)) {
@@ -29,7 +30,7 @@ class RemoveTenantOwnerAction
                 app(RemoveTenantOwner::class)->handle(Filament::getTenant(), $record, Filament::auth()->user());
                 unset(Filament::getTenant()->owners_count);
 
-                Notification::make()->title(__(':name is no longer an owner of this tenant.', ['name' => $record->name]))->success()->send();
+                Notification::make()->title(__(':name is no longer an owner of this tenant.', ['name' => UserDisplayName::for($record)]))->success()->send();
             });
     }
 

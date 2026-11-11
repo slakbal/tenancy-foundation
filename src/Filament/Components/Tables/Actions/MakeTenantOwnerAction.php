@@ -7,6 +7,7 @@ use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Actions\Tenant\AddTenantOwner;
+use Slakbal\TenancyFoundation\Support\UserDisplayName;
 
 class MakeTenantOwnerAction
 {
@@ -34,7 +35,7 @@ class MakeTenantOwnerAction
                 unset(Filament::getTenant()->owners_count);
 
                 Notification::make()
-                    ->title(__(':name is now an owner of this tenant.', ['name' => $record->name]))
+                    ->title(__(':name is now an owner of this tenant.', ['name' => UserDisplayName::for($record)]))
                     ->success()
                     ->send();
             });

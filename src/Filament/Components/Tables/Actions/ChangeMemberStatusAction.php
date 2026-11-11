@@ -9,6 +9,7 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Actions\Tenant\ChangeTenantMemberStatus;
 use Slakbal\TenancyFoundation\Enums\MemberStatus;
+use Slakbal\TenancyFoundation\Support\UserDisplayName;
 
 class ChangeMemberStatusAction
 {
@@ -18,7 +19,7 @@ class ChangeMemberStatusAction
             ->label(__('Deactivate'))
             ->icon(Heroicon::OutlinedNoSymbol)
             ->color('warning')
-            ->modalHeading(fn (Model $record): string => __('Deactivate :name?', ['name' => $record->name]))
+            ->modalHeading(fn (Model $record): string => __('Deactivate :name?', ['name' => UserDisplayName::for($record)]))
             ->modalDescription(__('The user is locked out of this tenant until reactivated. Their other tenants are not affected.'));
     }
 
@@ -28,7 +29,7 @@ class ChangeMemberStatusAction
             ->label(__('Activate'))
             ->icon(Heroicon::OutlinedCheckCircle)
             ->color('success')
-            ->modalHeading(fn (Model $record): string => __('Activate :name?', ['name' => $record->name]))
+            ->modalHeading(fn (Model $record): string => __('Activate :name?', ['name' => UserDisplayName::for($record)]))
             ->modalDescription(__('The user can use this tenant again.'));
     }
 
@@ -46,8 +47,8 @@ class ChangeMemberStatusAction
 
                 Notification::make()
                     ->title($status === MemberStatus::ACTIVE
-                        ? __(':name has been activated.', ['name' => $record->name])
-                        : __(':name has been deactivated.', ['name' => $record->name]))
+                        ? __(':name has been activated.', ['name' => UserDisplayName::for($record)])
+                        : __(':name has been deactivated.', ['name' => UserDisplayName::for($record)]))
                     ->success()
                     ->send();
             });

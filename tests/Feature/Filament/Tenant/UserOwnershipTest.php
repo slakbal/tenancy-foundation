@@ -34,8 +34,8 @@ test('the sole owner has no delete action while other users do', function () {
     actAsTenantUserIn($this->owner, $this->tenant);
 
     Livewire::test(ListUsers::class)
-        ->assertTableActionHidden('delete', $this->owner)
-        ->assertTableActionVisible('delete', $this->member);
+        ->assertTableActionHidden('removeFromTenant', $this->owner)
+        ->assertTableActionVisible('removeFromTenant', $this->member);
 });
 
 test('make owner shows only to owners and only for non owner members', function (string $actor, bool $visibleForMember) {
@@ -90,12 +90,12 @@ test('after the hand over the original owner can be deleted but the new sole own
     actAsTenantUserIn($this->member, $this->tenant);
 
     Livewire::test(ListUsers::class)
-        ->callTableAction('delete', $this->owner);
+        ->callTableAction('removeFromTenant', $this->owner);
 
     expect($this->owner->fresh()->trashed())->toBeTrue();
 
     Livewire::test(ListUsers::class)
-        ->assertTableActionHidden('delete', $this->member);
+        ->assertTableActionHidden('removeFromTenant', $this->member);
 });
 
 test('bulk delete skips a sole owner and deletes only the other selected users', function (bool $withMember) {
@@ -116,21 +116,24 @@ test('the edit page hides delete for a sole owner and shows it for others', func
     actAsTenantUserIn($this->owner, $this->tenant);
 
     Livewire::test(EditUser::class, ['record' => $this->owner->getRouteKey()])
-        ->assertActionHidden('delete');
+        ->assertActionHidden('removeFromTenant');
 
     Livewire::test(EditUser::class, ['record' => $this->member->getRouteKey()])
-        ->assertActionVisible('delete');
+        ->assertActionVisible('removeFromTenant');
 });
 
-test('bulk force delete also skips a sole owner', function () {
-    $this->owner->delete();
+test('the tenant panel never offers force delete, not even to an owner', function () {
     $this->member->delete();
     actAsTenantUserIn($this->owner, $this->tenant);
 
+    expect($this->owner->can('forceDelete', $this->member))->toBeFalse()
+        ->and($this->owner->can('forceDeleteAny', User::class))->toBeFalse();
+
     Livewire::test(ListUsers::class)
         ->filterTable('trashed', true)
-        ->callTableBulkAction('forceDelete', [$this->owner, $this->member]);
+        ->assertTableActionDoesNotExist('forceDelete')
+        ->assertTableBulkActionDoesNotExist('forceDelete');
 
-    expect(User::withTrashed()->find($this->owner->getKey()))->not->toBeNull()
-        ->and(User::withTrashed()->find($this->member->getKey()))->toBeNull();
+    Livewire::test(EditUser::class, ['record' => $this->member->getRouteKey()])
+        ->assertActionDoesNotExist('forceDelete');
 });

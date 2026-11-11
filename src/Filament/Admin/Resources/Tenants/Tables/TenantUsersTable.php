@@ -15,8 +15,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
+use Slakbal\TenancyFoundation\Enums\MemberStatus;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\MakeUserTenantOwnerAction;
-use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\ManageTenantRolesAction;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ManageTenantRolesAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\RemoveUserFromTenantAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\RemoveUserTenantOwnerAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\SendUserPasswordResetLinkAction;
@@ -58,6 +59,10 @@ class TenantUsersTable
             NameColumn::make('name')->label(__('Name')),
             EmailColumn::make('email'),
             VerifiedColumn::make(),
+            TextColumn::make('membership_status')
+                ->label(__('Status'))
+                ->badge()
+                ->state(fn (Model $record): ?MemberStatus => $record->pivot->status),
             RoleBadgeColumn::make('tenant_roles')
                 ->state(fn (Model $record): array => $roles->for($record)->all())
                 ->placeholder(__('No role')),

@@ -121,6 +121,17 @@ it('sets several roles for a member inside that tenant only', function () {
         ->and($roles->for($second)->all())->toBe([TenantRoles::ADMIN->value]);
 });
 
+it('never accepts the owner role when managing the roles of a member', function () {
+    tenantsActor(AdminPermissions::USER_UPDATE);
+    app(AssignTenantRole::class)->handle($this->member, $this->tenant, TenantRoles::ADMIN);
+
+    tenantsManager($this->member)
+        ->callAction(TestAction::make('manageTenantRoles')->table($this->tenant), ['roles' => [TenantRoles::OWNER->value]])
+        ->assertHasActionErrors(['roles.0']);
+
+    expect((new UserTenantRoles($this->member->fresh()))->for($this->tenant)->all())->toBe([TenantRoles::ADMIN->value]);
+});
+
 it('hides the tenants tab from an admin who may not view tenants', function () {
     $admin = Admin::factory()->create();
     Permission::findOrCreate(AdminPermissions::USER_VIEW->value, AuthGuard::ADMIN->value);

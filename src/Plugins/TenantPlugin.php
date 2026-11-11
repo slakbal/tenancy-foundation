@@ -26,6 +26,7 @@ use Slakbal\TenancyFoundation\Http\Middleware\SyncTenantPermissionsContext;
 use Slakbal\TenancyFoundation\Support\PolicyResolver;
 use Slakbal\TenancyFoundation\Support\SelfDeletionGuard;
 use Slakbal\TenancyFoundation\Support\SoleOwnerGuard;
+use Slakbal\TenancyFoundation\Support\TenantForceDeleteGuard;
 use Slakbal\TenancyFoundation\Support\TenantMembershipGuard;
 
 class TenantPlugin implements Plugin
@@ -148,7 +149,8 @@ class TenantPlugin implements Plugin
             // Always first!! Blocks deleting a user who is the only owner of any tenant. It’s called first in both Gate::before callbacks, so it can deny delete or forceDelete even for super admins and owners, who would otherwise bypass every policy.
             if ($denial = SelfDeletionGuard::denial($user, $ability, $arguments)
                 ?? SoleOwnerGuard::denial($ability, $arguments)
-                ?? TenantMembershipGuard::denial($ability, $arguments)) {
+                ?? TenantMembershipGuard::denial($ability, $arguments)
+                ?? TenantForceDeleteGuard::denial($ability, $arguments)) {
                 return $denial;
             }
 
