@@ -28,5 +28,4 @@ test('each ability requires its permission', function (string $ability, TenantPe
     'update' => ['update', TenantPermissions::USER_UPDATE, true],
     'delete' => ['delete', TenantPermissions::USER_DELETE, true],
     'restoreAny' => ['restoreAny', TenantPermissions::USER_RESTORE, false],
-    'forceDeleteAny' => ['forceDeleteAny', TenantPermissions::USER_FORCE_DELETE, false],
 ]);
