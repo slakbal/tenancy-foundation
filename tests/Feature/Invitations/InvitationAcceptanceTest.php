@@ -35,7 +35,8 @@ test('visiting a valid invitation link shows the accept page with a registration
 
     $response->assertOk();
     $response->assertSee('wire:model="data.name"', false);
-    $response->assertSee('wire:model.fill="data.password"', false);
+    // Filament renders revealable inputs with a modifier (wire:model.fill) in some versions and plain wire:model in others.
+    expect($response->getContent())->toMatch('/wire:model(\.[a-z]+)*="data\.password"/');
 });
 
 test('visiting a valid invitation link for an already-registered email skips the registration fields', function () {
