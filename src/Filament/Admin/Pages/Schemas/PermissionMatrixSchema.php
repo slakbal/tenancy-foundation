@@ -174,7 +174,7 @@ class PermissionMatrixSchema
     protected static function lockedCell(): Icon
     {
         return Icon::make(Heroicon::OutlinedCheckCircle)
-            ->color('gray')
+            ->color('success')
             ->tooltip(__('Full access, cannot be changed'));
     }
 
