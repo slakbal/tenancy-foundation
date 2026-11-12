@@ -32,7 +32,7 @@ composer require slakbal/tenancy-foundation
 php artisan tenancy-foundation:install
 ```
 
-The install command publishes `config/tenancy-foundation.php`, warns if spatie teams are not enabled and prints the remaining steps.
+The install command publishes `config/tenancy-foundation.php`, warns if spatie teams are not enabled and prints the remaining steps (including that seeding applies role defaults on first install only, and the `tenancy-foundation:sync-permissions` command).
 
 ### 2. Create your models
 
@@ -150,12 +150,15 @@ $this->call([AdminRolePermissionsSeeder::class, TenantRolePermissionsSeeder::cla
 
 Roles are global; tenant roles are assigned per tenant. To add your own permission enums, extend `TenantRolePermissionsSeeder` and override `permissionEnums()` and `viewOnlyPermissions()`. The owner role carries no permission rows: the owner of a tenant bypasses every check for that tenant through `Gate::before`, and owner-only areas (the tenant profile page) are guarded by an owner check. The admin role gets every permission.
 
-**After every upgrade, re-run both seeders.** New permissions and changed role mappings only reach the database through them. The seeders sync each role, so run them again whenever the package or your own permission enums change:
+**Seeding is first-install only.** The seeders always `findOrCreate` every permission row, but a role's default permissions are applied only to a role that has no permissions yet. A role that already holds any permission is never reset, so re-running the seeders no longer undoes edits (this lets permissions become editable in the database later). The owner role is the exception: it is always cleared, because it carries no rows. The admin role gets every permission except `permissions.manage`, which nobody is seeded with (`super_admin` passes through `Gate::before`).
+
+The enums stay the permission registry. After an upgrade, or after adding permissions to your own enums, run:
 
 ```bash
-php artisan db:seed --class="Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder"
-php artisan db:seed --class="Slakbal\TenancyFoundation\Database\Seeders\TenantRolePermissionsSeeder"
+php artisan tenancy-foundation:sync-permissions
 ```
+
+The command creates the missing permission rows for both guards (the tenant list comes from `TenantRolePermissionsSeeder`, so your `permissionEnums()` override applies when you bind your subclass in the container), reports orphans (database rows with no enum case, per guard) without deleting them, and clears the permission cache. It is idempotent and never changes role assignments, so a new permission is not granted to any existing role: assign it to the roles that need it manually (or through the permissions screen once it exists).
 
 Admin roles live under the fixed team id `Admin::PERMISSIONS_TEAM_ID` (`0`, never a tenant id, so no placeholder tenant is needed). Create the first super admin:
 
@@ -211,7 +214,21 @@ The package has no hard-coded name columns. `tenancy-foundation.user_name_attrib
 
 Declare `#[Fillable]` and any name accessor on your own `User` and `Admin` models.
 
-The package reads `$user->name` for display (modal headings, notifications, record titles), so the user model must expose a `name` attribute. With custom name attributes, add an accessor built with `Slakbal\TenancyFoundation\Support\UserDisplayName::for($this)`, which joins the configured attributes and falls back to the email.
+The package reads `$user->name` for display (modal headings, notifications, record titles), so the user model must expose a `name` attribute. With custom `user_name_attributes`, add an accessor that joins them, for example:
+
+```php
+protected function name(): Attribute
+{
+    return Attribute::get(function (): string {
+        $name = collect(config('tenancy-foundation.user_name_attributes'))
+            ->map(fn (string $attribute): mixed => $this->getAttribute($attribute))
+            ->filter()
+            ->implode(' ');
+
+        return $name !== '' ? $name : (string) $this->email;
+    });
+}
+```
 
 ## Users table
 
@@ -230,7 +247,7 @@ The package owns the generic lifecycle; your application owns the cancel screen 
 | `AccountCancelled` mail to every owner (queued, `notifications.cancelled`, `null` disables it) | package |
 | Login blocking: a user whose tenants are all cancelled cannot sign in, cancelled tenants leave the switcher and default tenant, requests to a cancelled tenant go to another active tenant | package (`IsTenantUser`, `EnsureTenantIsNotCancelled`) |
 | `DeleteTenant` action and the `DeleteDueTenants` job, scheduled daily at `cancellation.deletion_time` (switch off with `cancellation.schedule_deletion`) | package |
-| Admin panel **Tenants** list with cancel and reactivate actions, `ReactivateTenant` action. Permissions `tenant.view_any`, `tenant.view`, `tenant.cancel`, `tenant.reactivate` (re-run `AdminRolePermissionsSeeder`; swap the resource with `AdminPlugin::usingTenantResource()`) | package |
+| Admin panel **Tenants** list with cancel and reactivate actions, `ReactivateTenant` action. Permissions `tenant.view_any`, `tenant.view`, `tenant.cancel`, `tenant.reactivate` (run `tenancy-foundation:sync-permissions` and grant them to the roles that need them; swap the resource with `AdminPlugin::usingTenantResource()`) | package |
 | Cancel screen, password confirmation, and cleaning up **your own** models (subscriptions, addresses, ...) | application |
 
 ### The four lifecycle events

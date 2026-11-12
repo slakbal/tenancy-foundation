@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 use Slakbal\TenancyFoundation\Database\Factories\InvitationFactory;
-use Slakbal\TenancyFoundation\Events\Invitation\InvitationIssued;
 use Slakbal\TenancyFoundation\Models\Concerns\HasUlidKey;
 use Slakbal\TenancyFoundation\Models\Concerns\Tenancy\BelongsToTenant;
 
@@ -47,16 +46,14 @@ class Invitation extends Model
     }
 
     /**
-     * Gives the invitation a fresh link and expiry, saves it and announces it so the invitee is mailed.
+     * Gives the invitation a fresh token and expiry and saves it. State only: announcing it is up to the caller.
      */
-    public function issue(): static
+    public function refreshToken(): static
     {
         $this->forceFill([
             'token' => Str::random(64),
             'expires_at' => now()->addDays((int) config('tenancy-foundation.invitations.expiry_days')),
         ])->save();
-
-        InvitationIssued::dispatch($this);
 
         return $this;
     }

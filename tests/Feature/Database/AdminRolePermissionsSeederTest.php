@@ -57,3 +57,21 @@ it('gives the admin and support roles the right tenant permissions', function ()
     expect($tenantPermissions(AdminRoles::ADMIN))->toBe(['tenant.cancel', 'tenant.reactivate', 'tenant.update', 'tenant.view', 'tenant.view_any'])
         ->and($tenantPermissions(AdminRoles::SUPPORT))->toBe(['tenant.view', 'tenant.view_any']);
 });
+
+it('keeps an edited assignment when the seeder runs again', function () {
+    $support = Role::findByName(AdminRoles::SUPPORT->value, AuthGuard::ADMIN->value);
+    $support->revokePermissionTo(AdminPermissions::USER_VIEW);
+    $support->givePermissionTo(AdminPermissions::USER_DELETE);
+
+    $this->seed(AdminRolePermissionsSeeder::class);
+
+    expect(adminRolePermissions(AdminRoles::SUPPORT))
+        ->toContain(AdminPermissions::USER_DELETE->value)
+        ->not->toContain(AdminPermissions::USER_VIEW->value);
+});
+
+it('never seeds permissions.manage to a role', function () {
+    expect(adminRolePermissions(AdminRoles::ADMIN))->not->toContain(AdminPermissions::PERMISSIONS_MANAGE->value)
+        ->and(adminRolePermissions(AdminRoles::SUPPORT))->not->toContain(AdminPermissions::PERMISSIONS_MANAGE->value)
+        ->and(adminRolePermissions(AdminRoles::SUPER_ADMIN))->not->toContain(AdminPermissions::PERMISSIONS_MANAGE->value);
+});

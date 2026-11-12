@@ -7,6 +7,9 @@ enum AdminPermissions: string
     // Impersonate Users
     case IMPERSONATE_USER = 'impersonate.user';
 
+    // Permission matrix (editing which role holds which permission; super_admin only, never seeded to other roles)
+    case PERMISSIONS_MANAGE = 'permissions.manage';
+
     // Admin Panel Users (for the users in the admins table)
     case ADMIN_USER_VIEW_ANY = 'admin_user.view_any';
     case ADMIN_USER_VIEW = 'admin_user.view';
