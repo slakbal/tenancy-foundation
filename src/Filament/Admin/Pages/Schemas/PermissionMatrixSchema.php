@@ -97,6 +97,7 @@ class PermissionMatrixSchema
         return Section::make(PermissionLabels::group($permissions[0]->name))
             ->description(trans_choice(':count permission|:count permissions', count($permissions)))
             ->collapsible()
+            ->collapsed()
             ->compact()
             ->schema([
                 Grid::make($columns)->schema([
