@@ -16,6 +16,7 @@ use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Console\InstallCommand;
 use Slakbal\TenancyFoundation\Console\SyncPermissionsCommand;
 use Slakbal\TenancyFoundation\Events\Admin\AdminUserCreated;
+use Slakbal\TenancyFoundation\Events\Admin\RolePermissionsChanged;
 use Slakbal\TenancyFoundation\Events\Contact\ContactRequestAnswered;
 use Slakbal\TenancyFoundation\Events\Contact\ContactRequestReceived;
 use Slakbal\TenancyFoundation\Events\Invitation\InvitationIssued;
@@ -29,6 +30,7 @@ use Slakbal\TenancyFoundation\Http\Responses\LogoutResponse;
 use Slakbal\TenancyFoundation\Http\Responses\RegistrationResponse;
 use Slakbal\TenancyFoundation\Jobs\DeleteDueTenants;
 use Slakbal\TenancyFoundation\Listeners\Admin\ActivateAdminOnPasswordReset;
+use Slakbal\TenancyFoundation\Listeners\Admin\RecordRolePermissionsChange;
 use Slakbal\TenancyFoundation\Listeners\Admin\SendAdminInvitation;
 use Slakbal\TenancyFoundation\Listeners\Auth\UpdateLastLogin;
 use Slakbal\TenancyFoundation\Listeners\Contact\NotifyAdminsOfContactRequest;
@@ -145,6 +147,7 @@ class TenancyFoundationServiceProvider extends ServiceProvider
         Event::listen(TenantMemberRemoved::class, SendMemberRemovedNotification::class);
         Event::listen(AdminUserCreated::class, SendAdminInvitation::class);
         Event::listen(PasswordReset::class, ActivateAdminOnPasswordReset::class);
+        Event::listen(RolePermissionsChanged::class, RecordRolePermissionsChange::class);
         Event::listen(ContactRequestReceived::class, NotifyAdminsOfContactRequest::class);
         Event::listen(ContactRequestAnswered::class, SendContactResponseNotification::class);
 
