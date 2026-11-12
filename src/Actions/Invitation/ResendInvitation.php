@@ -3,6 +3,7 @@
 namespace Slakbal\TenancyFoundation\Actions\Invitation;
 
 use Illuminate\Database\Eloquent\Model;
+use Slakbal\TenancyFoundation\Events\Invitation\InvitationIssued;
 use Slakbal\TenancyFoundation\Exceptions\InvalidInvitation;
 
 readonly class ResendInvitation
@@ -14,6 +15,10 @@ readonly class ResendInvitation
     {
         throw_if($invitation->accepted_at !== null, InvalidInvitation::notPending());
 
-        return $invitation->issue();
+        $invitation->refreshToken();
+
+        InvitationIssued::dispatch($invitation);
+
+        return $invitation;
     }
 }

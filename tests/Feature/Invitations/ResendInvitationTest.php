@@ -67,15 +67,25 @@ test('an accepted invitation cannot be resent and the action needs the create pe
     expect($pending->fresh()->token)->toBe($pending->token);
 });
 
-test('issuing rotates the token, resets the expiry from config and announces the invitation exactly once', function () {
+test('refreshToken rotates the token and resets the expiry from config without announcing anything', function () {
     Event::fake([InvitationIssued::class]);
     config(['tenancy-foundation.invitations.expiry_days' => 3]);
     $invitation = Invitation::factory()->for($this->tenant, 'tenant')->create(['expires_at' => now()->subDay()]);
     $oldToken = $invitation->token;
 
-    $invitation->issue();
-
-    expect($invitation->fresh()->token)->not->toBe($oldToken)->toHaveLength(64)
+    expect($invitation->refreshToken())->toBe($invitation)
+        ->and($invitation->fresh()->token)->not->toBe($oldToken)->toHaveLength(64)
         ->and($invitation->fresh()->expires_at->isSameDay(now()->addDays(3)))->toBeTrue();
+    Event::assertNotDispatched(InvitationIssued::class);
+});
+
+test('resending rotates the token and announces the invitation exactly once', function () {
+    Event::fake([InvitationIssued::class]);
+    $invitation = Invitation::factory()->for($this->tenant, 'tenant')->create(['expires_at' => now()->subDay()]);
+    $oldToken = $invitation->token;
+
+    app(ResendInvitation::class)->handle($invitation);
+
+    expect($invitation->fresh()->token)->not->toBe($oldToken);
     Event::assertDispatchedTimes(InvitationIssued::class, 1);
 });
