@@ -286,6 +286,26 @@ Reactivating a tenant clears `cancelled_at` and `scheduled_for_deletion_at` only
 
 Set the grace period with `TENANT_CANCELLATION_GRACE_DAYS` (default 30). The scheduler (`schedule:run`) and a queue worker must be running in production.
 
+## Changing role permissions
+
+`Actions\Roles\SyncRolePermissions` replaces the permissions of a role with exactly the list you give it. It is the write path for a permission matrix page; the seeders only set the defaults.
+
+```php
+use Slakbal\TenancyFoundation\Actions\Roles\SyncRolePermissions;
+
+app(SyncRolePermissions::class)->handle($role, [
+    TenantPermissions::USER_VIEW_ANY,
+    TenantPermissions::USER_VIEW,
+    'invitation.create',
+], actor: $admin);
+```
+
+- Permissions are enum cases or names. Duplicates are ignored and a name that does not exist for the role's guard throws `Exceptions\InvalidRolePermissions`; nothing is written.
+- The admin `super_admin` and the tenant `owner` roles are immutable (they carry no permission rows and bypass checks): the action throws `InvalidRolePermissions` for them.
+- Roles are global, so there is no team handling. Pass the role model from `tenancy-foundation.models.role`; subclasses work.
+- The write runs in one transaction, the permission cache is cleared after it (holders gain or lose the ability immediately), then `Events\Admin\RolePermissionsChanged` is dispatched. If nothing changed, nothing happens: no event, no audit row.
+- The listener `Listeners\Admin\RecordRolePermissionsChange` writes a row to `role_permission_changes` (`role_id`, `role_name`, `guard_name`, `added` and `removed` as JSON, the nullable `actor` morph, `created_at`) through the model in `tenancy-foundation.models.role_permission_change`. The actor is `null` for console runs. Re-run `php artisan migrate` after upgrading.
+
 ## Removing, leaving and restoring tenant members
 
 `Actions\Tenant\RemoveTenantMember` is the one action behind the tenant panel "remove from tenant", "delete user" and "leave tenant" row actions:

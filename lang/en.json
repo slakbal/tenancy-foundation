@@ -266,5 +266,7 @@
     "Users cannot be permanently deleted from the tenant panel.": "Users cannot be permanently deleted from the tenant panel.",
     "You were removed from :tenant": "You were removed from :tenant",
     "You no longer have access to :tenant.": "You no longer have access to :tenant.",
-    "If you think this is a mistake, contact the owner of the account.": "If you think this is a mistake, contact the owner of the account."
+    "If you think this is a mistake, contact the owner of the account.": "If you think this is a mistake, contact the owner of the account.",
+    "The :role role cannot be changed.": "The :role role cannot be changed.",
+    "Unknown permissions for the :guard guard: :names": "Unknown permissions for the :guard guard: :names"
 }

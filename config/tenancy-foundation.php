@@ -5,6 +5,7 @@ use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\ContactRequest;
 use Slakbal\TenancyFoundation\Models\Invitation;
 use Slakbal\TenancyFoundation\Models\Role;
+use Slakbal\TenancyFoundation\Models\RolePermissionChange;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
 use Slakbal\TenancyFoundation\Notifications\Admin\AdminInvited;
@@ -58,6 +59,7 @@ return [
         'role' => Role::class,
         'contact_request' => ContactRequest::class,
         'invitation' => Invitation::class,
+        'role_permission_change' => RolePermissionChange::class,
     ],
 
     /*
