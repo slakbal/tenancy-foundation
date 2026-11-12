@@ -1,5 +1,6 @@
 <?php
 
+use Slakbal\TenancyFoundation\Database\Seeders\TenantRolePermissionsSeeder;
 use Slakbal\TenancyFoundation\Livewire\PublicContactForm;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\ContactRequest;
@@ -60,6 +61,25 @@ return [
         'contact_request' => ContactRequest::class,
         'invitation' => Invitation::class,
         'role_permission_change' => RolePermissionChange::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Seeders
+    |--------------------------------------------------------------------------
+    |
+    | tenant_role_permissions  The seeder that defines the tenant permissions.
+    |                          It must be (a subclass of) the package
+    |                          TenantRolePermissionsSeeder. Point it at your
+    |                          subclass that overrides permissionEnums() to add
+    |                          app permission enums: the Role permissions page
+    |                          and tenancy-foundation:sync-permissions then
+    |                          treat them as normal, editable permissions.
+    |
+    */
+
+    'seeders' => [
+        'tenant_role_permissions' => TenantRolePermissionsSeeder::class,
     ],
 
     /*

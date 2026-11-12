@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
-use Slakbal\TenancyFoundation\Enums\Authorisation\InvitationPermissions;
-use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Enums\FilamentPanel;
 use Spatie\Permission\PermissionRegistrar;
@@ -41,10 +39,7 @@ class PermissionMatrixLoader
     {
         return match ($panel) {
             FilamentPanel::ADMIN => [AdminPermissions::class],
-            FilamentPanel::TENANT => array_filter([
-                TenantPermissions::class,
-                config('tenancy-foundation.features.invitations') ? InvitationPermissions::class : null,
-            ]),
+            FilamentPanel::TENANT => app(TenantPermissionEnums::class)->classes(),
         };
     }
 

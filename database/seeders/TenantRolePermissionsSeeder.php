@@ -27,6 +27,16 @@ class TenantRolePermissionsSeeder extends Seeder
     }
 
     /**
+     * The permission enums of the tenant guard. Apps add theirs by overriding permissionEnums().
+     *
+     * @return array<int, class-string<BackedEnum>>
+     */
+    public function permissionEnumClasses(): array
+    {
+        return array_values($this->permissionEnums());
+    }
+
+    /**
      * @return array<int, BackedEnum>
      */
     protected function viewOnlyPermissions(): array
@@ -44,7 +54,7 @@ class TenantRolePermissionsSeeder extends Seeder
      */
     public function permissionNames(): array
     {
-        return collect($this->permissionEnums())
+        return collect($this->permissionEnumClasses())
             ->flatMap(fn (string $enum): array => $enum::cases())
             ->map(fn (BackedEnum $permission): string => $permission->value)
             ->all();
