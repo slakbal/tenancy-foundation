@@ -85,8 +85,8 @@ readonly class SyncRolePermissions
     protected function guardMutable(Role $role): void
     {
         $immutable = match ($role->guard_name) {
-            AuthGuard::ADMIN->value => $role->name === AdminRoles::SUPER_ADMIN->value,
-            AuthGuard::TENANT->value => $role->name === TenantRoles::OWNER->value,
+            AuthGuard::ADMIN->value => AdminRoles::tryFrom($role->name)?->isLocked() ?? false,
+            AuthGuard::TENANT->value => TenantRoles::tryFrom($role->name)?->isLocked() ?? false,
             default => false,
         };
 

@@ -8,6 +8,7 @@ use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Gate;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
+use Slakbal\TenancyFoundation\Filament\Admin\Pages\ManageRolePermissions;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\AdminUserResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\ContactRequestResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\TenantResource;
@@ -30,6 +31,8 @@ class AdminPlugin implements Plugin
     protected string $contactRequestResource = ContactRequestResource::class;
 
     protected string $profilePage = EditProfile::class;
+
+    protected string $rolePermissionsPage = ManageRolePermissions::class;
 
     public static function make(): static
     {
@@ -76,6 +79,13 @@ class AdminPlugin implements Plugin
         return $this;
     }
 
+    public function usingRolePermissionsPage(string $page): static
+    {
+        $this->rolePermissionsPage = $page;
+
+        return $this;
+    }
+
     public function register(Panel $panel): void
     {
         $panel->databaseNotifications();
@@ -83,6 +93,7 @@ class AdminPlugin implements Plugin
         $panel->profile($this->profilePage);
         $panel->emailChangeVerification(config('tenancy-foundation.email_change_verification', true));
         $panel->authPasswordBroker(AuthGuard::ADMIN->getPasswordBroker());
+        $panel->pages([$this->rolePermissionsPage]);
         $panel->resources([$this->userResource, $this->adminUserResource, $this->tenantResource, $this->contactRequestResource]);
     }
 

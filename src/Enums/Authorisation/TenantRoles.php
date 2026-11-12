@@ -23,6 +23,14 @@ enum TenantRoles: string implements HasColor, HasIcon, HasLabel
             ->all();
     }
 
+    /**
+     * A locked role has full access through the gate and its permissions can never be edited.
+     */
+    public function isLocked(): bool
+    {
+        return $this === self::OWNER;
+    }
+
     public function getLabel(): string
     {
         return match ($this) {
