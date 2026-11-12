@@ -1,6 +1,5 @@
 <?php
 
-
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\Roles\AssignTenantRole;

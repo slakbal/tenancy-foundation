@@ -4,6 +4,7 @@ use Filament\Facades\Filament;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenantUser;
@@ -58,7 +59,7 @@ test('creating a user attaches them as an active member with their roles, an unu
 
 test('an email that already has an account, here or in another tenant, is refused and the owner role cannot be given', function () {
     expect(fn () => app(CreateTenantUser::class)->handle($this->tenant, newUserData(['email' => 'taken@example.test'])))
-        ->toThrow(Illuminate\Validation\ValidationException::class, 'Invite them to this tenant');
+        ->toThrow(ValidationException::class, 'Invite them to this tenant');
 
     config(['tenancy-foundation.features.invitations' => false]);
     expect(CreateTenantUser::emailTakenMessage())->toBe(__('This email already has an account.'));

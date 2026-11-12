@@ -9,7 +9,6 @@ use Slakbal\TenancyFoundation\Enums\Authorisation\InvitationPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Models\Invitation;
-use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
 use Spatie\Permission\Models\Role;
 

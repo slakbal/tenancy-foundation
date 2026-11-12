@@ -9,7 +9,7 @@ use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantUserAbilities;
 use Slakbal\TenancyFoundation\Models\User;
-
+use Slakbal\TenancyFoundation\Policies\Tenant\UserPolicy;
 
 function tenantUserWrites(): array
 {
@@ -76,7 +76,7 @@ test('anyone but an owner may leave, only for themselves', function () {
         ->and($this->admin->can(TenantUserAbilities::Leave, $this->member))->toBeFalse()
         ->and($this->coOwner->isOwner($this->tenant))->toBeTrue();
 
-    $policy = new Slakbal\TenancyFoundation\Policies\Tenant\UserPolicy;
+    $policy = new UserPolicy;
     expect($policy->leave($this->coOwner, $this->coOwner))->toBeFalse();
 });
 

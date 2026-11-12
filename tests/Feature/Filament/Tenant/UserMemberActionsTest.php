@@ -12,6 +12,7 @@ use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Enums\MemberStatus;
 use Slakbal\TenancyFoundation\Events\Tenant\TenantMemberRemoved;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\Pages\ListUsers;
+use Slakbal\TenancyFoundation\Listeners\Tenant\SendMemberRemovedNotification;
 use Slakbal\TenancyFoundation\Models\User;
 use Slakbal\TenancyFoundation\Notifications\Tenant\MemberRemoved;
 use Slakbal\TenancyFoundation\Support\UserTenantRoles;
@@ -86,7 +87,7 @@ test('deleting a user of only this tenant soft deletes them, drops the roles and
 test('the removal listener mails the removed user, can be disabled and stays quiet when someone leaves on their own', function () {
     Notification::fake();
     $event = new TenantMemberRemoved($this->tenant, $this->member, $this->admin, false);
-    $listener = new Slakbal\TenancyFoundation\Listeners\Tenant\SendMemberRemovedNotification;
+    $listener = new SendMemberRemovedNotification;
 
     $listener->handle($event);
     Notification::assertSentOnDemand(MemberRemoved::class, fn ($notification, $channels, $notifiable): bool => $notifiable->routes['mail'] === $this->member->email);
