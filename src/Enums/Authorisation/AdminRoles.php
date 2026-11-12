@@ -12,6 +12,14 @@ enum AdminRoles: string implements HasColor, HasIcon, HasLabel
     case ADMIN = 'admin';
     case SUPPORT = 'support';
 
+    /**
+     * A locked role has full access through the gate and its permissions can never be edited.
+     */
+    public function isLocked(): bool
+    {
+        return $this === self::SUPER_ADMIN;
+    }
+
     public function getLabel(): string
     {
         return match ($this) {
