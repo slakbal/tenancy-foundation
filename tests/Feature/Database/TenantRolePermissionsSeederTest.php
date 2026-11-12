@@ -39,8 +39,23 @@ it('limits the view only role to viewing users and gives it no invitation access
 it('leaves the invitation permissions out when the feature is off', function () {
     config(['tenancy-foundation.features.invitations' => false]);
 
+    // defaults only apply to an empty role (first install), so start the admin role empty
+    Role::findByName(TenantRoles::ADMIN->value, AuthGuard::TENANT->value)->syncPermissions([]);
+
     $this->seed(TenantRolePermissionsSeeder::class);
 
     expect(tenantRolePermissions(TenantRoles::ADMIN))
         ->not->toContain(InvitationPermissions::INVITATION_CREATE->value);
+});
+
+it('keeps an edited assignment when the seeder runs again', function () {
+    $viewOnly = Role::findByName(TenantRoles::VIEW_ONLY->value, AuthGuard::TENANT->value);
+    $viewOnly->revokePermissionTo(TenantPermissions::USER_VIEW);
+    $viewOnly->givePermissionTo(TenantPermissions::USER_UPDATE);
+
+    $this->seed(TenantRolePermissionsSeeder::class);
+
+    expect(tenantRolePermissions(TenantRoles::VIEW_ONLY))
+        ->toContain(TenantPermissions::USER_UPDATE->value)
+        ->not->toContain(TenantPermissions::USER_VIEW->value);
 });
