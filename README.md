@@ -315,7 +315,39 @@ The admin panel has a **Security > Role permissions** page (`Filament\Admin\Page
 - **Saving:** the Save changes button (disabled until something changed) opens a confirmation that lists, per role, what it gains and loses, and warns that **the change applies to every tenant** straight away. Reset discards unsaved edits. Each changed role is synced on its own and audited in `role_permission_changes` with the signed-in admin as actor.
 - **Unknown permissions:** rows in the database that no enum defines (for example added by your app) are listed read-only and kept untouched when a role is saved.
 - **Missing permissions:** enum permissions that have no database row (a new release, or the invitations feature switched on) are listed in a notice. The page never creates rows: run `php artisan tenancy-foundation:sync-permissions`, then grant the new permissions here. With `features.invitations` off, the invitation permissions are not offered.
+- **App permissions:** tenant permissions from your own enums are normal, editable rows once registered (see [App permissions](#app-permissions)).
 - **Extending:** subclass the page and override the protected static hooks `panels()`, `matrixLoader()` and `matrixSchema()`.
+
+### App permissions
+
+An app adds its own tenant permissions by registering an enum with the tenant seeder. They then show up as editable rows on the Role permissions page and are created by `tenancy-foundation:sync-permissions`.
+
+1. Create a backed string enum whose values are `resource.action` names (for example `invoice.approve`). Labels fall back to a headline of the group and action (`Invoice`, `Approve`).
+2. Subclass the package seeder and extend the `permissionEnums()` hook (keep `parent::permissionEnums()`, which carries the package enums and the invitations feature flag):
+
+```php
+use Slakbal\TenancyFoundation\Database\Seeders\TenantRolePermissionsSeeder;
+
+class AppTenantRolePermissionsSeeder extends TenantRolePermissionsSeeder
+{
+    protected function permissionEnums(): array
+    {
+        return [...parent::permissionEnums(), InvoicePermissions::class];
+    }
+}
+```
+
+3. Point the config at your subclass in `config/tenancy-foundation.php`:
+
+```php
+'seeders' => [
+    'tenant_role_permissions' => App\Database\Seeders\AppTenantRolePermissionsSeeder::class,
+],
+```
+
+4. Run `php artisan tenancy-foundation:sync-permissions` to create the rows (it never changes role assignments), then grant them to roles on the Role permissions page.
+
+The configured class must be the package seeder or a subclass of it; anything else throws `Exceptions\InvalidPermissionSeeder`. Database permissions that no registered enum defines stay read-only under "Unknown permissions" and are reported as orphans by the sync command. Admin-side app permissions are not supported yet: `AdminPermissions` has no hook.
 
 ## Removing, leaving and restoring tenant members
 
