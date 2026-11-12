@@ -306,6 +306,17 @@ app(SyncRolePermissions::class)->handle($role, [
 - The write runs in one transaction, the permission cache is cleared after it (holders gain or lose the ability immediately), then `Events\Admin\RolePermissionsChanged` is dispatched. If nothing changed, nothing happens: no event, no audit row.
 - The listener `Listeners\Admin\RecordRolePermissionsChange` writes a row to `role_permission_changes` (`role_id`, `role_name`, `guard_name`, `added` and `removed` as JSON, the nullable `actor` morph, `created_at`) through the model in `tenancy-foundation.models.role_permission_change`. The actor is `null` for console runs. Re-run `php artisan migrate` after upgrading.
 
+### The role permissions page
+
+The admin panel has a **Security > Role permissions** page (`Filament\Admin\Pages\ManageRolePermissions`, registered by `AdminPlugin`; swap it with `AdminPlugin::usingRolePermissionsPage()`). It edits which role holds which permission, through `SyncRolePermissions`.
+
+- **Who can use it:** admins who hold `permissions.manage` (`AdminPermissions::PERMISSIONS_MANAGE`). Super admins pass through `Gate::before`; the seeders grant the permission to nobody else, so give it to another role deliberately. Everyone else gets a 403 and no navigation item.
+- **Layout:** one tab per guard (Admin team, Tenant users). Each tab has one collapsible section per resource, with a row per permission (View list, Edit, ...) and a column per role, highest authority first. Every cell is a checkbox, and each role column has a one-click Select all / Select none per section. The `super_admin` and tenant `owner` columns are locked: they show full access and cannot be changed.
+- **Saving:** the Save changes button (disabled until something changed) opens a confirmation that lists, per role, what it gains and loses, and warns that **the change applies to every tenant** straight away. Reset discards unsaved edits. Each changed role is synced on its own and audited in `role_permission_changes` with the signed-in admin as actor.
+- **Unknown permissions:** rows in the database that no enum defines (for example added by your app) are listed read-only and kept untouched when a role is saved.
+- **Missing permissions:** enum permissions that have no database row (a new release, or the invitations feature switched on) are listed in a notice. The page never creates rows: run `php artisan tenancy-foundation:sync-permissions`, then grant the new permissions here. With `features.invitations` off, the invitation permissions are not offered.
+- **Extending:** subclass the page and override the protected static hooks `panels()`, `matrixLoader()` and `matrixSchema()`.
+
 ## Removing, leaving and restoring tenant members
 
 `Actions\Tenant\RemoveTenantMember` is the one action behind the tenant panel "remove from tenant", "delete user" and "leave tenant" row actions:
