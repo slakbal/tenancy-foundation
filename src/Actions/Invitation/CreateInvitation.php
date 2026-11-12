@@ -4,6 +4,7 @@ namespace Slakbal\TenancyFoundation\Actions\Invitation;
 
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
+use Slakbal\TenancyFoundation\Events\Invitation\InvitationIssued;
 use Slakbal\TenancyFoundation\Exceptions\InvalidInvitation;
 
 class CreateInvitation
@@ -18,9 +19,13 @@ class CreateInvitation
 
         throw_unless($tenant->canBeInvited($email, $role), InvalidInvitation::notAllowed($email));
 
-        return config('tenancy-foundation.models.invitation')::query()
+        $invitation = config('tenancy-foundation.models.invitation')::query()
             ->firstOrNew(['tenant_id' => $tenant->getKey(), 'email' => $email, 'accepted_at' => null])
             ->fill(['invited_by' => $inviter?->getKey(), 'role_id' => $role->getKey()])
-            ->issue();
+            ->refreshToken();
+
+        InvitationIssued::dispatch($invitation);
+
+        return $invitation;
     }
 }
