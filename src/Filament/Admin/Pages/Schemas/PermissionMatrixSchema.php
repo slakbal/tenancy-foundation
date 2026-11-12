@@ -30,27 +30,44 @@ use Slakbal\TenancyFoundation\Support\Permissions\PermissionMatrix;
 class PermissionMatrixSchema
 {
     /**
-     * @param  array<int, PermissionMatrix>  $matrices
+     * Every panel gets a tab, but only a panel with a loaded matrix gets its content; the page loads the rest when
+     * the tab is first opened. The tab keys are the panel values, bound to the page's activeTab property.
+     *
+     * @param  array<int, FilamentPanel>  $panels
+     * @param  array<string, PermissionMatrix>  $matrices  loaded matrices by panel value
      */
-    public static function make(array $matrices): Tabs
+    public static function make(array $panels, array $matrices): Tabs
     {
-        return Tabs::make('guards')
-            ->tabs(array_map(fn (PermissionMatrix $matrix): Tab => static::tab($matrix), $matrices));
+        $tabs = [];
+
+        foreach ($panels as $panel) {
+            $tabs[$panel->value] = static::tab($panel, $matrices[$panel->value] ?? null);
+        }
+
+        return Tabs::make('guards')->livewireProperty('activeTab')->tabs($tabs);
     }
 
-    protected static function tab(PermissionMatrix $matrix): Tab
+    protected static function tab(FilamentPanel $panel, ?PermissionMatrix $matrix): Tab
     {
-        return Tab::make($matrix->panel->value)
-            ->label(static::tabLabel($matrix->panel))
-            ->icon(static::tabIcon($matrix->panel))
-            ->schema([
-                ...static::missingNotice($matrix),
-                ...collect($matrix->groups)
-                    ->map(fn (array $permissions): Section => static::groupSection($matrix, $permissions))
-                    ->values()
-                    ->all(),
-                ...static::unknownSection($matrix),
-            ]);
+        return Tab::make($panel->value)
+            ->label(static::tabLabel($panel))
+            ->icon(static::tabIcon($panel))
+            ->schema($matrix === null ? [] : static::tabContent($matrix));
+    }
+
+    /**
+     * @return array<int, Component>
+     */
+    protected static function tabContent(PermissionMatrix $matrix): array
+    {
+        return [
+            ...static::missingNotice($matrix),
+            ...collect($matrix->groups)
+                ->map(fn (array $permissions): Section => static::groupSection($matrix, $permissions))
+                ->values()
+                ->all(),
+            ...static::unknownSection($matrix),
+        ];
     }
 
     public static function tabLabel(FilamentPanel $panel): string

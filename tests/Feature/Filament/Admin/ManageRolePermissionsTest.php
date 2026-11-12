@@ -2,6 +2,7 @@
 
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\Roles\ApplyPermissionMatrix;
 use Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder;
@@ -15,6 +16,8 @@ use Slakbal\TenancyFoundation\Enums\FilamentPanel;
 use Slakbal\TenancyFoundation\Filament\Admin\Pages\ManageRolePermissions;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\RolePermissionChange;
+use Slakbal\TenancyFoundation\Support\Permissions\PermissionMatrix;
+use Slakbal\TenancyFoundation\Support\Permissions\PermissionMatrixLoader;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -33,6 +36,34 @@ function openPermissionsPage(?Admin $admin = null)
     test()->actingAs($admin ?? adminWithAccess(AdminRoles::SUPER_ADMIN), AuthGuard::ADMIN->value);
 
     return Livewire::test(ManageRolePermissions::class);
+}
+
+/**
+ * Binds a loader that records which panels were loaded, in order.
+ */
+function recordPanelLoads(): object
+{
+    $loader = new class extends PermissionMatrixLoader
+    {
+        /** @var array<int, string> */
+        public array $loaded = [];
+
+        public function load(FilamentPanel $panel): PermissionMatrix
+        {
+            $this->loaded[] = $panel->value;
+
+            return parent::load($panel);
+        }
+    };
+
+    app()->instance(PermissionMatrixLoader::class, $loader);
+
+    return $loader;
+}
+
+function openTenantTab($page)
+{
+    return $page->set('activeTab', FilamentPanel::TENANT->value);
 }
 
 beforeEach(function () {
@@ -75,8 +106,8 @@ describe('access', function () {
 });
 
 describe('matrix', function () {
-    it('renders the resource groups and roles of both guards', function () {
-        openPermissionsPage()
+    it('renders both tabs, and the resource groups and roles of each guard once opened', function () {
+        $page = openPermissionsPage()
             ->assertSee('Admin team')
             ->assertSee('Tenant users')
             ->assertSee('Admin users')
@@ -84,12 +115,14 @@ describe('matrix', function () {
             ->assertSee('View list')
             ->assertSee('Super Admin')
             ->assertSee('Support')
-            ->assertSee('View Only')
-            ->assertSee('Full access, cannot be changed');
+            ->assertSee('Full access, cannot be changed')
+            ->assertDontSee('View Only');
+
+        openTenantTab($page)->assertSee('View Only');
     });
 
     it('offers each guard only its own roles and permissions', function () {
-        $page = openPermissionsPage();
+        $page = openTenantTab(openPermissionsPage());
 
         $adminState = $page->get('data.'.FilamentPanel::ADMIN->value);
         $tenantState = $page->get('data.'.FilamentPanel::TENANT->value);
@@ -102,7 +135,7 @@ describe('matrix', function () {
     });
 
     it('leaves the locked roles out of the editable state', function () {
-        $page = openPermissionsPage();
+        $page = openTenantTab(openPermissionsPage());
         $owner = Role::findByName(TenantRoles::OWNER->value, AuthGuard::TENANT->value);
 
         expect($page->get('data.'.FilamentPanel::ADMIN->value))->not->toHaveKey(adminRole(AdminRoles::SUPER_ADMIN)->id)
@@ -113,7 +146,7 @@ describe('matrix', function () {
         config(['tenancy-foundation.features.invitations' => $enabled]);
         $this->seed(TenantRolePermissionsSeeder::class);
 
-        $page = openPermissionsPage();
+        $page = openTenantTab(openPermissionsPage());
 
         $enabled ? $page->assertSee('Invitations') : $page->assertDontSee('Invitations');
     })->with([true, false]);
@@ -265,5 +298,91 @@ describe('saving', function () {
         foreach ($ids as $id) {
             $page->assertSet("data.admin.{$support->id}.{$id}", false);
         }
+    });
+});
+
+describe('lazy tabs', function () {
+    it('loads only the active guard on first render and the other guard when its tab opens', function () {
+        $loader = recordPanelLoads();
+
+        $page = openPermissionsPage();
+
+        expect($loader->loaded)->toBe([FilamentPanel::ADMIN->value])
+            ->and($page->get('data'))->toHaveKey(FilamentPanel::ADMIN->value)
+            ->and($page->get('data'))->not->toHaveKey(FilamentPanel::TENANT->value);
+
+        $loader->loaded = [];
+        openTenantTab($page);
+
+        expect($page->get('data'))->toHaveKeys([FilamentPanel::ADMIN->value, FilamentPanel::TENANT->value]);
+        expect($loader->loaded)->toContain(FilamentPanel::TENANT->value);
+
+        expect($page->get('original'))->toHaveCount(2);
+    });
+
+    it('keeps unsaved edits of a tab while switching away and back', function () {
+        $support = adminRole(AdminRoles::SUPPORT);
+        $grant = adminPermissionId(AdminPermissions::TENANT_UPDATE);
+
+        $page = openPermissionsPage()->set("data.admin.{$support->id}.{$grant}", true);
+
+        openTenantTab($page)
+            ->set('activeTab', FilamentPanel::ADMIN->value)
+            ->assertSet("data.admin.{$support->id}.{$grant}", true)
+            ->assertSee('1 unsaved change');
+    });
+
+    it('saves the edits of both tabs and nothing else', function () {
+        $support = adminRole(AdminRoles::SUPPORT);
+        $grant = adminPermissionId(AdminPermissions::TENANT_UPDATE);
+        $viewOnly = Role::findByName(TenantRoles::VIEW_ONLY->value, AuthGuard::TENANT->value);
+        $tenantGrant = Permission::findByName(TenantPermissions::TENANT_DELETE->value, AuthGuard::TENANT->value)->getKey();
+
+        $page = openPermissionsPage()->set("data.admin.{$support->id}.{$grant}", true);
+        openTenantTab($page)
+            ->set("data.app.{$viewOnly->id}.{$tenantGrant}", true)
+            ->assertSee('2 unsaved changes')
+            ->call('save')
+            ->assertNotified('Permissions saved for 2 roles')
+            ->assertSee('Reset');
+
+        expect($support->fresh()->hasPermissionTo(AdminPermissions::TENANT_UPDATE->value))->toBeTrue()
+            ->and($viewOnly->fresh()->hasPermissionTo(TenantPermissions::TENANT_DELETE->value))->toBeTrue()
+            ->and(RolePermissionChange::query()->count())->toBe(2);
+    });
+
+    it('saves only the loaded tab when the other was never opened', function () {
+        $this->mock(ApplyPermissionMatrix::class)
+            ->shouldReceive('handle')
+            ->once()
+            ->andReturn(['applied' => [], 'failed' => []]);
+
+        openPermissionsPage()->call('save');
+    });
+
+    it('ignores state sent for a tab that is not loaded', function () {
+        $viewOnly = Role::findByName(TenantRoles::VIEW_ONLY->value, AuthGuard::TENANT->value);
+        $tenantGrant = Permission::findByName(TenantPermissions::TENANT_DELETE->value, AuthGuard::TENANT->value)->getKey();
+
+        $page = openPermissionsPage()
+            ->set('data.app', [$viewOnly->id => [$tenantGrant => true]])
+            ->assertDontSee('unsaved change')
+            ->assertActionDisabled('save')
+            ->call('save');
+
+        expect($viewOnly->fresh()->hasPermissionTo(TenantPermissions::TENANT_DELETE->value))->toBeFalse()
+            ->and(RolePermissionChange::query()->count())->toBe(0);
+
+        $page->assertSet('data', fn (array $data): bool => array_keys($data) === [FilamentPanel::ADMIN->value]);
+    });
+
+    it('does not let the client mark a panel as loaded', function () {
+        openPermissionsPage()->set('original', [FilamentPanel::TENANT->value => []]);
+    })->throws(CannotUpdateLockedPropertyException::class);
+
+    it('falls back to the first tab for an unknown tab key', function () {
+        openPermissionsPage()
+            ->set('activeTab', 'nonsense')
+            ->assertSet('activeTab', FilamentPanel::ADMIN->value);
     });
 });

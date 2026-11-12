@@ -5,7 +5,6 @@ namespace Slakbal\TenancyFoundation\Filament\Admin\Pages;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Component;
@@ -15,6 +14,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
+use Livewire\Attributes\Locked;
 use Slakbal\TenancyFoundation\Actions\Roles\ApplyPermissionMatrix;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\FilamentPanel;
@@ -23,6 +23,7 @@ use Slakbal\TenancyFoundation\Support\Permissions\PermissionChangeSet;
 use Slakbal\TenancyFoundation\Support\Permissions\PermissionLabels;
 use Slakbal\TenancyFoundation\Support\Permissions\PermissionMatrix;
 use Slakbal\TenancyFoundation\Support\Permissions\PermissionMatrixLoader;
+use Slakbal\TenancyFoundation\Support\Permissions\PermissionSaveNotifications;
 use Slakbal\TenancyFoundation\Support\Permissions\RoleChange;
 use UnitEnum;
 
@@ -47,10 +48,17 @@ class ManageRolePermissions extends Page
     public array $data = [];
 
     /**
-     * The state as last loaded from the database, to tell what is unsaved.
+     * The guard tab being shown. Only the matrix of a tab that was opened is loaded, see loadPanel().
+     */
+    public string $activeTab = '';
+
+    /**
+     * The state as last loaded from the database, to tell what is unsaved. Its keys are the loaded panels, so a
+     * client cannot mark a panel as loaded.
      *
      * @var array<string, array<int|string, array<int|string, bool>>>
      */
+    #[Locked]
     public array $original = [];
 
     /**
@@ -77,11 +85,12 @@ class ManageRolePermissions extends Page
     }
 
     /**
-     * @param  array<int, PermissionMatrix>  $matrices
+     * @param  array<int, FilamentPanel>  $panels
+     * @param  array<string, PermissionMatrix>  $matrices  the loaded matrices by panel; other tabs stay empty
      */
-    protected static function matrixSchema(array $matrices): Component
+    protected static function matrixSchema(array $panels, array $matrices): Component
     {
-        return PermissionMatrixSchema::make($matrices);
+        return PermissionMatrixSchema::make($panels, $matrices);
     }
 
     public static function getNavigationLabel(): string
@@ -106,7 +115,35 @@ class ManageRolePermissions extends Page
 
     public function mount(): void
     {
-        $this->resetChanges();
+        $this->activeTab = static::panels()[0]->value;
+        $this->loadPanel(static::panels()[0]);
+    }
+
+    /**
+     * Loads a tab's matrix the first time it is opened. This runs before the property changes (and before Filament
+     * caches the content schema for the request), and a tab that is already loaded keeps its unsaved edits.
+     */
+    public function updatingActiveTab(mixed $value): void
+    {
+        $panel = is_string($value) ? $this->panelFor($value) : null;
+
+        if ($panel !== null && ! array_key_exists($panel->value, $this->original)) {
+            $this->loadPanel($panel);
+        }
+    }
+
+    public function updatedActiveTab(): void
+    {
+        $this->activeTab = ($this->panelFor($this->activeTab) ?? static::panels()[0])->value;
+    }
+
+    protected function loadPanel(FilamentPanel $panel): void
+    {
+        $matrices = $this->matrices();
+        $matrix = $this->freshMatrix($panel);
+
+        $this->matrices = [...$matrices, $panel->value => $matrix];
+        $this->data[$panel->value] = $this->original[$panel->value] = $matrix->state();
     }
 
     public function content(Schema $schema): Schema
@@ -118,7 +155,7 @@ class ManageRolePermissions extends Page
                     ->badge()
                     ->color('warning')
                     ->visible(fn (): bool => $this->hasChanges()),
-                static::matrixSchema(array_values($this->matrices())),
+                static::matrixSchema(static::panels(), $this->matrices()),
             ]);
     }
 
@@ -177,12 +214,7 @@ class ManageRolePermissions extends Page
             $lines[] = Text::make(__('Loses: :permissions', ['permissions' => PermissionLabels::fullList($change->removed)]))->color('danger');
         }
 
-        return Section::make($this->changeHeading($change))->compact()->schema($lines);
-    }
-
-    protected function changeHeading(RoleChange $change): string
-    {
-        return PermissionLabels::role($change->role->name).' ('.PermissionMatrixSchema::tabLabel($change->panel).')';
+        return Section::make(PermissionSaveNotifications::heading($change))->compact()->schema($lines);
     }
 
     public function save(): void
@@ -190,53 +222,43 @@ class ManageRolePermissions extends Page
         $actor = Filament::auth()->user();
         $applied = [];
 
-        foreach (static::panels() as $panel) {
+        foreach ($this->loadedPanels() as $panel) {
             $result = app(ApplyPermissionMatrix::class)->handle($this->freshMatrix($panel), $this->data[$panel->value] ?? [], $actor);
 
             $applied = [...$applied, ...$result['applied']];
-            $this->notifyFailures($result['failed']);
+            PermissionSaveNotifications::failed($result['failed']);
         }
 
-        $this->notifySaved($applied);
+        PermissionSaveNotifications::saved($applied);
         $this->resetChanges();
     }
 
     /**
-     * @param  array<int, RoleChange>  $applied
+     * Reloads every loaded tab from the database. State sent for any other panel is dropped.
      */
-    protected function notifySaved(array $applied): void
+    public function resetChanges(): void
     {
-        if ($applied === []) {
-            Notification::make()->title(__('Nothing changed'))->body(__('The permissions already matched what you selected.'))->info()->send();
+        $panels = $this->loadedPanels();
 
-            return;
+        $this->matrices = [];
+        $this->data = $this->original = [];
+
+        foreach ($panels as $panel) {
+            $this->loadPanel($panel);
         }
-
-        Notification::make()
-            ->title(trans_choice('Permissions saved for :count role|Permissions saved for :count roles', count($applied)))
-            ->body(implode(', ', array_map(fn (RoleChange $change): string => $this->changeHeading($change), $applied)))
-            ->success()
-            ->send();
     }
 
     /**
-     * @param  array<string, string>  $failed
+     * @return array<int, FilamentPanel>
      */
-    protected function notifyFailures(array $failed): void
+    protected function loadedPanels(): array
     {
-        foreach ($failed as $role => $message) {
-            Notification::make()
-                ->title(__('Could not save the :role role', ['role' => PermissionLabels::role($role)]))
-                ->body($message)
-                ->danger()
-                ->send();
-        }
+        return array_values(array_filter(static::panels(), fn (FilamentPanel $panel): bool => array_key_exists($panel->value, $this->original)));
     }
 
-    public function resetChanges(): void
+    protected function panelFor(string $value): ?FilamentPanel
     {
-        $this->matrices = null;
-        $this->data = $this->original = collect($this->matrices())->map(fn (PermissionMatrix $matrix): array => $matrix->state())->all();
+        return collect(static::panels())->first(fn (FilamentPanel $panel): bool => $panel->value === $value);
     }
 
     public function hasChanges(): bool
@@ -246,7 +268,7 @@ class ManageRolePermissions extends Page
 
     public function changeCount(): int
     {
-        return PermissionChangeSet::countDifferences($this->flatten($this->original), $this->flatten($this->data));
+        return PermissionChangeSet::countDifferences($this->flatten($this->original), $this->flatten(array_intersect_key($this->data, $this->original)));
     }
 
     /**
@@ -274,17 +296,19 @@ class ManageRolePermissions extends Page
      */
     protected function pendingChanges(): array
     {
-        return collect(static::panels())
+        return collect($this->loadedPanels())
             ->flatMap(fn (FilamentPanel $panel): array => PermissionChangeSet::between($this->freshMatrix($panel), $this->data[$panel->value] ?? []))
             ->all();
     }
 
     /**
+     * The matrices of the loaded tabs only.
+     *
      * @return array<string, PermissionMatrix>
      */
     protected function matrices(): array
     {
-        return $this->matrices ??= collect(static::panels())
+        return $this->matrices ??= collect($this->loadedPanels())
             ->mapWithKeys(fn (FilamentPanel $panel): array => [$panel->value => $this->freshMatrix($panel)])
             ->all();
     }
