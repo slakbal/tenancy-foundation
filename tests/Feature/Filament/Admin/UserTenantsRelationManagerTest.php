@@ -12,6 +12,7 @@ use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
+use Slakbal\TenancyFoundation\Enums\MemberStatus;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ViewTenant;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\RelationManagers\UsersRelationManager;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Pages\ViewUser;
@@ -223,4 +224,16 @@ it('hides remove from tenant for an admin without update permission', function (
     tenantsActor();
 
     tenantUsersManager($this->tenant)->assertActionHidden(TestAction::make('removeFromTenant')->table($this->member));
+});
+
+it('shows the membership status on the tenant users tab and filters by it', function () {
+    tenantsActor();
+    $this->tenant->members()->updateExistingPivot($this->member->getKey(), ['status' => MemberStatus::INACTIVE]);
+
+    tenantUsersManager($this->tenant)
+        ->assertCanSeeTableRecords([$this->owner, $this->member])
+        ->assertSee(MemberStatus::INACTIVE->getLabel())
+        ->filterTable('membership_status', MemberStatus::INACTIVE->value)
+        ->assertCanSeeTableRecords([$this->member])
+        ->assertCanNotSeeTableRecords([$this->owner]);
 });

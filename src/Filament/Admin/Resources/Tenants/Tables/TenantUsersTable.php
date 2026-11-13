@@ -91,6 +91,12 @@ class TenantUsersTable
                 ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
                     ? $query->whereKey($roles->userIdsWithRole($data['value']))
                     : $query),
+            SelectFilter::make('membership_status')
+                ->label(__('Status'))
+                ->options(MemberStatus::class)
+                ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
+                    ? $query->where('tenant_user.status', $data['value'])
+                    : $query),
             VerifiedFilter::make(),
             TernaryFilter::make('is_owner')
                 ->label(__('Owner'))
