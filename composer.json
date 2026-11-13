@@ -13,6 +13,7 @@
     },
     "require-dev": {
         "heyosseus/sloppy": "^1.8",
+        "laramint/laravel-brain": "^2.7",
         "laravel/pint": "^1.27",
         "orchestra/testbench": "^11.0",
         "pestphp/pest": "^5.1",
