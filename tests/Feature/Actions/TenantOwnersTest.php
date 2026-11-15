@@ -12,7 +12,7 @@ use Slakbal\TenancyFoundation\Support\UserTenantRoles;
 
 beforeEach(function () {
     $this->owner = User::factory()->create();
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->owner);
     $this->member = User::factory()->create();
     $this->tenant->members()->attach($this->member, ['is_owner' => false, 'is_default_tenant' => true]);
 });
@@ -55,7 +55,7 @@ test('an owner can step down once another owner exists but a non owner cannot re
 });
 
 test('removing a member from one of several tenants detaches only that tenant and repairs the default', function () {
-    $second = app(CreateTenant::class)->handle(['name' => 'Second', 'subdomain' => 'second'], User::factory()->create());
+    $second = app(CreateTenant::class)->handle(['name' => 'Second', ...tenantAddress('second')], User::factory()->create());
     $second->members()->attach($this->member, ['is_owner' => false, 'is_default_tenant' => false]);
     app(AssignTenantRole::class)->handle($this->member, $this->tenant, TenantRoles::ADMIN);
     app(AssignTenantRole::class)->handle($this->member, $second, TenantRoles::VIEW_ONLY);
@@ -72,7 +72,7 @@ test('removing a member from one of several tenants detaches only that tenant an
 });
 
 test('an owner is never removed and a stranger not at all', function () {
-    $other = app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], User::factory()->create());
+    $other = app(CreateTenant::class)->handle(['name' => 'Other', ...tenantAddress('other')], User::factory()->create());
     $other->members()->attach($this->owner, ['is_owner' => false, 'is_default_tenant' => false]);
 
     expect(fn () => app(RemoveTenantMember::class)->handle($this->tenant, $this->owner))->toThrow(AuthorizationException::class)

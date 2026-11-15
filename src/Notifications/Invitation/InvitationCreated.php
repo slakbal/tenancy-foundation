@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\URL;
 use Slakbal\TenancyFoundation\Filament\Tenant\Pages\AcceptInvitation;
 
 class InvitationCreated extends Notification implements ShouldQueue
@@ -30,11 +29,7 @@ class InvitationCreated extends Notification implements ShouldQueue
         $tenantName = $this->invitation->tenant->name;
         $expiresAt = Carbon::parse($this->invitation->expires_at);
 
-        $acceptUrl = URL::temporarySignedRoute(
-            AcceptInvitation::routeName(),
-            $expiresAt,
-            ['invitation' => $this->invitation->getRouteKey()],
-        );
+        $acceptUrl = AcceptInvitation::signedUrl($this->invitation, $expiresAt);
 
         return (new MailMessage)
             ->subject(__('Join :tenant', ['tenant' => $tenantName]))

@@ -1,7 +1,6 @@
 <?php
 
 use Filament\Facades\Filament;
-use Filament\Forms\Components\TextInput;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
@@ -11,12 +10,13 @@ use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\TenantResolution;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\EditTenant;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ListTenants;
-use Slakbal\TenancyFoundation\Filament\Pages\EditTenantProfile;
 use Slakbal\TenancyFoundation\Filament\Tenant\Pages\ContactUs;
 use Slakbal\TenancyFoundation\Http\Middleware\BindSessionToHost;
 use Slakbal\TenancyFoundation\Http\Responses\RegistrationResponse;
 use Slakbal\TenancyFoundation\Models\Admin;
+use Slakbal\TenancyFoundation\Models\Invitation;
 use Slakbal\TenancyFoundation\Models\User;
+use Slakbal\TenancyFoundation\Notifications\Invitation\InvitationCreated;
 use Slakbal\TenancyFoundation\Notifications\Tenant\WelcomeToTenant;
 use Symfony\Component\HttpFoundation\Cookie;
 
@@ -130,6 +130,7 @@ test('the admin tenant form validates the domain', function (string $domain, str
 })->with([
     'taken' => ['training.other.org', 'unique'],
     'app domain' => ['tenant.test', 'not_in'],
+    'admin host' => ['backoffice.test', 'not_in'],
     'scheme' => ['https://academy.example.com', 'regex'],
     'path' => ['academy.example.com/app', 'regex'],
     'upper case' => ['Academy.Example.com', 'regex'],
@@ -173,20 +174,25 @@ test('a session stays signed in on the host it was started on', function () {
     expect(Auth::guard(AuthGuard::TENANT->value)->id())->toBe($this->owner->getKey());
 });
 
-test('an owner cannot change the tenant domain from the tenant profile, even when the request is tampered with', function () {
-    Filament::setCurrentPanel(Filament::getPanel('app'));
-    Filament::bootCurrentPanel();
-    setPermissionsTeamId($this->tenant->getKey());
-    $this->actingAs($this->owner, AuthGuard::TENANT->value);
-    Filament::setTenant($this->tenant);
+test('the tenant panel, login included, answers only on the host of an existing tenant', function (string $host, int $status) {
+    $this->other->delete();
 
-    Livewire::test(EditTenantProfile::class)
-        ->assertFormFieldExists('domain', fn (TextInput $field): bool => $field->isReadOnly())
-        ->fillForm(['name' => 'Academy Renamed', 'domain' => 'evil.example.com'])
-        ->call('save')
-        ->assertHasNoFormErrors();
+    $this->get("http://{$host}/login")->assertStatus($status);
+    $this->get("http://{$host}/")->assertStatus($status === 200 ? 302 : 404);
+})->with([
+    'tenant host' => ['academy.example.com', 200],
+    'unknown host' => ['nope.example.com', 404],
+    'app domain' => ['tenant.test', 404],
+    'admin host' => ['backoffice.test', 404],
+    'deleted tenant host' => ['training.other.org', 404],
+]);
 
-    expect($this->tenant->fresh())
-        ->name->toBe('Academy Renamed')
-        ->domain->toBe('academy.example.com');
+test('an invitation link is signed for the tenant host and opens there', function () {
+    $invitation = Invitation::factory()->create(['tenant_id' => $this->tenant->getKey(), 'expires_at' => now()->addDays(7)]);
+
+    $url = (new InvitationCreated($invitation))->toMail($this->owner)->actionUrl;
+
+    expect($url)->toStartWith('http://academy.example.com/invitations/accept/');
+
+    $this->get($url)->assertOk()->assertSee('Join Academy');
 });

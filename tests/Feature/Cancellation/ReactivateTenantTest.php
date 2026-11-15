@@ -12,7 +12,7 @@ use Slakbal\TenancyFoundation\Models\User;
 beforeEach(function () {
     $this->travelTo('2026-10-28 09:30:00');
     $this->owner = User::factory()->create();
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->owner);
 });
 
 test('reactivating clears both cancellation dates', function () {

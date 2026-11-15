@@ -2,6 +2,7 @@
 
 namespace Slakbal\TenancyFoundation\Filament\Tenant\Pages;
 
+use DateTimeInterface;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\TextInput;
@@ -48,6 +49,18 @@ class AcceptInvitation extends SimplePage
     public static function routeName(): string
     {
         return 'filament.'.FilamentPanel::TENANT->getPanelId().'.invitations.accept';
+    }
+
+    public static function signedUrl(Model $invitation, DateTimeInterface $expiresAt): string
+    {
+        $urls = clone app('url');
+
+        // In domain mode the tenant panel answers only on the tenant's own host, so the link is signed for that host.
+        if (TenantResolution::current() === TenantResolution::DOMAIN) {
+            $urls->forceRootUrl(TenantResolution::current()->urlFor($invitation->tenant));
+        }
+
+        return $urls->temporarySignedRoute(static::routeName(), $expiresAt, ['invitation' => $invitation->getRouteKey()]);
     }
 
     public function mount(mixed $invitation): void

@@ -38,7 +38,7 @@ beforeEach(function () {
 
     $this->owner = User::factory()->create();
     $this->member = User::factory()->create();
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->owner);
     $this->tenant->members()->attach($this->member, ['is_owner' => false, 'is_default_tenant' => true]);
 });
 
@@ -59,7 +59,7 @@ it('lists the tenants of the user with owner flag and role', function () {
 
 it('shows only the tenants of that user', function () {
     tenantsActor();
-    $other = app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], User::factory()->create());
+    $other = app(CreateTenant::class)->handle(['name' => 'Other', ...tenantAddress('other')], User::factory()->create());
 
     tenantsManager($this->member)
         ->assertCanSeeTableRecords([$this->tenant])
@@ -107,7 +107,7 @@ it('removes an owner from the admin portal once another owner exists', function 
 
 it('sets several roles for a member inside that tenant only', function () {
     tenantsActor(AdminPermissions::USER_UPDATE);
-    $second = app(CreateTenant::class)->handle(['name' => 'Second', 'subdomain' => 'second'], User::factory()->create());
+    $second = app(CreateTenant::class)->handle(['name' => 'Second', ...tenantAddress('second')], User::factory()->create());
     $second->members()->attach($this->member, ['is_owner' => false, 'is_default_tenant' => false]);
     app(AssignTenantRole::class)->handle($this->member, $this->tenant, TenantRoles::ADMIN);
     app(AssignTenantRole::class)->handle($this->member, $second, TenantRoles::ADMIN);
@@ -203,7 +203,7 @@ it('offers remove from tenant only for non owner rows of a user with several ten
     tenantsManager($this->member)->assertActionHidden(TestAction::make('removeFromTenant')->table($this->tenant));
     tenantUsersManager($this->tenant)->assertActionHidden(TestAction::make('removeFromTenant')->table($this->member));
 
-    $second = app(CreateTenant::class)->handle(['name' => 'Second', 'subdomain' => 'second'], User::factory()->create());
+    $second = app(CreateTenant::class)->handle(['name' => 'Second', ...tenantAddress('second')], User::factory()->create());
     $second->members()->attach($this->member, ['is_owner' => false, 'is_default_tenant' => false]);
 
     tenantsManager($this->member->fresh())->assertActionVisible(TestAction::make('removeFromTenant')->table($this->tenant));
@@ -219,7 +219,7 @@ it('offers remove from tenant only for non owner rows of a user with several ten
 });
 
 it('hides remove from tenant for an admin without update permission', function () {
-    $second = app(CreateTenant::class)->handle(['name' => 'Second', 'subdomain' => 'second'], User::factory()->create());
+    $second = app(CreateTenant::class)->handle(['name' => 'Second', ...tenantAddress('second')], User::factory()->create());
     $second->members()->attach($this->member, ['is_owner' => false, 'is_default_tenant' => false]);
     tenantsActor();
 

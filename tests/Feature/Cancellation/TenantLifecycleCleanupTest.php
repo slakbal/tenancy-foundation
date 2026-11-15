@@ -35,18 +35,18 @@ beforeEach(function () {
     $this->travelTo('2026-10-01 09:00:00');
     config(['tenancy-foundation.cancellation.grace_days' => 30]);
     $this->seen = [];
-    Event::listen(TenantCancelled::class, fn (TenantCancelled $event) => $this->seen[] = 'cancelled:'.$event->tenant->subdomain);
-    Event::listen(TenantDeleting::class, fn (TenantDeleting $event) => $this->seen[] = 'deleting:'.$event->tenant->subdomain);
+    Event::listen(TenantCancelled::class, fn (TenantCancelled $event) => $this->seen[] = 'cancelled:'.$event->tenant->name);
+    Event::listen(TenantDeleting::class, fn (TenantDeleting $event) => $this->seen[] = 'deleting:'.$event->tenant->name);
 
     $this->owner = User::factory()->create();
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->owner);
     $this->admin = memberWithRole($this->tenant, TenantRoles::ADMIN);
     $this->viewer = memberWithRole($this->tenant, TenantRoles::VIEW_ONLY);
     $this->removedViewer = memberWithRole($this->tenant, TenantRoles::VIEW_ONLY);
     $this->removedViewer->delete();
 
     $this->otherOwner = User::factory()->create();
-    $this->other = app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], $this->otherOwner);
+    $this->other = app(CreateTenant::class)->handle(['name' => 'Other', ...tenantAddress('other')], $this->otherOwner);
     $this->shared = memberWithRole($this->tenant, TenantRoles::ADMIN);
     $this->other->members()->attach($this->shared, ['is_owner' => false, 'is_default_tenant' => false]);
     app(AssignTenantRole::class)->handle($this->shared, $this->other, TenantRoles::VIEW_ONLY);
@@ -66,7 +66,7 @@ test('cancelling revokes pending invitations and keeps every member, role and th
         ->and($this->tenant->members()->withTrashed()->count())->toBe(5)
         ->and(teamRows('model_has_roles', $this->tenant))->toBe(5)
         ->and($this->other->fresh()->isCancelled())->toBeFalse()
-        ->and($this->seen)->toBe(['cancelled:acme']);
+        ->and($this->seen)->toBe(['cancelled:Acme']);
 });
 
 test('the scheduled deletion removes the tenant with its data, deletes users who only belonged to it and keeps the rest', function () {
@@ -80,7 +80,7 @@ test('the scheduled deletion removes the tenant with its data, deletes users who
     (new DeleteDueTenants)->handle(app(DeleteTenant::class));
 
     expect(Tenant::query()->whereKey($this->tenant->getKey())->exists())->toBeFalse()
-        ->and($this->seen)->toBe(['deleting:acme'])
+        ->and($this->seen)->toBe(['deleting:Acme'])
         ->and(Invitation::query()->where('tenant_id', $this->tenant->getKey())->count())->toBe(0)
         ->and(DB::table('tenant_user')->where('tenant_id', $this->tenant->getKey())->count())->toBe(0)
         ->and(teamRows('model_has_roles', $this->tenant))->toBe(0)

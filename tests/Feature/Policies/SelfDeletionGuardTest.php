@@ -10,7 +10,7 @@ beforeEach(function () {
     Filament::bootCurrentPanel();
 
     $this->first = User::factory()->create();
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->first);
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->first);
     $this->second = User::factory()->create();
     $this->tenant->members()->attach($this->second->getKey(), ['is_owner' => true, 'is_default_tenant' => true]);
 

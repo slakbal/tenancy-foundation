@@ -22,9 +22,26 @@ enum FilamentPanel: string implements HasColor, HasIcon, HasLabel
     public function getPath(): string
     {
         return match ($this) {
-            self::ADMIN => 'admin',
+            self::ADMIN => (string) config('tenancy-foundation.admin.path', 'admin'),
             self::TENANT => '',
         };
+    }
+
+    public function getDomain(): ?string
+    {
+        if ($this === self::TENANT) {
+            return null;
+        }
+
+        if (filled($domain = config('tenancy-foundation.admin.domain'))) {
+            return $domain;
+        }
+
+        if (TenantResolution::current() === TenantResolution::DOMAIN && filled($domain = config('tenancy-foundation.domain'))) {
+            return $domain;
+        }
+
+        return null;
     }
 
     // Convenience Delegation method

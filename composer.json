@@ -42,7 +42,10 @@
         }
     },
     "scripts": {
-        "test": "pest"
+        "test": [
+            "pest --parallel",
+            "pest --parallel --configuration=phpunit.domain.xml"
+        ]
     },
     "config": {
         "sort-packages": true,

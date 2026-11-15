@@ -25,7 +25,7 @@ beforeEach(function () {
     $this->seed(AdminRolePermissionsSeeder::class);
 
     $this->user = User::factory()->unverified()->create();
-    app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], User::factory()->create())
+    app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], User::factory()->create())
         ->members()->attach($this->user, ['is_owner' => false, 'is_default_tenant' => true]);
 });
 

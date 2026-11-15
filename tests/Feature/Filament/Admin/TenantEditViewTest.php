@@ -10,6 +10,7 @@ use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Enums\MemberStatus;
+use Slakbal\TenancyFoundation\Enums\TenantResolution;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\EditTenant;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ListTenants;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ViewTenant;
@@ -36,8 +37,8 @@ beforeEach(function () {
     setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
     $this->owner = User::factory()->create(['email' => 'owner@acme.test']);
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
-    $this->other = app(CreateTenant::class)->handle(['name' => 'Globex', 'subdomain' => 'globex'], User::factory()->create());
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->owner);
+    $this->other = app(CreateTenant::class)->handle(['name' => 'Globex', ...tenantAddress('globex')], User::factory()->create());
 
     setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 });
@@ -64,33 +65,31 @@ test('editing a tenant needs the update permission', function () {
 
     Livewire::test(EditTenant::class, ['record' => $this->tenant->getRouteKey()])
         ->assertSuccessful()
-        ->assertSchemaStateSet(['name' => 'Acme', 'subdomain' => 'acme']);
+        ->assertSchemaStateSet(['name' => 'Acme', ...tenantAddress('acme')]);
 });
 
-test('an admin can update the name, subdomain and billing email', function () {
+test('an admin can update the name, address and billing email', function () {
     tenantPageAdmin(AdminPermissions::TENANT_VIEW, AdminPermissions::TENANT_UPDATE);
 
     Livewire::test(EditTenant::class, ['record' => $this->tenant->getRouteKey()])
-        ->fillForm(['name' => 'Acme Corp', 'subdomain' => 'acme-corp', 'billing_email' => 'billing@acme.test'])
+        ->fillForm(['name' => 'Acme Corp', ...tenantAddress('acme-corp'), 'billing_email' => 'billing@acme.test'])
         ->call('save')
         ->assertHasNoFormErrors();
 
-    expect($this->tenant->refresh())
-        ->name->toBe('Acme Corp')
-        ->subdomain->toBe('acme-corp')
-        ->billing_email->toBe('billing@acme.test');
+    expect($this->tenant->refresh()->only(['name', TenantResolution::current()->attribute(), 'billing_email']))
+        ->toBe(['name' => 'Acme Corp', ...tenantAddress('acme-corp'), 'billing_email' => 'billing@acme.test']);
 });
 
-test('the edit form validates the name, a unique subdomain and the email', function () {
+test('the edit form validates the name, a unique address and the email', function () {
     tenantPageAdmin(AdminPermissions::TENANT_VIEW, AdminPermissions::TENANT_UPDATE);
 
     Livewire::test(EditTenant::class, ['record' => $this->tenant->getRouteKey()])
-        ->fillForm(['name' => '', 'subdomain' => 'globex', 'billing_email' => 'nope'])
+        ->fillForm(['name' => '', ...tenantAddress('globex'), 'billing_email' => 'nope'])
         ->call('save')
-        ->assertHasFormErrors(['name' => 'required', 'subdomain' => 'unique', 'billing_email' => 'email']);
+        ->assertHasFormErrors(['name' => 'required', TenantResolution::current()->attribute() => 'unique', 'billing_email' => 'email']);
 
     Livewire::test(EditTenant::class, ['record' => $this->tenant->getRouteKey()])
-        ->fillForm(['subdomain' => 'acme'])
+        ->fillForm(tenantAddress('acme'))
         ->call('save')
         ->assertHasNoFormErrors();
 });

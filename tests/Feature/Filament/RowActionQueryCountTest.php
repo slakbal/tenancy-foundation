@@ -48,7 +48,7 @@ test('the tenant users tab keeps its query count with the owner, role and remova
     setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
     $this->actingAs(adminWithAccess(AdminPermissions::TENANT_VIEW_ANY, AdminPermissions::TENANT_VIEW, AdminPermissions::USER_VIEW_ANY, AdminPermissions::USER_UPDATE), AuthGuard::ADMIN->value);
 
-    $tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], User::factory()->create());
+    $tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], User::factory()->create());
 
     assertQueryCountIsConstant(
         UsersRelationManager::class,
@@ -87,7 +87,7 @@ test('the tenant panel users list keeps its query count with the owner actions',
     Filament::bootCurrentPanel();
 
     $owner = User::factory()->create();
-    $tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $owner);
+    $tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $owner);
     setPermissionsTeamId($tenant->getKey());
     $this->actingAs($owner, AuthGuard::TENANT->value);
     Filament::setTenant($tenant);

@@ -21,6 +21,7 @@ use Slakbal\TenancyFoundation\Filament\Tenant\Pages\ContactUs;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Invitations\InvitationResource;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Http\Middleware\BindSessionToHost;
+use Slakbal\TenancyFoundation\Http\Middleware\EnsureKnownTenantHost;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureTenantIsNotCancelled;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureUserHasTenant;
 use Slakbal\TenancyFoundation\Http\Middleware\RedirectDeletedUserHome;
@@ -134,7 +135,7 @@ class TenantPlugin implements Plugin
             ->emailChangeVerification(config('tenancy-foundation.email_change_verification', true))
             ->authPasswordBroker(AuthGuard::TENANT->getPasswordBroker())
             ->emailVerification(EmailVerificationPrompt::class)
-            ->middleware([BindSessionToHost::class, RedirectDeletedUserHome::class, EnsureUserHasTenant::class], isPersistent: true)
+            ->middleware([EnsureKnownTenantHost::class, BindSessionToHost::class, RedirectDeletedUserHome::class, EnsureUserHasTenant::class], isPersistent: true)
             ->resources([$this->userResource])
             ->pages([$this->contactPage])
             ->renderHook(PanelsRenderHook::HEAD_END, fn (): HtmlString => $this->currentTenantLabelStyle());

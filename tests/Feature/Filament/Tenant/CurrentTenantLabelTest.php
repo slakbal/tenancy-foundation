@@ -13,8 +13,8 @@ beforeEach(function () {
     Filament::bootCurrentPanel();
 
     $this->owner = User::factory()->create();
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
-    $this->other = app(CreateTenant::class)->handle(['name' => 'Globex', 'subdomain' => 'globex'], User::factory()->create());
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->owner);
+    $this->other = app(CreateTenant::class)->handle(['name' => 'Globex', ...tenantAddress('globex')], User::factory()->create());
 });
 
 test('the tenant switcher shows the role of the signed in user in the current tenant', function () {

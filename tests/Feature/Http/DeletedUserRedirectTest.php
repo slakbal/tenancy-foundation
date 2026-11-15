@@ -7,8 +7,8 @@ use Slakbal\TenancyFoundation\Models\User;
 
 beforeEach(function () {
     $this->owner = User::factory()->create();
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
-    $this->url = 'http://acme.tenant.test/';
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->owner);
+    $this->url = $this->tenantUrl($this->tenant);
 });
 
 test('a signed in user who is deleted is sent to the home page on their next request', function () {

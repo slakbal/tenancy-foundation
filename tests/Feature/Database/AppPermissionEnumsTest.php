@@ -157,7 +157,7 @@ describe('role permissions page', function () {
         Filament::setCurrentPanel(Filament::getPanel(FilamentPanel::TENANT->getPanelId()));
         Filament::bootCurrentPanel();
 
-        $tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], User::factory()->create());
+        $tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], User::factory()->create());
         setPermissionsTeamId($tenant->getKey());
         $member = User::factory()->create();
         $tenant->members()->attach($member->getKey(), ['is_owner' => false, 'is_default_tenant' => true]);

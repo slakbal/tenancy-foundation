@@ -29,7 +29,7 @@ beforeEach(function () {
     Filament::bootCurrentPanel();
 
     $this->owner = User::factory()->create();
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->owner);
     setPermissionsTeamId($this->tenant->getKey());
 
     $this->member = tenantMember($this->tenant);
@@ -57,7 +57,7 @@ test('the name and the roles of a member are saved, the email is not editable', 
 
 test('the roles field is hidden for owners and yourself and a shared user keeps their name', function () {
     $coOwner = tenantMember($this->tenant, owner: true);
-    $other = app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], User::factory()->create());
+    $other = app(CreateTenant::class)->handle(['name' => 'Other', ...tenantAddress('other')], User::factory()->create());
     $other->members()->syncWithoutDetaching([$this->member->getKey() => ['is_owner' => false, 'is_default_tenant' => false]]);
     setPermissionsTeamId($this->tenant->getKey());
 

@@ -12,7 +12,7 @@ beforeEach(function () {
     Filament::bootCurrentPanel();
 
     $this->owner = User::factory()->create(['name' => 'Jane Owner']);
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->owner);
     setPermissionsTeamId($this->tenant->getKey());
 
     $this->member = User::factory()->create();
@@ -50,11 +50,11 @@ test('the denial message names the user and the tenants they solely own', functi
 
 test('the preloaded sole owner flag agrees with the fallback query for every kind of user', function () {
     $coOwned = User::factory()->create();
-    $coOwnedTenant = app(CreateTenant::class)->handle(['name' => 'Duo', 'subdomain' => 'duo'], $coOwned);
+    $coOwnedTenant = app(CreateTenant::class)->handle(['name' => 'Duo', ...tenantAddress('duo')], $coOwned);
     $coOwnedTenant->members()->attach(User::factory()->create()->getKey(), ['is_owner' => true, 'is_default_tenant' => true]);
 
     $trashedCoOwner = User::factory()->create();
-    $trashedTenant = app(CreateTenant::class)->handle(['name' => 'Ghost', 'subdomain' => 'ghost'], $trashedCoOwner);
+    $trashedTenant = app(CreateTenant::class)->handle(['name' => 'Ghost', ...tenantAddress('ghost')], $trashedCoOwner);
     $ghost = User::factory()->create();
     $trashedTenant->members()->attach($ghost->getKey(), ['is_owner' => true, 'is_default_tenant' => true]);
     $ghost->delete();

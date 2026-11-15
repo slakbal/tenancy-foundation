@@ -4,6 +4,7 @@ namespace Slakbal\TenancyFoundation\Enums;
 
 use Filament\Support\Contracts\HasLabel;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 enum TenantResolution: string implements HasLabel
 {
@@ -38,9 +39,32 @@ enum TenantResolution: string implements HasLabel
         };
     }
 
+    /**
+     * @return array<int, string>
+     */
+    public static function reservedHosts(): array
+    {
+        return array_values(array_unique(array_filter([config('tenancy-foundation.domain'), FilamentPanel::ADMIN->getDomain()])));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function reservedSubdomains(): array
+    {
+        $suffix = '.'.config('tenancy-foundation.domain');
+
+        $hosts = array_filter(self::reservedHosts(), fn (string $host): bool => str_ends_with($host, $suffix));
+
+        return array_values(array_unique([
+            ...config('tenancy-foundation.reserved_subdomains', []),
+            ...array_map(fn (string $host): string => Str::beforeLast($host, $suffix), $hosts),
+        ]));
+    }
+
     public function routePattern(): string
     {
-        $reserved = array_map(fn (string $host): string => preg_quote($host, '#'), array_filter([config('tenancy-foundation.domain')]));
+        $reserved = array_map(fn (string $host): string => preg_quote($host, '#'), self::reservedHosts());
 
         return ($reserved === [] ? '' : '(?!(?:'.implode('|', $reserved).')$)').'[a-z0-9.\-]+';
     }

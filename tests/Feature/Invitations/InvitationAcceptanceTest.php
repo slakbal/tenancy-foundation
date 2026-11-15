@@ -13,11 +13,7 @@ use Slakbal\TenancyFoundation\Models\User;
 
 function invitationAcceptUrl(Invitation $invitation): string
 {
-    return URL::temporarySignedRoute(
-        'filament.app.invitations.accept',
-        $invitation->expires_at,
-        ['invitation' => $invitation->getRouteKey()],
-    );
+    return AcceptInvitation::signedUrl($invitation, $invitation->expires_at);
 }
 
 test('visiting a valid invitation link shows the accept page with a registration form for a new email', function () {
@@ -198,11 +194,7 @@ test('an expired invitation shows the expired message and cannot be accepted', f
 
     // Build the signature against a future expiry so the signed-URL check
     // itself passes; the page's own expiry check must still reject it.
-    $url = URL::temporarySignedRoute(
-        'filament.app.invitations.accept',
-        now()->addHour(),
-        ['invitation' => $invitation->getRouteKey()],
-    );
+    $url = AcceptInvitation::signedUrl($invitation, now()->addHour());
 
     $this->get($url)
         ->assertOk()
@@ -266,7 +258,8 @@ test('visiting the accept page loads the tenant and role at most once each', fun
         'expires_at' => now()->addDays(7),
     ]);
 
-    $counts = acceptInvitationQueryCounts(fn () => $this->get(invitationAcceptUrl($invitation))->assertOk());
+    $url = invitationAcceptUrl($invitation);
+    $counts = acceptInvitationQueryCounts(fn () => $this->get($url)->assertOk());
 
     expect($counts['tenant'])->toBe(1)->and($counts['role'])->toBeLessThanOrEqual(1);
 });

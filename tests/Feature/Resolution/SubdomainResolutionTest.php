@@ -15,6 +15,8 @@ use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
 
+pest()->group('subdomain');
+
 beforeEach(function () {
     $this->owner = User::factory()->create();
     $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme', 'domain' => 'academy.example.com'], $this->owner);
@@ -74,6 +76,19 @@ test('the admin tenant form edits the subdomain and not the domain', function ()
     Livewire::test(ListTenants::class)
         ->assertTableColumnExists('subdomain')
         ->assertTableColumnDoesNotExist('domain');
+});
+
+test('a subdomain of the app domain used by the admin host is reserved', function () {
+    config(['tenancy-foundation.admin.domain' => 'backoffice.tenant.test']);
+    Filament::setCurrentPanel(Filament::getPanel('admin'));
+    Filament::bootCurrentPanel();
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
+    $this->actingAs(adminWithAccess(AdminPermissions::TENANT_VIEW_ANY, AdminPermissions::TENANT_VIEW, AdminPermissions::TENANT_UPDATE), AuthGuard::ADMIN->value);
+
+    Livewire::test(EditTenant::class, ['record' => $this->tenant->getRouteKey()])
+        ->fillForm(['subdomain' => 'backoffice'])
+        ->call('save')
+        ->assertHasFormErrors(['subdomain' => 'not_in']);
 });
 
 test('the factory fills both address columns so either mode can use it', function () {

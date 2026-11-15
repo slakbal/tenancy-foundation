@@ -15,7 +15,7 @@ test('the tenant dashboard widget shows the welcome, the name, the role badge an
     Filament::bootCurrentPanel();
 
     $owner = User::factory()->create(['name' => 'Olivia Owner']);
-    $tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $owner);
+    $tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $owner);
     setPermissionsTeamId($tenant->getKey());
     $this->actingAs($owner, AuthGuard::TENANT->value);
     Filament::setTenant($tenant, isQuiet: true);

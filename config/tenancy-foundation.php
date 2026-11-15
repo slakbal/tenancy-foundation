@@ -68,6 +68,35 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Admin panel (backoffice) host
+    |--------------------------------------------------------------------------
+    |
+    | Where the admin panel is served. AdminPlugin applies both to the panel.
+    |
+    | domain  Host of the admin panel, without scheme or port (e.g.
+    |         "backoffice.example.com"). Default null: with resolution
+    |         "subdomain" the panel answers on every host (unchanged); with
+    |         resolution "domain" it falls back to `domain` above, so the
+    |         backoffice never answers on a tenant host. In domain mode one
+    |         of the two is required: with both empty the app refuses to boot
+    |         (InvalidTenancyConfiguration). Side effects: the panel's routes only match this host
+    |         (other hosts return 404), tenants may not use it as their
+    |         domain, and a subdomain of `domain` is reserved for tenants.
+    |         The host must point at the app (DNS and TLS). In domain mode
+    |         the session cookie is host-only, so staff sign in on this host
+    |         only. Env: ADMIN_DOMAIN.
+    | path    URL path prefix of the admin panel. Default "admin"; may be
+    |         empty ("") when the panel has its own domain. Env: ADMIN_PATH.
+    |
+    */
+
+    'admin' => [
+        'domain' => env('ADMIN_DOMAIN'),
+        'path' => env('ADMIN_PATH', 'admin'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Models
     |--------------------------------------------------------------------------
     |
@@ -282,7 +311,9 @@ return [
     | logout_route  Name of the route users are sent to after logging out, and
     |               after registering on a panel without tenancy. Falls back to
     |               the application root ("/") when null or when the route does
-    |               not exist.
+    |               not exist. With resolution "domain" logging out ignores it
+    |               and returns to the panel's login page on the same host,
+    |               because each host is its own site.
     |
     */
 

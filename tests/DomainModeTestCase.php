@@ -11,6 +11,7 @@ abstract class DomainModeTestCase extends TestCase
 
         $app['config']->set('tenancy-foundation.resolution', 'domain');
         $app['config']->set('tenancy-foundation.domain', 'tenant.test');
+        $app['config']->set('tenancy-foundation.admin.domain', 'backoffice.test');
         $app['config']->set('session.domain', '.example.com');
     }
 }

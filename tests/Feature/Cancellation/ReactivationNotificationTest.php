@@ -9,7 +9,7 @@ use Slakbal\TenancyFoundation\Notifications\Tenant\AccountReactivated;
 
 beforeEach(function () {
     $this->owner = User::factory()->create();
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme School', 'subdomain' => 'acme'], $this->owner);
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme School', ...tenantAddress('acme')], $this->owner);
     app(CancelTenant::class)->handle($this->tenant);
 });
 

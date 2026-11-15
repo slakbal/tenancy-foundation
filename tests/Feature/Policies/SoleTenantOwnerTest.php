@@ -11,7 +11,7 @@ use Slakbal\TenancyFoundation\Models\User;
 
 function createTenantOwnedBy(User $owner, string $subdomain): Tenant
 {
-    return app(CreateTenant::class)->handle(['name' => ucfirst($subdomain), 'subdomain' => $subdomain], $owner);
+    return app(CreateTenant::class)->handle(['name' => ucfirst($subdomain), ...tenantAddress($subdomain)], $owner);
 }
 
 function attachTenantMember(Tenant $tenant, ?User $user = null, bool $isOwner = false): User

@@ -17,7 +17,7 @@ beforeEach(function () {
     Filament::bootCurrentPanel();
 
     $this->owner = User::factory()->create();
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->owner);
     setPermissionsTeamId($this->tenant->getKey());
 
     $this->member = User::factory()->create();

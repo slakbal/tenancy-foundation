@@ -37,7 +37,7 @@ test('a view only member can read users and nothing else on any tenant resource,
     Filament::setCurrentPanel(Filament::getPanel('app'));
     Filament::bootCurrentPanel();
 
-    $tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], User::factory()->create());
+    $tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], User::factory()->create());
     setPermissionsTeamId($tenant->getKey());
 
     $viewer = User::factory()->create();

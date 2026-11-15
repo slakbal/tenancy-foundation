@@ -6,6 +6,7 @@ use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
+use Slakbal\TenancyFoundation\Enums\TenantResolution;
 use Slakbal\TenancyFoundation\Filament\Components\Schemas\TenantDetailsSchema;
 use Slakbal\TenancyFoundation\Filament\Pages\EditTenantProfile;
 use Slakbal\TenancyFoundation\Models\User;
@@ -24,7 +25,7 @@ beforeEach(function () {
     Filament::bootCurrentPanel();
 
     $this->owner = User::factory()->create();
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->owner);
     setPermissionsTeamId($this->tenant->getKey());
 
     $this->actingAs($this->owner, AuthGuard::TENANT->value);
@@ -42,23 +43,26 @@ test('the subdomain is shown read only with the same prefix and suffix as at reg
         ->assertFormFieldExists('subdomain', fn (TextInput $field): bool => $field->isReadOnly()
             && $field->getPrefixLabel() === 'https://'
             && $field->getSuffixLabel() === '.'.config('tenancy-foundation.domain'));
-});
+})->group('subdomain');
 
-test('the name can be edited but the subdomain cannot, even when the request is tampered with', function () {
+test('the name can be edited but the address cannot, even when the request is tampered with', function () {
+    $address = TenantResolution::current()->attribute();
+
     Livewire::test(EditTenantProfile::class)
-        ->assertFormFieldExists('name')
-        ->fillForm(['name' => 'Acme Renamed', 'subdomain' => 'hacked'])
+        ->assertFormFieldExists($address, fn (TextInput $field): bool => $field->isReadOnly())
+        ->fillForm(['name' => 'Acme Renamed', ...tenantAddress('hacked')])
         ->call('save')
         ->assertHasNoFormErrors();
 
-    expect($this->tenant->fresh()->subdomain)->toBe('acme')
-        ->and($this->tenant->fresh()->name)->toBe('Acme Renamed');
+    expect($this->tenant->fresh())
+        ->name->toBe('Acme Renamed')
+        ->{$address}->toBe(tenantAddress('acme')[$address]);
 });
 
 test('the full tenant url can be copied to the clipboard', function () {
     $url = TenantDetailsSchema::url($this->tenant);
 
-    expect($url)->toBe(appDomainScheme().'acme.'.config('tenancy-foundation.domain'));
+    expect($url)->toBe(TenantResolution::current()->urlFor($this->tenant));
 
     $html = Livewire::test(EditTenantProfile::class)->html();
 

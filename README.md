@@ -31,7 +31,7 @@ This README is the setup and usage guide. Release notes are in [CHANGELOG.md](CH
 ## What it provides
 
 - Two Filament panels, both set up by plugins:
-  - **admin**: path `/admin`, guard `admin`.
+  - **admin**: path `/admin` (`ADMIN_PATH`), optionally on its own host (`ADMIN_DOMAIN`), guard `admin`.
   - **tenant**: panel id `app`, root path, guard `web`, one subdomain per tenant (`{subdomain}.APP_DOMAIN`).
 - Tenant users can belong to several tenants (`tenant_user` pivot with `is_owner`, `is_default_tenant` and `status`). Several owners per tenant are allowed. A tenant always keeps at least one owner.
 - Roles and permissions come from spatie/laravel-permission with teams. Tenant roles are assigned per tenant (team = tenant id). Admin roles are assigned under team `0`. Role definitions are global.
@@ -174,14 +174,13 @@ use Slakbal\TenancyFoundation\Plugins\AdminPlugin;
 
 return $panel
     ->id(FilamentPanel::ADMIN->getPanelId())
-    ->path(FilamentPanel::ADMIN->getPath())
     ->authGuard(FilamentPanel::ADMIN->getAuthGuard())
     ->authPasswordBroker(FilamentPanel::ADMIN->getPasswordBroker())
     ->strictAuthorization()
     ->login()
     ->widgets([AccountWidget::class])
     // ->middleware([...]) and ->authMiddleware([Authenticate::class]) as in a normal panel provider
-    ->plugins([AdminPlugin::make()]);
+    ->plugins([AdminPlugin::make()]); // sets ->path() and ->domain() from `admin.*`
 ```
 
 ```php
@@ -247,6 +246,8 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 |---|---|---|
 | `domain` | `env('APP_DOMAIN')` | Root domain without scheme or port. In `subdomain` mode tenants live at `{subdomain}.domain`; in `domain` mode it is the optional central host |
 | `resolution` | `env('TENANCY_RESOLUTION', 'subdomain')` | `subdomain` or `domain`. See [Domains, hosts and sessions](#domains-hosts-and-sessions) for routing and session side effects |
+| `admin.domain` | `env('ADMIN_DOMAIN')` | Host of the admin panel. `null`: any host in `subdomain` mode, `domain` (`APP_DOMAIN`) in `domain` mode. Reserved for tenants |
+| `admin.path` | `env('ADMIN_PATH', 'admin')` | Path prefix of the admin panel; may be `''` on its own host |
 | `models.tenant` | `Models\Tenant` | Tenant model |
 | `models.user` | `Models\User` | Tenant panel user, also used by the `users` provider |
 | `models.admin` | `Models\Admin` | Admin panel user, also used by the `admins` provider |
@@ -276,7 +277,7 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 | `contact_requests.notify_admins` | `true` | Notify admins who may view contact requests (and super admins) about new requests |
 | `contact_requests.public_path` | `'contact'` | Public contact page path on the main domain (route `public.contact`). `null` disables it |
 | `contact_requests.public_form` | `PublicContactForm` | Livewire component behind the public page |
-| `redirects.logout_route` | `null` | Named route used after logout (and after registering on a panel without tenancy). Falls back to `/` |
+| `redirects.logout_route` | `null` | Named route used after logout (and after registering on a panel without tenancy). Falls back to `/`. Ignored on logout in `domain` mode |
 | `schedule_pruning` | `true` | Registers the daily `model:prune` commands |
 | `register_auth_defaults` | `true` | Registers the `admin` guard, the `admins` provider and the `admins` broker if `config/auth.php` lacks them |
 | `register_last_login_listener` | `true` | Stores `last_login_at` and `last_login_ip` on `Login` |
@@ -309,6 +310,7 @@ A block switch gates all of its sub-items.
 | `APP_URL` | Central URL. Deleted-user redirects and the helpers `appUrl()`, `appDomainScheme()` and `appDomainHost()` use it |
 | `APP_DOMAIN` | `tenancy-foundation.domain` |
 | `TENANCY_RESOLUTION` | `tenancy-foundation.resolution`: `subdomain` (default) or `domain` |
+| `ADMIN_DOMAIN`, `ADMIN_PATH` | `tenancy-foundation.admin.domain` / `admin.path`: admin panel host and path |
 | `SESSION_DOMAIN` | `subdomain` mode: must be `.your-domain`. `domain` mode: ignored, the cookie is host-only (see below) |
 | `SESSION_COOKIE` | Change it once to drop old host-only cookies |
 | `QUEUE_CONNECTION` | Queued notifications |
@@ -325,30 +327,35 @@ A block switch gates all of its sub-items.
 
 | Host | Serves |
 |---|---|
-| `APP_DOMAIN` | Tenant panel login, `/register`, email verification, password reset, `/admin`, public contact page (`/contact`) |
+| `APP_DOMAIN` | Tenant panel login, `/register`, email verification, password reset, `/admin` (any host unless `ADMIN_DOMAIN` is set), public contact page (`/contact`) |
+| `ADMIN_DOMAIN` (optional) | The admin panel only (`/ADMIN_PATH`); its first label is reserved when it is a subdomain of `APP_DOMAIN` |
 | `{subdomain}.APP_DOMAIN` | The tenant panel for that tenant (`tenantDomain('{tenant:subdomain}.'.domain)`, slug attribute `subdomain`) |
 
 - `APP_DOMAIN`: if it's empty, tenant URLs render as `tenant1.` and the public contact route is not registered.
 - `SESSION_DOMAIN`: set it to the domain with a leading dot. Login, registration and verification run on the central domain and tenants on subdomains. Without a wildcard session cookie, users are sent back to the login page. If browsers still hold old host-only cookies, change `SESSION_COOKIE` once.
-- The tenant forms show the `subdomain` field (suffix `.APP_DOMAIN`, `reserved_subdomains` rejected).
+- The tenant forms show the `subdomain` field (suffix `.APP_DOMAIN`, `reserved_subdomains` and the admin host's subdomain rejected).
 - Local development: any server that routes wildcard subdomains of the app host to the app works. [Lerd](https://github.com/lerd-env/lerd) does this for `*.project.test` (`lerd link project && lerd secure`). Use the same host in `APP_URL`, `APP_DOMAIN` and `SESSION_DOMAIN` (with a leading dot), for example `https://myapp.test`, `myapp.test` and `.myapp.test`.
 
 ### `domain`
 
 | Host | Serves |
 |---|---|
-| `APP_DOMAIN` (optional) | Central host: public contact page. Never resolved as a tenant |
+| `APP_DOMAIN` (optional) | Central host: public contact page, and the admin panel when `ADMIN_DOMAIN` is empty. Never resolved as a tenant |
+| `ADMIN_DOMAIN` (recommended) | The admin panel (backoffice) only, at `/ADMIN_PATH`. Never resolved as a tenant; staff sign in on this host only |
 | `tenants.domain` (e.g. `academy.example.com`) | The tenant panel for that tenant, including its own login (`tenantDomain('{tenant:domain}')`, slug attribute `domain`) |
 
 - Tenants can live on unrelated domains. Every tenant host must point at the app (DNS, TLS certificate, web server/Lerd site alias).
 - Sessions: the package forces `session.domain` to `null`, so the session, CSRF and remember-me cookies are host-only and two tenants never share a session, even under a common parent domain. `SESSION_DOMAIN` is ignored. Users sign in on each tenant host separately. Because all hosts share one session store, the tenant panel middleware `BindSessionToHost` also records the host in the session; a session cookie copied to another host is invalidated there (guest, new CSRF token).
-- Filament matches any host on the tenant routes (`{tenant}` allows dots); the package excludes `APP_DOMAIN` from those routes after boot, so the central host is never taken as a tenant.
-- The tenant forms show the `domain` field: lower-case host name only (no scheme, path or port), unique, not `APP_DOMAIN`.
+- Filament matches any host on the tenant routes (`{tenant}` allows dots); the package excludes `APP_DOMAIN` and the admin host from those routes after boot, so they are never taken as a tenant.
+- Every tenant panel route, including login, password reset and the invitation accept page, answers only on the host of an existing tenant (`EnsureKnownTenantHost`, first in the tenant panel middleware): unknown hosts, `APP_DOMAIN` and the admin host get a 404. Invitation links are signed for the tenant's host (`AcceptInvitation::signedUrl()`).
+- The admin panel is bound to `ADMIN_DOMAIN`, or to `APP_DOMAIN` when that is empty, so tenant hosts return 404 for the admin path. One of them is required: with both empty `AdminPlugin` throws `InvalidTenancyConfiguration` at boot instead of serving the admin panel on every tenant host.
+- The tenant forms show the `domain` field: lower-case host name only (no scheme, path or port), unique, not `APP_DOMAIN` or the admin host.
+- After logout, users return to the login page of the panel on the same host (`redirects.logout_route` is not used), because each host is its own site.
 
 ### Both modes
 
 - After registration or verification, `RegistrationResponse` redirects to the default tenant URL (`urlFor`), or to tenant registration if the user has no tenant.
-- After logout, users go to `redirects.logout_route`, or to `/` if that is unset.
+- After logout in `subdomain` mode, users go to `redirects.logout_route`, or to `/` if that is unset.
 - Switching modes needs no migration, but every tenant needs a value in the new column. Change `SESSION_COOKIE` once when switching so browsers drop the old cookies.
 
 ## Panels and guards
@@ -356,7 +363,7 @@ A block switch gates all of its sub-items.
 | | Admin panel | Tenant panel |
 |---|---|---|
 | Enum | `FilamentPanel::ADMIN` | `FilamentPanel::TENANT` |
-| Panel id / path | `admin` / `admin` | `app` / `''` |
+| Panel id / path | `admin` / `admin.path` (default `admin`) | `app` / `''` |
 | Guard (`AuthGuard`) / broker | `admin` / `admins` | `web` / `users` |
 | Plugin | `AdminPlugin` | `TenantPlugin` |
 | Super user via `Gate::before` | `super_admin` role | owner of the current tenant |
@@ -763,10 +770,19 @@ These are registered through the scheduler (`callAfterResolving(Schedule::class)
 
 ```bash
 composer install
-vendor/bin/pest
+composer test        # both tenant resolutions, in parallel
 ```
 
 Tests run on Orchestra Testbench with SQLite in memory, `tenancy-foundation.domain = tenant.test`, spatie teams on, and two test panels (`tests/Support`) that register the plugins. `stubs/testing` holds the users and permission migrations for Testbench.
+
+Both tenant resolutions run the same tests:
+
+| Run | Config | What runs |
+|---|---|---|
+| `vendor/bin/pest --parallel` | `phpunit.xml` | `tests/Feature` in `subdomain` mode, plus `tests/DomainMode` (domain-only behaviour, `DomainModeTestCase`) |
+| `vendor/bin/pest --parallel --configuration=phpunit.domain.xml` | `phpunit.domain.xml` (forces `TENANCY_RESOLUTION=domain`) | `tests/Feature` again in `domain` mode, without the `subdomain` group |
+
+Write feature tests mode-agnostic: create tenants with `tenantAddress('acme')` (`tests/Pest.php`: `['subdomain' => 'acme']` or `['domain' => 'acme.example.test']`), read the column with `TenantResolution::current()->attribute()` and build URLs with `urlFor()`. Tag a test (or a file, `pest()->group('subdomain')`) with the `subdomain` group only when it checks subdomain-only behaviour; put domain-only behaviour in `tests/DomainMode`.
 
 ### An application built on it
 

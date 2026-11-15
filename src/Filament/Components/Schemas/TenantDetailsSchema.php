@@ -51,7 +51,7 @@ class TenantDetailsSchema
             ->unique(config('tenancy-foundation.models.tenant'), 'subdomain', ignoreRecord: $ignoreRecord)
             ->prefix('https://')
             ->suffix('.'.config('tenancy-foundation.domain'))
-            ->notIn(config('tenancy-foundation.reserved_subdomains'));
+            ->notIn(TenantResolution::reservedSubdomains());
     }
 
     public static function domain(bool $ignoreRecord = false): TextInput
@@ -63,7 +63,7 @@ class TenantDetailsSchema
             ->maxLength(253)
             ->unique(config('tenancy-foundation.models.tenant'), 'domain', ignoreRecord: $ignoreRecord)
             ->prefix('https://')
-            ->notIn(array_filter([config('tenancy-foundation.domain')]))
+            ->notIn(TenantResolution::reservedHosts())
             ->placeholder('academy.example.com');
     }
 

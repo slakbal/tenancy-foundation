@@ -33,14 +33,14 @@ beforeEach(function () {
     Filament::bootCurrentPanel();
 
     $this->owner = User::factory()->create();
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->owner);
     setPermissionsTeamId($this->tenant->getKey());
 
     $this->admin = actionTestMember($this->tenant, TenantRoles::ADMIN);
     $this->member = actionTestMember($this->tenant, TenantRoles::VIEW_ONLY);
     $this->viewer = actionTestMember($this->tenant, TenantRoles::VIEW_ONLY);
     $this->outsider = User::factory()->create();
-    app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], $this->outsider);
+    app(CreateTenant::class)->handle(['name' => 'Other', ...tenantAddress('other')], $this->outsider);
     setPermissionsTeamId($this->tenant->getKey());
 });
 
@@ -101,7 +101,7 @@ test('the removal listener mails the removed user, can be disabled and stays qui
 
 test('leave tenant removes a non owner through the same action and is not offered for others or for owners', function () {
     $other = User::factory()->create();
-    $second = app(CreateTenant::class)->handle(['name' => 'Second', 'subdomain' => 'second'], $other);
+    $second = app(CreateTenant::class)->handle(['name' => 'Second', ...tenantAddress('second')], $other);
     $second->members()->attach($this->member->getKey(), ['is_owner' => false, 'is_default_tenant' => false]);
     setPermissionsTeamId($this->tenant->getKey());
 

@@ -4,6 +4,7 @@ use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
+use Slakbal\TenancyFoundation\Enums\TenantResolution;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
@@ -14,6 +15,14 @@ use Spatie\Permission\Models\Role;
 
 pest()->extend(TestCase::class)->in('Feature');
 pest()->extend(DomainModeTestCase::class)->in('DomainMode');
+
+function tenantAddress(string $slug): array
+{
+    return match (TenantResolution::current()) {
+        TenantResolution::SUBDOMAIN => ['subdomain' => $slug],
+        TenantResolution::DOMAIN => ['domain' => "{$slug}.example.test"],
+    };
+}
 
 function adminWithAccess(AdminRoles|AdminPermissions ...$grants): Admin
 {

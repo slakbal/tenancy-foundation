@@ -19,6 +19,8 @@ use Slakbal\TenancyFoundation\Models\User;
 use Slakbal\TenancyFoundation\Notifications\Tenant\WelcomeToTenant;
 use Spatie\Permission\PermissionRegistrar;
 
+pest()->group('subdomain');
+
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('app'));
     Filament::bootCurrentPanel();
@@ -71,8 +73,8 @@ test('the action rolls back the user and produces no event when the tenant canno
 test('creating a tenant for an existing user without tenants makes it their default and keeps later ones non-default', function () {
     $user = User::factory()->create();
 
-    app(CreateTenant::class)->handle(['name' => 'One', 'subdomain' => 'one'], $user);
-    app(CreateTenant::class)->handle(['name' => 'Two', 'subdomain' => 'two'], $user);
+    app(CreateTenant::class)->handle(['name' => 'One', ...tenantAddress('one')], $user);
+    app(CreateTenant::class)->handle(['name' => 'Two', ...tenantAddress('two')], $user);
 
     $pivots = $user->tenants()->get()->keyBy('subdomain');
 
@@ -128,7 +130,7 @@ test('the wizard blocks a duplicate email on the account step and creates nothin
 
 test('the registration response sends a verified user to their default tenant domain', function () {
     $user = User::factory()->create();
-    app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $user);
+    app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $user);
     $this->actingAs($user);
 
     $response = app(RegistrationResponse::class)->toResponse(request());

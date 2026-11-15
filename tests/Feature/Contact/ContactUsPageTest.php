@@ -14,7 +14,7 @@ beforeEach(function () {
     Filament::bootCurrentPanel();
 
     $this->user = User::factory()->create(['name' => 'Jane Owner', 'email' => 'jane@example.com']);
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->user);
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->user);
     $this->actingAsTenantUser($this->user, $this->tenant);
 });
 

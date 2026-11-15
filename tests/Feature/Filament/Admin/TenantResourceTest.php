@@ -22,7 +22,7 @@ use Slakbal\TenancyFoundation\Plugins\AdminPlugin;
 
 function tenantWithOwner(string $subdomain): Tenant
 {
-    return app(CreateTenant::class)->handle(['name' => ucfirst($subdomain), 'subdomain' => $subdomain], User::factory()->create(['email' => "{$subdomain}@owner.test"]));
+    return app(CreateTenant::class)->handle(['name' => ucfirst($subdomain), ...tenantAddress($subdomain)], User::factory()->create(['email' => "{$subdomain}@owner.test"]));
 }
 
 beforeEach(function () {

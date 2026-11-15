@@ -307,5 +307,6 @@
     "These changes affect all users holding these roles, in every tenant, as soon as you save.": "These changes affect all users holding these roles, in every tenant, as soon as you save.",
     ":count permission|:count permissions": ":count permission|:count permissions",
     ":count unsaved change|:count unsaved changes": ":count unsaved change|:count unsaved changes",
-    "Permissions saved for :count role|Permissions saved for :count roles": "Permissions saved for :count role|Permissions saved for :count roles"
+    "Permissions saved for :count role|Permissions saved for :count roles": "Permissions saved for :count role|Permissions saved for :count roles",
+    "Tenant resolution \"domain\" needs a host for the admin panel: set ADMIN_DOMAIN or APP_DOMAIN, otherwise the admin panel would answer on every tenant host.": "Tenant resolution \"domain\" needs a host for the admin panel: set ADMIN_DOMAIN or APP_DOMAIN, otherwise the admin panel would answer on every tenant host."
 }

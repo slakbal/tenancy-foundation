@@ -16,7 +16,7 @@ use Spatie\Permission\Models\Role;
 
 function dueTenant(string $subdomain = 'acme', ?User $owner = null): Tenant
 {
-    $tenant = app(CreateTenant::class)->handle(['name' => ucfirst($subdomain), 'subdomain' => $subdomain], $owner ?? User::factory()->create());
+    $tenant = app(CreateTenant::class)->handle(['name' => ucfirst($subdomain), ...tenantAddress($subdomain)], $owner ?? User::factory()->create());
     $tenant->forceFill(['cancelled_at' => now()->subDays(31), 'scheduled_for_deletion_at' => now()->subDay()->endOfDay()])->save();
 
     return $tenant->fresh();
@@ -59,7 +59,7 @@ test('soft deleted members of that tenant are removed too', function () {
 test('users who also belong to another tenant keep their account', function () {
     $owner = User::factory()->create();
     $tenant = dueTenant('acme', $owner);
-    $other = app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], User::factory()->create());
+    $other = app(CreateTenant::class)->handle(['name' => 'Other', ...tenantAddress('other')], User::factory()->create());
     $other->members()->attach($owner, ['is_owner' => false, 'is_default_tenant' => false]);
 
     app(DeleteTenant::class)->handle($tenant);
@@ -70,7 +70,7 @@ test('users who also belong to another tenant keep their account', function () {
 
 test('role assignments of that tenant are removed and those of other tenants stay', function () {
     $otherOwner = User::factory()->create();
-    $other = app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], $otherOwner);
+    $other = app(CreateTenant::class)->handle(['name' => 'Other', ...tenantAddress('other')], $otherOwner);
     $tenant = dueTenant();
     $team = config('permission.column_names.team_foreign_key');
 

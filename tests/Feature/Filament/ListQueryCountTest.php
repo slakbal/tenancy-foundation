@@ -86,7 +86,7 @@ test('the admin tenants list runs the same number of queries regardless of row c
 
         foreach (range(1, $rows) as $ignored) {
             $created++;
-            app(CreateTenant::class)->handle(['name' => "Extra {$created}", 'subdomain' => "extra{$created}"], User::factory()->create());
+            app(CreateTenant::class)->handle(['name' => "Extra {$created}", ...tenantAddress("extra{$created}")], User::factory()->create());
         }
 
         setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);

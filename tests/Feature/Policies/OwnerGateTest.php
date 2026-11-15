@@ -9,8 +9,8 @@ beforeEach(function () {
     Filament::bootCurrentPanel();
 
     $this->owner = User::factory()->create();
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
-    $this->other = app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], User::factory()->create());
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->owner);
+    $this->other = app(CreateTenant::class)->handle(['name' => 'Other', ...tenantAddress('other')], User::factory()->create());
 });
 
 it('reads ownership from the tenant_user flag, defaulting to the current Filament tenant', function () {

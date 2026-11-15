@@ -27,12 +27,12 @@ beforeEach(function () {
     Filament::bootCurrentPanel();
 
     $this->owner = User::factory()->create();
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->owner);
     setPermissionsTeamId($this->tenant->getKey());
 
     $this->single = memberOf($this->tenant);
     $this->shared = memberOf($this->tenant);
-    $this->other = app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], User::factory()->create());
+    $this->other = app(CreateTenant::class)->handle(['name' => 'Other', ...tenantAddress('other')], User::factory()->create());
     $this->other->members()->syncWithoutDetaching([$this->shared->getKey() => ['is_owner' => false, 'is_default_tenant' => false]]);
 
     $this->actingAs($this->owner, AuthGuard::TENANT->value);

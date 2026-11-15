@@ -10,7 +10,7 @@ use Slakbal\TenancyFoundation\Models\User;
 use Slakbal\TenancyFoundation\Support\UserTenantRoles;
 
 beforeEach(function () {
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], User::factory()->create());
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], User::factory()->create());
     setPermissionsTeamId($this->tenant->getKey());
 
     $this->member = User::factory()->create();

@@ -33,7 +33,7 @@ test('the active scope leaves cancelled tenants out', function () {
 
 test('owners lists only the owning members and status follows cancellation', function () {
     $owner = User::factory()->create();
-    $tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $owner);
+    $tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $owner);
     $tenant->members()->attach(User::factory()->create(), ['is_owner' => false, 'is_default_tenant' => true]);
 
     expect($tenant->owners->pluck('id')->all())->toBe([$owner->getKey()])

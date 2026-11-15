@@ -26,6 +26,7 @@ use Slakbal\TenancyFoundation\Events\Tenant\TenantDeleting;
 use Slakbal\TenancyFoundation\Events\Tenant\TenantMemberRemoved;
 use Slakbal\TenancyFoundation\Events\Tenant\TenantReactivated;
 use Slakbal\TenancyFoundation\Events\Tenant\TenantRegistered;
+use Slakbal\TenancyFoundation\Http\Middleware\EnsureKnownTenantHost;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureUserHasTenant;
 use Slakbal\TenancyFoundation\Http\Responses\LogoutResponse;
 use Slakbal\TenancyFoundation\Http\Responses\RegistrationResponse;
@@ -158,6 +159,8 @@ class TenancyFoundationServiceProvider extends ServiceProvider
         // Filament's Authenticate would answer a user of only cancelled tenants with a 403 before our sign-out redirect could run.
         if (method_exists($kernel, 'addToMiddlewarePriorityBefore')) {
             $kernel->addToMiddlewarePriorityBefore(AuthenticatesRequests::class, EnsureUserHasTenant::class);
+            // An unknown host is a 404, not a redirect to a login page that is a 404 itself.
+            $kernel->addToMiddlewarePriorityBefore(EnsureUserHasTenant::class, EnsureKnownTenantHost::class);
         }
     }
 

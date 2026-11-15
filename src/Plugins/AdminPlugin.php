@@ -8,6 +8,9 @@ use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Gate;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
+use Slakbal\TenancyFoundation\Enums\FilamentPanel;
+use Slakbal\TenancyFoundation\Enums\TenantResolution;
+use Slakbal\TenancyFoundation\Exceptions\InvalidTenancyConfiguration;
 use Slakbal\TenancyFoundation\Filament\Admin\Pages\ManageRolePermissions;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\AdminUserResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\ContactRequestResource;
@@ -88,6 +91,16 @@ class AdminPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
+        $panel->path(FilamentPanel::ADMIN->getPath());
+
+        $domain = FilamentPanel::ADMIN->getDomain();
+
+        throw_if($domain === null && TenantResolution::current() === TenantResolution::DOMAIN, InvalidTenancyConfiguration::missingAdminHost());
+
+        if ($domain !== null) {
+            $panel->domain($domain);
+        }
+
         $panel->databaseNotifications();
         $panel->passwordReset(resetAction: ResetPassword::class);
         $panel->profile($this->profilePage);

@@ -18,7 +18,7 @@ beforeEach(function () {
     Filament::bootCurrentPanel();
 
     $this->owner = User::factory()->create();
-    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', 'subdomain' => 'acme'], $this->owner);
+    $this->tenant = app(CreateTenant::class)->handle(['name' => 'Acme', ...tenantAddress('acme')], $this->owner);
     setPermissionsTeamId($this->tenant->getKey());
 
     $this->member = User::factory()->create(['last_login_at' => now()->subDay()]);
@@ -31,7 +31,7 @@ beforeEach(function () {
     app(AssignTenantRole::class)->handle($this->viewer, $this->tenant, TenantRoles::VIEW_ONLY);
 
     $this->outsider = User::factory()->create();
-    app(CreateTenant::class)->handle(['name' => 'Other', 'subdomain' => 'other'], $this->outsider);
+    app(CreateTenant::class)->handle(['name' => 'Other', ...tenantAddress('other')], $this->outsider);
     setPermissionsTeamId($this->tenant->getKey());
 
     $this->actingAs($this->owner, AuthGuard::TENANT->value);
