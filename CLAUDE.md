@@ -1,6 +1,9 @@
 # Project rules
 
 - Keep README.md as the setup and usage guide: update it in the same change whenever config, install steps, env vars, commands, events or extension points change.
+- This package serves many projects. Only add or change behaviour that works for different project variants (example: tenant resolution by `subdomain` or full `domain`). Project-specific behaviour belongs in the app.
+- Every variant is config driven, with a safe default that keeps existing projects working unchanged. Never hard-code one project's choice.
+- Document each config key in `config/tenancy-foundation.php` itself: what it does, the allowed values, the default, and its side effects (for example required env vars, session/cookie behaviour, routes or features it turns on or off, and migrations it needs). Also document it in README.md.
 
 <!-- sloppy:begin -->
 
