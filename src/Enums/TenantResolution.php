@@ -4,7 +4,9 @@ namespace Slakbal\TenancyFoundation\Enums;
 
 use Filament\Support\Contracts\HasLabel;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Illuminate\Support\Uri;
 
 enum TenantResolution: string implements HasLabel
 {
@@ -84,6 +86,7 @@ enum TenantResolution: string implements HasLabel
 
     public function urlFor(Model $tenant): string
     {
-        return appDomainScheme().$this->hostFor($tenant);
+        // Same scheme and port as every other generated URL (forced https, APP_URL port), only the host differs.
+        return Uri::of(URL::to('/'))->withHost($this->hostFor($tenant))->value();
     }
 }
