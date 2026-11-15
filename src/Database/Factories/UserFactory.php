@@ -5,7 +5,11 @@ namespace Slakbal\TenancyFoundation\Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Slakbal\TenancyFoundation\Models\User;
 
+/**
+ * @extends Factory<User>
+ */
 class UserFactory extends Factory
 {
     public function modelName(): string

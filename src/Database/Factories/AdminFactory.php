@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
+use Slakbal\TenancyFoundation\Models\Admin;
 
+/**
+ * @extends Factory<Admin>
+ */
 class AdminFactory extends Factory
 {
     public function modelName(): string

@@ -4,7 +4,11 @@ namespace Slakbal\TenancyFoundation\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
+use Slakbal\TenancyFoundation\Models\Tenant;
 
+/**
+ * @extends Factory<Tenant>
+ */
 class TenantFactory extends Factory
 {
     public function modelName(): string
