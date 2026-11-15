@@ -9,17 +9,14 @@ use Filament\Tables\Table;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\SendUserPasswordResetLinkAction;
 use Slakbal\TenancyFoundation\Filament\Components\Resources\Users\UsersTable as BaseUsersTable;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\TenantNamesColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\VerifiedColumn;
-use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\WrappedBadgeColumn;
 
 class UsersTable extends BaseUsersTable
 {
     protected static function modifyQuery(Table $table): Table
     {
-        return $table->modifyQueryUsing(fn ($query) => $query->withSoleOwnerFlag()->with([
-            'ownedTenants',
-            'memberTenants',
-        ]));
+        return $table->modifyQueryUsing(fn ($query) => $query->withSoleOwnerFlag()->with('tenants'));
     }
 
     /**
@@ -31,8 +28,8 @@ class UsersTable extends BaseUsersTable
 
         array_splice($columns, 2, 0, [
             VerifiedColumn::make(),
-            WrappedBadgeColumn::make('ownedTenants.name')->label(__('Owner of')),
-            WrappedBadgeColumn::make('memberTenants.name')->label(__('Member of')),
+            TenantNamesColumn::owned(),
+            TenantNamesColumn::member(),
         ]);
 
         return $columns;

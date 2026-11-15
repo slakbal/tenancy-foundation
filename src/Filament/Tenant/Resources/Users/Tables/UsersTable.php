@@ -30,8 +30,8 @@ use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\RemoveFromTenan
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\RemoveTenantOwnerAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\RestoreMemberAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
+use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\TenantNamesColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\VerifiedColumn;
-use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\WrappedBadgeColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Filters\RoleFilter;
 
 class UsersTable extends BaseUsersTable
@@ -41,8 +41,6 @@ class UsersTable extends BaseUsersTable
         return $table->modifyQueryUsing(fn ($query) => $query->withSoleOwnerFlag()->with([
             'roles',
             'tenants',
-            'ownedTenants',
-            'memberTenants',
         ]));
     }
 
@@ -63,8 +61,8 @@ class UsersTable extends BaseUsersTable
                 ->badge()
                 ->state(fn (Model $record): ?MemberStatus => $record->memberStatus()),
             RoleBadgeColumn::make(),
-            WrappedBadgeColumn::make('ownedTenants.name')->label(__('Owner of')),
-            WrappedBadgeColumn::make('memberTenants.name')->label(__('Member of')),
+            TenantNamesColumn::owned(),
+            TenantNamesColumn::member(),
             TextColumn::make('joined_at')
                 ->label(__('Joined'))
                 ->state(fn (Model $record): mixed => $record->tenants->firstWhere('id', Filament::getTenant()->getKey())?->pivot->created_at)

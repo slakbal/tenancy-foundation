@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Users tables load memberships once.** The admin and tenant users tables eager-loaded `tenants`, `ownedTenants` and `memberTenants` (three queries on `tenant_user` per page); the Owner of / Member of columns now read the single `tenants` load through the new `Components\Tables\Columns\TenantNamesColumn`. **Breaking:** the column names change from `ownedTenants.name` / `memberTenants.name` to `owned_tenants` / `member_tenants` (update table tests or column overrides that use them).
 - **`TenantResolution::urlFor()` keeps the scheme and port of generated URLs.** It now swaps only the host of `url('/')`, so forced https and an `APP_URL` port (e.g. `:8000`) match Filament's route URLs; it used to take only the scheme of `APP_URL`.
 - **Domain mode: tenant panel only on tenant hosts.** New tenant panel middleware `Http\Middleware\EnsureKnownTenantHost` (added by `TenantPlugin`, no-op in `subdomain` mode) returns 404 for every tenant panel route, login included, unless the host is the `domain` of an existing tenant, so unknown hosts, `APP_DOMAIN` and the admin host no longer show a tenant login. Invitation links are now signed for the tenant's host in `domain` mode: new `AcceptInvitation::signedUrl($invitation, $expiresAt)`, used by `InvitationCreated`.
 - **Tests run in both tenant resolutions.** New `phpunit.domain.xml` runs `tests/Feature` again with `TENANCY_RESOLUTION=domain` (the `subdomain` group is excluded); `composer test` runs both. Feature tests create tenants through the new `tenantAddress()` helper in `tests/Pest.php`.
