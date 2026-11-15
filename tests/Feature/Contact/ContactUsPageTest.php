@@ -32,7 +32,7 @@ test('a message is stored with the name and email of the logged in user and the 
         ->call('submit')
         ->assertHasNoFormErrors()
         ->assertNotified(__('Thank you! Your message has been sent.'))
-        ->assertSet('data.message', null);
+        ->assertRedirect(Filament::getUrl());
 
     $request = ContactRequest::query()->sole();
 

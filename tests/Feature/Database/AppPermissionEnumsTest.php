@@ -127,6 +127,7 @@ describe('role permissions page', function () {
 
     it('lists the app permissions as editable rows, not as unknown', function () {
         Livewire::test(ManageRolePermissions::class)
+            ->set('activeTab', FilamentPanel::TENANT->value)
             ->assertSee('Invoice')
             ->assertSee('Purchase Order')
             ->assertSee('Export All')
@@ -138,6 +139,7 @@ describe('role permissions page', function () {
         Permission::findOrCreate('legacy.thing', AuthGuard::TENANT->value);
 
         Livewire::test(ManageRolePermissions::class)
+            ->set('activeTab', FilamentPanel::TENANT->value)
             ->assertSee('Unknown permissions')
             ->assertSee('legacy.thing');
     });
@@ -146,6 +148,7 @@ describe('role permissions page', function () {
         config([TenantPermissionEnums::CONFIG_KEY => TenantRolePermissionsSeeder::class]);
 
         Livewire::test(ManageRolePermissions::class)
+            ->set('activeTab', FilamentPanel::TENANT->value)
             ->assertSee('Unknown permissions')
             ->assertSee(AppPermissions::INVOICE_APPROVE->value);
     });
@@ -171,6 +174,7 @@ describe('role permissions page', function () {
         $this->actingAs(adminWithAccess(AdminRoles::SUPER_ADMIN), AuthGuard::ADMIN->value);
 
         Livewire::test(ManageRolePermissions::class)
+            ->set('activeTab', FilamentPanel::TENANT->value)
             ->set('data.'.FilamentPanel::TENANT->value.".{$role->id}.{$permissionId}", true)
             ->callAction('save')
             ->assertNotified('Permissions saved for 1 role');
