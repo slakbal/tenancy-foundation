@@ -1,22 +1,60 @@
 # Tenancy Foundation
 
-Multi-tenancy foundation for Laravel 13 and Filament v5: subdomain tenants, tenant users, a separate admin guard, role/permission authorisation (spatie, teams), a tenant registration wizard, Filament panel plugins and opinionated Filament defaults.
+`slakbal/tenancy-foundation`: the multi-tenancy base for Laravel 13 and Filament v5 apps. The companion app template is [`slakbal/filament-tenant-template`](https://github.com/slakbal/filament-tenant-template).
 
-- Two Filament panels: **admin** (path `/admin`, guard `admin`) and **tenant** (root path, guard `web`, one subdomain per tenant).
-- Tenant users belong to one or more tenants; roles and permissions are scoped per tenant (spatie teams). Admin roles are global.
-- Business logic lives in Action classes you can replace; every page, resource and model can be overridden from the application.
+This README is the setup and usage guide. Release notes are in [CHANGELOG.md](CHANGELOG.md).
+
+## Contents
+
+- [What it provides](#what-it-provides)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Configuration reference](#configuration-reference)
+- [Domains, hosts and sessions](#domains-hosts-and-sessions)
+- [Panels and guards](#panels-and-guards)
+- [Models and traits](#models-and-traits)
+- [Roles and permissions](#roles-and-permissions)
+- [Registration](#registration)
+- [Invitations](#invitations)
+- [Tenant members](#tenant-members)
+- [Cancelling and deleting a tenant](#cancelling-and-deleting-a-tenant)
+- [Events and extension points](#events-and-extension-points)
+- [Contact requests](#contact-requests)
+- [Admin users](#admin-users)
+- [Impersonation](#impersonation)
+- [Scheduled jobs](#scheduled-jobs)
+- [Commands](#commands)
+- [Testing](#testing)
+- [Troubleshooting](#troubleshooting)
+- [Upgrading](#upgrading)
+
+## What it provides
+
+- Two Filament panels, both set up by plugins:
+  - **admin**: path `/admin`, guard `admin`.
+  - **tenant**: panel id `app`, root path, guard `web`, one subdomain per tenant (`{subdomain}.APP_DOMAIN`).
+- Tenant users can belong to several tenants (`tenant_user` pivot with `is_owner`, `is_default_tenant` and `status`). Several owners per tenant are allowed. A tenant always keeps at least one owner.
+- Roles and permissions come from spatie/laravel-permission with teams. Tenant roles are assigned per tenant (team = tenant id). Admin roles are assigned under team `0`. Role definitions are global.
+- Tenant registration wizard, email verification, password reset and profile pages for both panels. Email change verification is optional.
+- Admin resources: tenants (cancel and reactivate), tenant users (impersonate), admin users, contact requests, and a role permission matrix.
+- Tenant resources: users (create, edit, roles, activate or deactivate, owners, remove, leave, restore) and invitations.
+- Tenant lifecycle: cancellation with a grace period, reactivation and scheduled deletion. Each step dispatches an event.
+- A public contact form, a tenant "Contact us" page, and contact request handling in the admin panel.
+- Business logic lives in Action classes (`src/Actions/<Domain>`), which you can replace through the container. You can swap models, policies, pages and resources from the app.
+- Opinionated Filament defaults (`config/filament-defaults.php`).
 
 ## Requirements
 
-- PHP 8.3+, Laravel 13.17+, Filament 5
-- `spatie/laravel-permission` 8 (installed as a dependency, configured by you, see step 4)
-- A database, queue worker and mailer. Wildcard DNS and a wildcard TLS certificate for `*.your-domain` in production. Laravel Herd serves `*.project.test` automatically.
+- PHP 8.3+ (`^8.3`), Laravel `^13.17`, Filament `^5.0`.
+- Pulled in as dependencies: `spatie/laravel-permission` `^8.3` (you configure it, see [step 5](#5-spatie-permissions-with-teams)), `stechstudio/filament-impersonate` `^5.6` and `l3aro/filament-turnstile` (the captcha on the public contact form).
+- A database, a queue worker, a mailer and the scheduler (`schedule:run`).
+- Wildcard DNS and a wildcard TLS certificate for `*.your-domain` in production. Locally, use a server that routes wildcard subdomains to the app ([Lerd](https://github.com/lerd-env/lerd) serves `*.project.test` automatically for a linked site).
 
 ## Installation
 
 ### 1. Require the package
 
-Until the package is on GitHub, use a local path repository in the application's `composer.json`:
+During local development, use a path repository in the application's `composer.json` (the package checked out next to the app):
 
 ```json
 "repositories": [
@@ -25,18 +63,29 @@ Until the package is on GitHub, use a local path repository in the application's
 "require": { "slakbal/tenancy-foundation": "@dev" }
 ```
 
-Later, switch to `{ "type": "vcs", "url": "git@github.com:slakbal/tenancy-foundation.git" }` and a tagged constraint such as `^1.0`.
+To install from GitHub instead, use a VCS repository: `{ "type": "vcs", "url": "git@github.com:slakbal/tenancy-foundation.git" }`. There are no tags yet, so require `dev-main` until a version is tagged.
 
 ```bash
 composer require slakbal/tenancy-foundation
 php artisan tenancy-foundation:install
 ```
 
-The install command publishes `config/tenancy-foundation.php`, warns if spatie teams are not enabled and prints the remaining steps (including that seeding applies role defaults on first install only, and the `tenancy-foundation:sync-permissions` command).
+`tenancy-foundation:install` publishes `config/tenancy-foundation.php`. It warns if spatie teams are off and prints the remaining steps below.
+
+Publish tags:
+
+| Tag | Publishes |
+|---|---|
+| `tenancy-foundation-config` | `config/tenancy-foundation.php` (the install command does this) |
+| `tenancy-foundation-defaults` | `config/filament-defaults.php` |
+| `tenancy-foundation-views` | `resources/views/vendor/tenancy-foundation` (public contact page) |
+| `tenancy-foundation-stubs` | App listeners in `app/Listeners/Tenant`: `RegisteredTenant`, `CancelledTenant`, `ReactivatedTenant`, `DeletedTenant`, `CreatedTenantUser` |
+
+You don't need to republish the config after an upgrade. The package fills in missing nested keys from its own defaults (`models`, `notifications`, `redirects`, `cancellation`, `contact_requests`, `features`, `invitations`) and missing top-level keys.
 
 ### 2. Create your models
 
-Extend the package models. The package works with them as they are; extend to add your own behaviour.
+Extend the package models. They work as they are, so extend them only to add your own behaviour.
 
 ```php
 namespace App\Models;
@@ -46,7 +95,7 @@ use Slakbal\TenancyFoundation\Models\User as BaseUser;
 class User extends BaseUser {}
 ```
 
-Do the same for `Admin`, `Tenant` and `Role` (`Slakbal\TenancyFoundation\Models\{Admin,Tenant,Role}`), then point the config at them in `config/tenancy-foundation.php`:
+Do the same for the other models you need, for example `Admin`, `Tenant`, `Role` and `Invitation` (`Slakbal\TenancyFoundation\Models\*`). Then point the config at them:
 
 ```php
 'models' => [
@@ -54,10 +103,13 @@ Do the same for `Admin`, `Tenant` and `Role` (`Slakbal\TenancyFoundation\Models\
     'user' => App\Models\User::class,
     'admin' => App\Models\Admin::class,
     'role' => App\Models\Role::class,
+    // contact_request, invitation, role_permission_change keep the package defaults unless you swap them
 ],
 ```
 
-Set the auth provider model too: `config/auth.php` → `providers.users.model` = `App\Models\User::class`. The `admin` guard, `admins` provider and `admins` password broker are registered by the package (see [What the package registers](#what-the-package-registers)).
+Set `config/auth.php` → `providers.users.model` to `App\Models\User::class`. The package registers the `admin` guard, the `admins` provider and the `admins` password broker (see [Panels and guards](#panels-and-guards)).
+
+If spatie should use your role model, set `config/permission.php` → `models.role` to that model too.
 
 ### 3. Environment
 
@@ -66,48 +118,58 @@ APP_URL=https://your-domain.test
 APP_DOMAIN=your-domain.test
 SESSION_DOMAIN=.your-domain.test
 QUEUE_CONNECTION=database
+TURNSTILE_SITE_KEY=...
+TURNSTILE_SECRET_KEY=...
 ```
 
-- `APP_DOMAIN`: tenants resolve at `{subdomain}.APP_DOMAIN`. If it is empty, tenant URLs render as `tenant1.`.
-- `SESSION_DOMAIN`: must be the domain with a leading dot. Login, registration and email verification run on the central domain, tenants on subdomains; without a wildcard session cookie users are sent back to the login page. Change `SESSION_COOKIE` once if browsers still hold old host-only cookies.
-- `QUEUE_CONNECTION`: all package emails (welcome, verification, password reset) are queued, so run `php artisan queue:work`. With `sync` they send immediately.
+See [Domains, hosts and sessions](#domains-hosts-and-sessions) and [Environment variables](#environment-variables).
 
-### 4. Spatie permissions with teams
+### 4. Queue and scheduler
+
+All package notifications are queued, so run `php artisan queue:work` (with `QUEUE_CONNECTION=sync` they send immediately). Tenant deletion and pruning run on the scheduler, so `schedule:run` must run every minute in production (see [Scheduled jobs](#scheduled-jobs)).
+
+### 5. Spatie permissions with teams
 
 ```bash
 php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
 ```
 
-In `config/permission.php` set:
+In `config/permission.php`:
 
 ```php
 'teams' => true,
 'team_foreign_key' => 'tenant_id',
 ```
 
-Do this before migrating, because the permission migration reads these values.
+Set both before you migrate, because the permission migration reads these values.
 
-### 5. Migrate
+### 6. Migrate
 
 ```bash
 php artisan migrate
 ```
 
-The package migrations load automatically and run after Laravel's default `users` migration:
+The package migrations load automatically (no publishing) and run after Laravel's default `users` migration:
 
 | Migration | Effect |
 |---|---|
 | `add_tenancy_columns_to_users_table` | Adds the missing tenancy columns to `users` (see [Users table](#users-table)) |
-| `create_tenants_table` | The `tenants` table (including `billing_email`, `cancelled_at` and `scheduled_for_deletion_at`) and the `tenant_user` membership pivot (`is_owner`, `is_default_tenant`) |
-| `create_admin_users_table` | The `admins` table |
+| `create_tenants_table` | `tenants` (`ulid`, `name`, `subdomain`, `billing_email`, `cancelled_at`, `scheduled_for_deletion_at`) and the `tenant_user` pivot (`is_owner`, `is_default_tenant`, `status`, `accepted_invite_at`) |
+| `create_admin_users_table` | `admins` (name attributes, `status`, two factor columns, `locale`, last login, soft deletes) |
+| `create_contact_requests_table` | `contact_requests` |
+| `create_notifications_table` | Laravel `notifications` table, skipped if it already exists (admin bell) |
+| `create_admin_password_reset_tokens_table` | Separate reset tokens for admins, so tokens never cross between an admin and a tenant user who share an email |
+| `create_invitations_table` | `invitations`. Always runs, even with `features.invitations` off |
+| `create_role_permission_changes_table` | Audit log of role permission changes |
 
-### 6. Register the panel plugins
+### 7. Register the panel plugins
 
-Both panels use the package enums for ids, paths and guards. The ids matter (`admin` and `app`): impersonation and redirects build route names from them.
+Use the package enums for ids, paths and guards. The ids matter (`admin` and `app`), because impersonation, invitation links and redirects build route names from them.
 
 ```php
 // app/Providers/Filament/AdminPanelProvider.php
 use Slakbal\TenancyFoundation\Enums\FilamentPanel;
+use Slakbal\TenancyFoundation\Filament\Widgets\AccountWidget;
 use Slakbal\TenancyFoundation\Plugins\AdminPlugin;
 
 return $panel
@@ -117,12 +179,15 @@ return $panel
     ->authPasswordBroker(FilamentPanel::ADMIN->getPasswordBroker())
     ->strictAuthorization()
     ->login()
+    ->widgets([AccountWidget::class])
+    // ->middleware([...]) and ->authMiddleware([Authenticate::class]) as in a normal panel provider
     ->plugins([AdminPlugin::make()]);
 ```
 
 ```php
 // app/Providers/Filament/TenantPanelProvider.php
 use Slakbal\TenancyFoundation\Enums\FilamentPanel;
+use Slakbal\TenancyFoundation\Filament\Widgets\AccountWidget;
 use Slakbal\TenancyFoundation\Plugins\TenantPlugin;
 
 return $panel
@@ -133,12 +198,17 @@ return $panel
     ->authPasswordBroker(FilamentPanel::TENANT->getPasswordBroker())
     ->strictAuthorization()
     ->login()
+    ->widgets([AccountWidget::class])
+    // ->middleware([...]) as in a normal panel provider
+    ->authMiddleware([Authenticate::class], isPersistent: true)
     ->plugins([TenantPlugin::make()]);
 ```
 
-Keep the standard Filament panel middleware (`StartSession`, `AuthenticateSession`, `Authenticate` and so on) as in a normal panel provider. Do not add the tenant, tenant domain, registration, email verification or tenant middleware yourself; the plugins do it. Register both providers in `bootstrap/providers.php`.
+Keep the standard Filament panel middleware (`StartSession`, `AuthenticateSession`, `Authenticate` and so on). Don't add the tenant, tenant domain, registration, email verification or tenant middleware yourself, because the plugins add them. Register both providers in `bootstrap/providers.php`.
 
-### 7. Seed roles and the first admin
+`Slakbal\TenancyFoundation\Filament\Widgets\AccountWidget` replaces Filament's `AccountWidget`. It adds a role badge per role of the signed-in user.
+
+### 8. Seed roles and the first admin
 
 ```php
 // database/seeders/DatabaseSeeder.php
@@ -148,73 +218,198 @@ use Slakbal\TenancyFoundation\Database\Seeders\TenantRolePermissionsSeeder;
 $this->call([AdminRolePermissionsSeeder::class, TenantRolePermissionsSeeder::class]);
 ```
 
-Roles are global; tenant roles are assigned per tenant. To add your own permission enums, extend `TenantRolePermissionsSeeder` and override `permissionEnums()` and `viewOnlyPermissions()`. The owner role carries no permission rows: the owner of a tenant bypasses every check for that tenant through `Gate::before`, and owner-only areas (the tenant profile page) are guarded by an owner check. The admin role gets every permission.
+If you registered your own tenant seeder subclass (see [App permissions](#app-permissions)), call that subclass instead.
 
-**Seeding is first-install only.** The seeders always `findOrCreate` every permission row, but a role's default permissions are applied only to a role that has no permissions yet. A role that already holds any permission is never reset, so re-running the seeders no longer undoes edits (this lets permissions become editable in the database later). The owner role is the exception: it is always cleared, because it carries no rows. The admin role gets every permission except `permissions.manage`, which nobody is seeded with (`super_admin` passes through `Gate::before`).
-
-The enums stay the permission registry. After an upgrade, or after adding permissions to your own enums, run:
-
-```bash
-php artisan tenancy-foundation:sync-permissions
-```
-
-The command creates the missing permission rows for both guards (the tenant list comes from `TenantRolePermissionsSeeder`, so your `permissionEnums()` override applies when you bind your subclass in the container), reports orphans (database rows with no enum case, per guard) without deleting them, and clears the permission cache. It is idempotent and never changes role assignments, so a new permission is not granted to any existing role: assign it to the roles that need it manually (or through the permissions screen once it exists).
-
-Admin roles live under the fixed team id `Admin::PERMISSIONS_TEAM_ID` (`0`, never a tenant id, so no placeholder tenant is needed). Create the first super admin:
+Create the first super admin under the admin team id:
 
 ```php
+use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
+
 setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
 Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 'secret'])
     ->assignRole(AdminRoles::SUPER_ADMIN);
 ```
 
-### 8. Check it works
+`Admin` models default to `status = active`. Admins created through the admin panel start as `pending` (see [Admin users](#admin-users)).
+
+### 9. Check it works
 
 1. Open `https://your-domain.test/register`, register a tenant and verify the email.
 2. You land on `https://{subdomain}.your-domain.test`.
 3. Open `https://your-domain.test/admin` and sign in as the admin.
 
-## What the package registers
+## Configuration reference
 
-- `admin` guard, `admins` provider and password broker, only if your `config/auth.php` does not define them (disable with `register_auth_defaults`).
-- Filament `LogoutResponse` and `RegistrationResponse`. `redirects.logout_route` is a named route and defaults to `/`.
-- `UpdateLastLogin` listener on `Login` (disable with `register_last_login_listener`).
-- `TenantRegistered` event and the welcome email listener.
-- Filament defaults from `config/filament-defaults.php` (toggle with `enabled`).
-- Policies for `User`, `Admin` and `Tenant`, resolved per panel.
-- User resources for both panels; the admin one has an impersonate action.
+### `config/tenancy-foundation.php`
 
-## Registration
+| Key | Default | Purpose |
+|---|---|---|
+| `domain` | `env('APP_DOMAIN')` | Root domain without scheme or port. Tenants live at `{subdomain}.domain` |
+| `models.tenant` | `Models\Tenant` | Tenant model |
+| `models.user` | `Models\User` | Tenant panel user, also used by the `users` provider |
+| `models.admin` | `Models\Admin` | Admin panel user, also used by the `admins` provider |
+| `models.role` | `Models\Role` | Spatie role model (the `RoleObserver` is attached to it) |
+| `models.contact_request` | `Models\ContactRequest` | Contact form submissions |
+| `models.invitation` | `Models\Invitation` | Tenant invitations |
+| `models.role_permission_change` | `Models\RolePermissionChange` | Audit rows written when role permissions change |
+| `seeders.tenant_role_permissions` | `TenantRolePermissionsSeeder` | The seeder that defines the tenant permission enums. Must be the package seeder or a subclass |
+| `user_name_attributes` | `['name']` | Name column(s), for example `['first_name', 'last_name']` |
+| `email_change_verification` | `true` | Email changes on the profile page take effect after the new address confirms (both panels) |
+| `features.invitations` | `true` | Invitations resource, accept page, invitation permissions and pruning |
+| `invitations.expiry_days` | `env('INVITATION_EXPIRY_DAYS', 7)` | Days an invitation link stays valid |
+| `invitations.retention_days` | `env('INVITATION_RETENTION_DAYS', 30)` | Pruning window for invitations |
+| `reserved_subdomains` | `www, admin, app, api, mail, dev, test` | Subdomains the registration form refuses |
+| `notifications.welcome` | `WelcomeToTenant` | Mailed to the new owner after registration |
+| `notifications.cancelled` | `AccountCancelled` | Mailed to every owner on cancellation |
+| `notifications.reactivated` | `AccountReactivated` | Mailed to every owner on reactivation |
+| `notifications.admin_invited` | `AdminInvited` | Mailed to a new admin with a set password link |
+| `notifications.contact_response` | `ContactRequestResponded` | Mailed to the requester when an admin responds |
+| `notifications.contact_received` | `NewContactRequest` | Database notification (admin bell) for a new contact request |
+| `notifications.member_removed` | `MemberRemoved` | Mailed to a user removed from a tenant (not when they left on their own) |
+| `notifications.invitation_created` | `InvitationCreated` | Mailed to the invitee with a signed accept link |
+| `cancellation.grace_days` | `env('TENANT_CANCELLATION_GRACE_DAYS', 30)` | Days between cancellation and deletion |
+| `cancellation.schedule_deletion` | `true` | Registers the daily `DeleteDueTenants` job |
+| `cancellation.deletion_time` | `'01:00'` | Time of day (server time) the deletion job runs |
+| `contact_requests.prune_after_days` | `env('CONTACT_REQUEST_PRUNE_AFTER_DAYS', 90)` | Closed requests are pruned this many days after closing. `0` or `null` keeps them forever |
+| `contact_requests.notify_admins` | `true` | Notify admins who may view contact requests (and super admins) about new requests |
+| `contact_requests.public_path` | `'contact'` | Public contact page path on the main domain (route `public.contact`). `null` disables it |
+| `contact_requests.public_form` | `PublicContactForm` | Livewire component behind the public page |
+| `redirects.logout_route` | `null` | Named route used after logout (and after registering on a panel without tenancy). Falls back to `/` |
+| `schedule_pruning` | `true` | Registers the daily `model:prune` commands |
+| `register_auth_defaults` | `true` | Registers the `admin` guard, the `admins` provider and the `admins` broker if `config/auth.php` lacks them |
+| `register_last_login_listener` | `true` | Stores `last_login_at` and `last_login_ip` on `Login` |
 
-The tenant panel exposes `/register`, a two-step wizard: tenant name and subdomain, then the owner account (`user_name_attributes`, email, password). `RegisterTenantOwner` creates the user, the tenant, the owner membership and the owner role in one transaction. Filament then sends the standard verification email and redirects to the verification prompt, and to the tenant domain once verified. `CreateTenant` is reused by the `RegisterTenant` page for signed-in users without a tenant.
+Every `notifications.*` entry takes a class, or `null` to stop that notification. Your own notification classes should implement `ShouldQueue`, like the package ones.
 
-- **Override the forms**: extend `RegisterUser` (and `RegisterTenant`) and override `getTenantFormComponents()` and/or `getUserFormComponents()`. Extra attributes must be fillable on the models. The page width is the `$maxWidth` property.
-- **Register your pages**: `TenantPlugin::make()->usingRegisterUserPage(...)` and `->usingRegisterTenantPage(...)`.
-- **Event and welcome email**: `TenantRegistered` (tenant, owner) is dispatched after the registration commits. `tenancy-foundation.notifications.welcome` (default `WelcomeToTenant`, `null` disables it) is mailed to the owner. Point it at your own notification class to customise it.
-- **Reserved subdomains**: `tenancy-foundation.reserved_subdomains`.
-- **Business logic**: bind your own subclass of `RegisterTenantOwner` or `CreateTenant` in the container.
-- **Email verification** is enabled by the tenant plugin; the base `User` implements `MustVerifyEmail`.
+### `config/filament-defaults.php`
 
-### Registration stays tenant plus owner only
+| Key | Purpose |
+|---|---|
+| `enabled` | Master switch for all defaults |
+| `translate_labels` | `translateLabel()` on fields, entries and columns |
+| `action_defaults` + `actions.*` | Defaults for `Action`, `ActionGroup`, create, edit, view, delete, restore, force delete and bulk actions (one switch each) |
+| `select_defaults` + `select.*` | `native`, `selectable_placeholder`, `searchable`, `preload` |
+| `datetime_defaults` + `datetime.*` | `seconds`, `max_date` |
+| `fileupload_defaults` | `FileUpload::moveFiles()` |
+| `repeater_defaults` + `repeater.*` | Delete confirmation on `Repeater` and `Builder` |
+| `form_defaults` + `form.*` | `toggle_buttons`, `text_input`, `textarea` |
+| `page_defaults` + `page.*` | `validation_notification`, `sticky_form_actions` |
+| `table_defaults` + `table.*` | `table`, `image_column`, `select_filter` |
+| `format_defaults` + `formats.*` | Currency (`zar`), date, datetime and time display formats, number locale |
+| `panel_defaults` (not in the file, defaults to `true`) + `panel.*` | `top_navigation` (`true`), `max_content_width` (`'container'`, `null` keeps Filament's `7xl`) |
 
-Tenant users never register themselves. `/register` always creates a new tenant together with its owner, and there is no open signup flag. Everyone else joins an existing tenant through an invitation (existing accounts sign in to accept it), through the plain create user form (`CreateTenantUser`) or from the admin panel. If a product ever needs open signup it has to be added in the application.
+A block switch gates all of its sub-items.
 
-## Customising
+### Environment variables
 
-- **Models**: extend them and set `tenancy-foundation.models`. `Model::factory()` resolves the configured model.
-- **Policies**: declare `App\Policies\{Admin|Tenant}\{Model}Policy` to override a package policy. The base class is `Policies\AuthorisationPolicy`.
-- **Resources and pages**: `usingUserResource()`, `usingRegisterUserPage()`, `usingRegisterTenantPage()` and `usingEditTenantProfilePage()` on the plugins.
-- **Translations**: JSON sentence keys loaded from the package `lang/en.json`. Override them in the application's `lang/en.json`.
-- **Notifications**: always implement `ShouldQueue` on your own.
+| Variable | Used for |
+|---|---|
+| `APP_URL` | Central URL. Deleted-user redirects and the helpers `appUrl()`, `appDomainScheme()` and `appDomainHost()` use it |
+| `APP_DOMAIN` | `tenancy-foundation.domain` |
+| `SESSION_DOMAIN` | Must be `.your-domain` (see below) |
+| `SESSION_COOKIE` | Change it once to drop old host-only cookies |
+| `QUEUE_CONNECTION` | Queued notifications |
+| `TENANT_CANCELLATION_GRACE_DAYS` | `cancellation.grace_days` |
+| `INVITATION_EXPIRY_DAYS`, `INVITATION_RETENTION_DAYS` | `invitations.*` |
+| `CONTACT_REQUEST_PRUNE_AFTER_DAYS` | `contact_requests.prune_after_days` |
+| `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Captcha on the public contact form (`l3aro/filament-turnstile`) |
 
-## Name attributes
+## Domains, hosts and sessions
 
-The package has no hard-coded name columns. `tenancy-foundation.user_name_attributes` (default `['name']`, for example `['first_name', 'last_name']`) drives the admins migration, the users migration, the factories, the register form and the name table column.
+| Host | Serves |
+|---|---|
+| `APP_DOMAIN` | Tenant panel login, `/register`, email verification, password reset, `/admin`, public contact page (`/contact`) |
+| `{subdomain}.APP_DOMAIN` | The tenant panel for that tenant (`TenantPlugin` sets `tenantDomain('{tenant:subdomain}.'.domain)`, slug attribute `subdomain`) |
+
+- `APP_DOMAIN`: if it's empty, tenant URLs render as `tenant1.` and the public contact route is not registered.
+- `SESSION_DOMAIN`: set it to the domain with a leading dot. Login, registration and verification run on the central domain and tenants on subdomains. Without a wildcard session cookie, users are sent back to the login page. If browsers still hold old host-only cookies, change `SESSION_COOKIE` once.
+- After registration or verification, `RegistrationResponse` redirects to `scheme://{subdomain}.APP_DOMAIN` for the user's default tenant, or to tenant registration if the user has no tenant.
+- After logout, users go to `redirects.logout_route`, or to `/` if that is unset.
+- Local development: any server that routes wildcard subdomains of the app host to the app works. [Lerd](https://github.com/lerd-env/lerd) does this for `*.project.test` (`lerd link project && lerd secure`). Use the same host in `APP_URL`, `APP_DOMAIN` and `SESSION_DOMAIN` (with a leading dot), for example `https://myapp.test`, `myapp.test` and `.myapp.test`.
+
+## Panels and guards
+
+| | Admin panel | Tenant panel |
+|---|---|---|
+| Enum | `FilamentPanel::ADMIN` | `FilamentPanel::TENANT` |
+| Panel id / path | `admin` / `admin` | `app` / `''` |
+| Guard (`AuthGuard`) / broker | `admin` / `admins` | `web` / `users` |
+| Plugin | `AdminPlugin` | `TenantPlugin` |
+| Super user via `Gate::before` | `super_admin` role | owner of the current tenant |
+| Policies | `Policies\Admin\*` | `Policies\Tenant\*` |
+
+### What `AdminPlugin` registers
+
+- Database notifications, password reset (`ResetPassword`), profile (`EditProfile`), email change verification, the `admins` broker.
+- Resources: `Users\UserResource` (tenant users), `AdminUsers\AdminUserResource` (slug `admins`), `Tenants\TenantResource`, `ContactRequests\ContactRequestResource`.
+- Page: `ManageRolePermissions` (Security > Role permissions).
+- On boot: `setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID)`, a `Gate::before` (`SoleOwnerGuard`, then `AdminAccountGuard`, then `super_admin` → allow), and policy resolution for the `Admin` namespace.
+
+Overrides: `usingUserResource()`, `usingAdminUserResource()`, `usingTenantResource()`, `usingContactRequestResource()`, `usingProfilePage()`, `usingRolePermissionsPage()`.
+
+### What `TenantPlugin` registers
+
+- Tenancy on `models.tenant` (slug attribute `subdomain`) with the tenant domain, tenant registration (`RegisterTenant`) and tenant profile (`EditTenantProfile`, slug `tenant-profile`, owner only).
+- Registration (`RegisterUser`), password reset, profile, email change verification, email verification (`EmailVerificationPrompt`), the `users` broker.
+- Tenant middleware (persistent): `SyncTenantPermissionsContext` (sets the spatie team id to the current tenant), `EnsureTenantIsNotCancelled`.
+- Panel middleware (persistent): `RedirectDeletedUserHome`, `EnsureUserHasTenant` (signs out users with no tenant, only cancelled tenants, or no accessible tenant). The service provider gives `EnsureUserHasTenant` priority over Filament's `Authenticate`.
+- Resources: `Users\UserResource`, and `Invitations\InvitationResource` plus the accept page route when `features.invitations` is on.
+- Page: `ContactUs` (slug `contact`).
+- A `HEAD_END` style that shows the role in the tenant switcher in the danger colour (`currentTenantLabelStyle()`, override to change).
+- On boot: a `Gate::before` (`SelfDeletionGuard`, `SoleOwnerGuard`, `TenantMembershipGuard`, `TenantForceDeleteGuard`, then owner → allow) and policy resolution for the `Tenant` namespace.
+
+Overrides: `usingUserResource()`, `usingRegisterUserPage()`, `usingRegisterTenantPage()`, `usingEditTenantProfilePage()`, `usingContactPage()`, `usingProfilePage()`, `usingInvitationResource()`, `usingAcceptInvitationPage()`.
+
+### What the service provider registers
+
+- The `admin` guard, the `admins` provider (`models.admin`) and the `admins` password broker (table `admin_password_reset_tokens`), each only if `config/auth.php` doesn't define it. Disable with `register_auth_defaults`.
+- Filament `LogoutResponse` and `RegistrationResponse` bindings.
+- The package event listeners (see [Events](#events)) and the `UpdateLastLogin` listener on `Login` (disable with `register_last_login_listener`).
+- `RoleObserver` on `models.role` when invitations are on.
+- Migrations, JSON translations (`lang/en.json`), views (namespace `tenancy-foundation`), the `public-contact-form` Livewire component and the `public.contact` route.
+- The scheduled jobs and the commands.
+- `FilamentDefaultsServiceProvider` (Filament defaults).
+
+## Models and traits
+
+| Model | Notes |
+|---|---|
+| `User` | `FilamentUser`, `HasTenants`, `HasDefaultTenant`, `MustVerifyEmail`. Uses `HasRoles`, `IsTenantUser`, `HasUlidKey`, `SoftDeletes` |
+| `Admin` | `FilamentUser`. Uses `HasRoles`, `IsAdminUser`, `CanImpersonate`, `HasUlidKey`, `SoftDeletes`. `PERMISSIONS_TEAM_ID = 0`, guard `admin`, `status` cast to `AdminStatus` |
+| `Tenant` | `HasName`, `HasCurrentTenantLabel`. Uses `IsTenant`, `HasUlidKey` |
+| `TenantUser` | Pivot. `status` cast to `MemberStatus` |
+| `Role` | Extends the spatie role, `invitations()` |
+| `Invitation` | `BelongsToTenant`, prunable, `pending()` and `expired()` scopes, `refreshToken()`, hides `token` |
+| `ContactRequest` | Prunable |
+| `RolePermissionChange` | Audit row, `actor()` morph |
+
+| Trait | Gives you |
+|---|---|
+| `HasUlidKey` | `ulid` column filled automatically and used as the route key |
+| `IsTenantUser` | `HasTenantAccess` + `HasTenantMemberships` + `OwnsTenants` |
+| `HasTenantAccess` | `canAccessPanel()`, `canSignIn()` (hook, default `true`), `canAccessTenant()`, `getTenants()`, `getDefaultTenant()` |
+| `HasTenantMemberships` | `tenants()`, `memberTenants()`, `memberStatus()`, `hasOnlyCancelledTenants()`, `hasNoAccessibleTenants()` |
+| `OwnsTenants` | `ownedTenants()`, `isOwner(?$tenant)` (reads `tenant_user.is_owner`), `withSoleOwnerFlag` scope, `isSoleOwnerOfAnyTenant()`, `soleOwnedTenants()` |
+| `IsTenant` | `cancelled_at` and `scheduled_for_deletion_at` casts, `status` attribute (`TenantStatus`), `isCancelled()`, `isDueForDeletion()`, `active()` and `dueForDeletion()` scopes, `canBeInvited()` (hook), `getCurrentTenantLabel()`, `owners()`, `members()` |
+| `BelongsToTenant` | `tenant()` relation to `models.tenant` |
+| `IsAdminUser` | `canAccessPanel()`: admin guard, status `active` or `pending`, not soft deleted |
+| `CanImpersonate` | `canImpersonate()`: `impersonate.user` permission |
+
+`Model::factory()` resolves the configured model. Factories and their states:
+
+- `UserFactory`: `unverified()`.
+- `AdminFactory`: `unverified()`, `inactive()`, `pending()`, `withTwoFactor()`.
+- `TenantFactory`, `InvitationFactory`: no states.
+- `ContactRequestFactory`: `fromTenant()`, `closed()`, `responded()`.
+
+### Name attributes
+
+The package has no hard-coded name columns. `user_name_attributes` (default `['name']`, for example `['first_name', 'last_name']`) drives the admins migration, the users migration, the factories, the register form and the name table column.
 
 Declare `#[Fillable]` and any name accessor on your own `User` and `Admin` models.
 
-The package reads `$user->name` for display (modal headings, notifications, record titles), so the user model must expose a `name` attribute. With custom `user_name_attributes`, add an accessor that joins them, for example:
+The package reads `$user->name` for display (modal headings, notifications, record titles), so the user model must expose a `name` attribute. With custom `user_name_attributes`, add an accessor that joins them:
 
 ```php
 protected function name(): Attribute
@@ -230,100 +425,61 @@ protected function name(): Attribute
 }
 ```
 
-## Users table
+### Users table
 
 Required columns: `ulid`, the name columns in `user_name_attributes`, `email`, `password`, `email_verified_at`, `last_login_at`, `last_login_ip`, `remember_token`, timestamps and soft deletes.
 
-`add_tenancy_columns_to_users_table` adds whichever of `ulid` (backfilled for existing rows), the name attributes, `last_login_at`, `last_login_ip`, `deleted_at` and the `created_at` index are missing, in their original column order (MySQL and MariaDB only). It is a no-op for columns that already exist. A non-default name attribute is added as a nullable column; dropping the default `name` column is left to your application.
+`add_tenancy_columns_to_users_table` adds whichever of these are missing:
 
-## Cancelling and deleting a tenant
+- `ulid` (backfilled for existing rows),
+- the name attributes,
+- `last_login_at` and `last_login_ip`,
+- `deleted_at`,
+- the `created_at` index.
 
-The package owns the generic lifecycle; your application owns the cancel screen and the cleanup of its own data.
+Columns are added in their original order on MySQL and MariaDB. Existing columns are left alone. A non-default name attribute is added as a nullable column. Dropping the default `name` column is up to your application.
 
-| Piece | Where |
+## Roles and permissions
+
+### Roles and teams
+
+| Guard | Roles (`enum`) | Team id |
+|---|---|---|
+| `admin` | `AdminRoles`: `super_admin`, `admin`, `support` | `Admin::PERMISSIONS_TEAM_ID` (`0`, never a tenant id, so no placeholder tenant is needed) |
+| `web` | `TenantRoles`: `owner`, `admin`, `view_only` | the tenant id, set per request by `SyncTenantPermissionsContext` |
+
+Permission enums: `AdminPermissions` (impersonate, permissions, admin users, tenants, contact requests, users), `TenantPermissions` (users, tenant) and `InvitationPermissions` (only when `features.invitations` is on). Values are `resource.action`, for example `user.view_any`.
+
+- `super_admin` and the tenant `owner` are locked (`isLocked()`). They carry no permission rows and pass every check through `Gate::before`. Owner-only areas, such as the tenant profile page, check ownership directly. The owner flag is `tenant_user.is_owner`, and `User::isOwner()` reads it.
+- `TenantRoles::assignableOptions()` lists the roles you can assign in forms (everything except owner).
+- The `Gate::before` guards run before the super-user bypass, so they apply to super admins and owners too:
+  - `SelfDeletionGuard`: you can't delete your own account.
+  - `SoleOwnerGuard`: you can't delete a user who is the only owner of a tenant.
+  - `TenantMembershipGuard`: you can't delete a user who belongs to other tenants from the tenant panel.
+  - `TenantForceDeleteGuard`: the tenant panel never force deletes.
+  - `AdminAccountGuard`: admins can't delete, deactivate or re-role themselves or the last active super admin.
+
+### Seeding
+
+`AdminRolePermissionsSeeder` and `TenantRolePermissionsSeeder` always `findOrCreate` every permission row. They apply a role's default permissions only when the role has no permissions yet, which normally means a first install. They never reset a role that already holds a permission, so re-seeding never undoes edits.
+
+| Role | Seeded defaults |
 |---|---|
-| `cancelled_at` and `scheduled_for_deletion_at` columns, `isCancelled()`, `isDueForDeletion()`, `active()` and `dueForDeletion()` scopes | package (`IsTenant`, migration) |
-| `CancelTenant` action: stamps `cancelled_at`, schedules deletion at the end of the day `cancellation.grace_days` later, dispatches `TenantCancelled` | package |
-| `AccountCancelled` mail to every owner (queued, `notifications.cancelled`, `null` disables it) | package |
-| Login blocking: a user whose tenants are all cancelled cannot sign in, cancelled tenants leave the switcher and default tenant, requests to a cancelled tenant go to another active tenant | package (`IsTenantUser`, `EnsureTenantIsNotCancelled`) |
-| `DeleteTenant` action and the `DeleteDueTenants` job, scheduled daily at `cancellation.deletion_time` (switch off with `cancellation.schedule_deletion`) | package |
-| Admin panel **Tenants** list with cancel and reactivate actions, `ReactivateTenant` action. Permissions `tenant.view_any`, `tenant.view`, `tenant.cancel`, `tenant.reactivate` (run `tenancy-foundation:sync-permissions` and grant them to the roles that need them; swap the resource with `AdminPlugin::usingTenantResource()`) | package |
-| Cancel screen, password confirmation, and cleaning up **your own** models (subscriptions, addresses, ...) | application |
+| admin `super_admin` | none (bypass) |
+| admin `admin` | every admin permission except `permissions.manage` |
+| admin `support` | view admins, tenants and users, send password reset, impersonate, view, update and respond to contact requests |
+| tenant `owner` | none (always cleared, bypass) |
+| tenant `admin` | every tenant permission (including invitation ones when enabled) |
+| tenant `view_only` | `viewOnlyPermissions()`: `user.view_any`, `user.view` |
 
-### The four lifecycle events
-
-Every step of a tenant's life is an event. Each side that owns data has **one general listener per event** with a protected `actions()` list; every concern is its own action class with `handle(Model $tenant)`. To add behaviour, add a class and list it in `actions()`. Do not add a second listener, a config list or a closure.
-
-| Event | Dispatched by | Package listener (its own data) | Application listener (stub) |
-|---|---|---|---|
-| `Events\Tenant\TenantRegistered` (tenant, owner) | `RegisterTenantOwner`, `CreateTenant` flows, after commit | `SendWelcomeNotification` (`notifications.welcome`) | `RegisteredTenant` |
-| `Events\Tenant\TenantCancelled` (tenant) | `CancelTenant` | `CancelledTenant` runs `RevokePendingInvitations` (with `features.invitations`); `SendCancellationNotification` | `CancelledTenant` |
-| `Events\Tenant\TenantReactivated` (tenant) | `ReactivateTenant`, after commit | `SendReactivationNotification` (`notifications.reactivated`) | `ReactivatedTenant` |
-| `Events\Tenant\TenantDeleting` (tenant) | `DeleteTenant`, inside its transaction before anything is removed | `DeletedTenant` runs `DeleteTenantInvitations` (with `features.invitations`) | `DeletedTenant` |
-
-`DeleteTenant` itself always removes, last and in this order, the members (`DeleteTenantMembers`: memberships, plus users who belong to no other tenant, which are force deleted), the tenant's role and permission rows (`DeleteTenantPermissionData`) and the tenant. These core steps are called by the action after it dispatches `TenantDeleting`, so their order never depends on listener registration. Listeners run while the tenant and its members still exist; if one throws, nothing is deleted and the tenant is retried on the next run.
-
-The package registers its own listeners with `Event::listen` (packages are not scanned). The application's listeners live in `app/Listeners/Tenant` and are discovered by Laravel. Publish the starting points:
-
-```bash
-php artisan vendor:publish --tag=tenancy-foundation-stubs
-```
-
-This publishes `RegisteredTenant`, `CancelledTenant`, `ReactivatedTenant`, `DeletedTenant` and `CreatedTenantUser` (the plain create user flow). Each has an empty `actions()`; list your own action classes there:
-
-```php
-// app/Listeners/Tenant/DeletedTenant.php
-protected function actions(): array
-{
-    return [
-        DeleteSubscriptionData::class,
-        DeleteTenantAddresses::class,
-    ];
-}
-```
-
-Reactivating a tenant clears `cancelled_at` and `scheduled_for_deletion_at` only. The invitations that cancelling revoked are **not restored** (`RevokePendingInvitations` deletes them, so there is nothing to bring back); owners send fresh invitations after reactivating.
-
-Set the grace period with `TENANT_CANCELLATION_GRACE_DAYS` (default 30). The scheduler (`schedule:run`) and a queue worker must be running in production.
-
-## Changing role permissions
-
-`Actions\Roles\SyncRolePermissions` replaces the permissions of a role with exactly the list you give it. It is the write path for a permission matrix page; the seeders only set the defaults.
-
-```php
-use Slakbal\TenancyFoundation\Actions\Roles\SyncRolePermissions;
-
-app(SyncRolePermissions::class)->handle($role, [
-    TenantPermissions::USER_VIEW_ANY,
-    TenantPermissions::USER_VIEW,
-    'invitation.create',
-], actor: $admin);
-```
-
-- Permissions are enum cases or names. Duplicates are ignored and a name that does not exist for the role's guard throws `Exceptions\InvalidRolePermissions`; nothing is written.
-- The admin `super_admin` and the tenant `owner` roles are immutable (they carry no permission rows and bypass checks): the action throws `InvalidRolePermissions` for them.
-- Roles are global, so there is no team handling. Pass the role model from `tenancy-foundation.models.role`; subclasses work.
-- The write runs in one transaction, the permission cache is cleared after it (holders gain or lose the ability immediately), then `Events\Admin\RolePermissionsChanged` is dispatched. If nothing changed, nothing happens: no event, no audit row.
-- The listener `Listeners\Admin\RecordRolePermissionsChange` writes a row to `role_permission_changes` (`role_id`, `role_name`, `guard_name`, `added` and `removed` as JSON, the nullable `actor` morph, `created_at`) through the model in `tenancy-foundation.models.role_permission_change`. The actor is `null` for console runs. Re-run `php artisan migrate` after upgrading.
-
-### The role permissions page
-
-The admin panel has a **Security > Role permissions** page (`Filament\Admin\Pages\ManageRolePermissions`, registered by `AdminPlugin`; swap it with `AdminPlugin::usingRolePermissionsPage()`). It edits which role holds which permission, through `SyncRolePermissions`.
-
-- **Who can use it:** admins who hold `permissions.manage` (`AdminPermissions::PERMISSIONS_MANAGE`). Super admins pass through `Gate::before`; the seeders grant the permission to nobody else, so give it to another role deliberately. Everyone else gets a 403 and no navigation item.
-- **Layout:** one tab per guard (Admin team, Tenant users). Each tab has one collapsible section per resource (collapsed by default), with a row per permission (View list, Edit, ...) and a column per role, highest authority first. Every cell is a checkbox, and each role column has a one-click Select all / Select none per section. The `super_admin` and tenant `owner` columns are locked: they show full access and cannot be changed. Tabs load lazily: only the open tab's matrix is read on first render, the other guard loads the first time its tab is opened, and edits survive switching tabs.
-- **Saving:** the Save changes button (disabled until something changed) opens a confirmation that lists, per role, what it gains and loses, and warns that **the change applies to every tenant** straight away. Reset discards unsaved edits. Each changed role is synced on its own and audited in `role_permission_changes` with the signed-in admin as actor.
-- **Unknown permissions:** rows in the database that no enum defines (for example added by your app) are listed read-only and kept untouched when a role is saved.
-- **Missing permissions:** enum permissions that have no database row (a new release, or the invitations feature switched on) are listed in a notice. The page never creates rows: run `php artisan tenancy-foundation:sync-permissions`, then grant the new permissions here. With `features.invitations` off, the invitation permissions are not offered.
-- **App permissions:** tenant permissions from your own enums are normal, editable rows once registered (see [App permissions](#app-permissions)).
-- **Extending:** subclass the page and override the protected static hooks `panels()`, `matrixLoader()` and `matrixSchema()`.
+The enums are the permission registry. After an upgrade, or after you add permissions to your own enums, run `php artisan tenancy-foundation:sync-permissions` (see [Commands](#commands)). It never grants anything, so assign new permissions to roles yourself, or on the Role permissions page.
 
 ### App permissions
 
-An app adds its own tenant permissions by registering an enum with the tenant seeder. They then show up as editable rows on the Role permissions page and are created by `tenancy-foundation:sync-permissions`.
+An app adds its own tenant permissions by registering an enum with the tenant seeder:
 
-1. Create a backed string enum whose values are `resource.action` names (for example `invoice.approve`). Labels fall back to a headline of the group and action (`Invoice`, `Approve`).
-2. Subclass the package seeder and extend the `permissionEnums()` hook (keep `parent::permissionEnums()`, which carries the package enums and the invitations feature flag):
+1. Create a backed string enum whose values are `resource.action` names (for example `invoice.approve`). Labels fall back to a headline of the group and the action (`Invoice`, `Approve`).
+2. Subclass the package seeder. Keep `parent::permissionEnums()`, because it carries the package enums and the invitations feature flag. You can also override `viewOnlyPermissions()` to change the view-only defaults.
 
 ```php
 use Slakbal\TenancyFoundation\Database\Seeders\TenantRolePermissionsSeeder;
@@ -337,7 +493,7 @@ class AppTenantRolePermissionsSeeder extends TenantRolePermissionsSeeder
 }
 ```
 
-3. Point the config at your subclass in `config/tenancy-foundation.php`:
+3. Point the config at the subclass:
 
 ```php
 'seeders' => [
@@ -345,40 +501,294 @@ class AppTenantRolePermissionsSeeder extends TenantRolePermissionsSeeder
 ],
 ```
 
-4. Run `php artisan tenancy-foundation:sync-permissions` to create the rows (it never changes role assignments), then grant them to roles on the Role permissions page.
+4. Run `php artisan tenancy-foundation:sync-permissions`, then grant the new permissions on the Role permissions page.
 
-The configured class must be the package seeder or a subclass of it; anything else throws `Exceptions\InvalidPermissionSeeder`. Database permissions that no registered enum defines stay read-only under "Unknown permissions" and are reported as orphans by the sync command. Admin-side app permissions are not supported yet: `AdminPermissions` has no hook.
+The Role permissions page and the sync command read the tenant enums through `Support\Permissions\TenantPermissionEnums`, which resolves this config key. A class that isn't the package seeder or a subclass of it throws `Exceptions\InvalidPermissionSeeder`. Admin-side app permissions aren't supported, because `AdminPermissions` has no hook.
 
-## Removing, leaving and restoring tenant members
+### Changing role permissions in code
 
-`Actions\Tenant\RemoveTenantMember` is the one action behind the tenant panel "remove from tenant", "delete user" and "leave tenant" row actions:
+`Actions\Roles\SyncRolePermissions` replaces a role's permissions with exactly the list you pass:
 
-- A user who belongs to other tenants is detached from this one, loses this tenant's roles and keeps a default tenant.
-- A user whose **only** tenant this is gets their roles dropped and is **soft deleted** (the membership row stays, so restoring them brings them back). The row action is labelled "Delete user" and the confirmation says the account is deleted.
-- Owners are never removed (remove the ownership first), and nobody can force delete users from the tenant panel (`Tenant\UserPolicy::forceDelete` is `false` and `TenantForceDeleteGuard` blocks owners too).
-- It dispatches `Events\Tenant\TenantMemberRemoved($tenant, $user, $actor, $accountDeleted)` after commit. `SendMemberRemovedNotification` mails the removed user with `notifications.member_removed` (queued, `null` disables it) unless they left on their own.
+```php
+app(SyncRolePermissions::class)->handle($role, [
+    TenantPermissions::USER_VIEW_ANY,
+    'invitation.create',
+], actor: $admin);
+```
 
-`Actions\Tenant\RestoreTenantMember` restores a soft deleted user, makes them an active member again and gives them a role when they have none. A removed user who still has an account is simply invited again (`CreateInvitation` / `AcceptInvitation`); a soft deleted account cannot be invited and has to be restored instead.
+- Permissions can be enum cases or names. Duplicates are ignored.
+- A name that doesn't exist for the role's guard throws `Exceptions\InvalidRolePermissions`, and nothing is written. The same exception is thrown for the locked roles (`super_admin`, `owner`).
+- The write runs in one transaction. The permission cache is cleared afterwards, then `Events\Admin\RolePermissionsChanged` is dispatched. If nothing changed, there is no event and no audit row.
+- `RecordRolePermissionsChange` writes a `role_permission_changes` row: `role_id`, `role_name`, `guard_name`, `added`, `removed`, the nullable `actor` morph and `created_at`. The actor is `null` for console runs.
 
-Tenant `UserPolicy` rules (owners bypass policies through the owner `Gate::before`, the actions repeat the guards that matter): nobody but an owner can update, delete, remove or re-role an owner, an admin cannot remove or re-role themselves, view only members have no write ability, and any non owner may `leave` as themselves.
+### The Role permissions page
 
-The tenant users resource has an infolist and view page (`Schemas\UserInfolist`, built on the shared `Components\Resources\Users\UserInfolist` with the protected hooks `mainComponents()`, `sideComponents()`, `detailsFields()` and `statusEntries()`), one row action group (view, edit, change role, activate, deactivate, make or remove owner, restore, remove or delete, leave), an owner icon column, joined and last login columns, and an owner filter. Resend an invitation from the invitations list (`Actions\Invitation\ResendInvitation`).
+**Security > Role permissions** in the admin panel (`ManageRolePermissions`, swap it with `usingRolePermissionsPage()`). It edits which role holds which permission, through `ApplyPermissionMatrix` and `SyncRolePermissions`.
 
-## Troubleshooting
+- **Access:** admins with `permissions.manage`. Super admins always pass. Everyone else gets a 403 and no navigation item.
+- **Layout:** one lazily loaded tab per guard (Admin team, Tenant users). Each tab has a collapsible section per resource, a row per permission and a column per role. There's a select all / none toggle per role and section. The `super_admin` and `owner` columns are locked.
+- **Saving:** Save changes opens a confirmation that lists what each role gains and loses, and warns that the change applies to every tenant immediately. Reset discards unsaved edits. Every save is audited with the signed-in admin as actor.
+- **Unknown permissions:** database rows with no enum case are shown read-only and left untouched.
+- **Missing permissions:** enum cases with no database row are listed in a notice. Run the sync command to create them, because the page never creates rows.
+- **Extending:** subclass the page and override the protected static `panels()`, `matrixLoader()` and `matrixSchema()`.
 
-| Symptom | Cause |
+### Policies
+
+`PolicyResolver` resolves the policy for a model per panel:
+
+1. `App\Policies\{Admin|Tenant}\{Model}Policy`, if that class exists.
+2. Otherwise `Slakbal\TenancyFoundation\Policies\{Admin|Tenant}\{Model}Policy`.
+
+So to override a package policy, declare the app class (usually extending the package one). The base class is `Policies\AuthorisationPolicy`.
+
+| Panel | Package policies |
 |---|---|
-| Tenant URL is `https://tenant1./` | `APP_DOMAIN` is not set |
-| Login succeeds but you are asked to log in again on the tenant | `SESSION_DOMAIN` is not `.your-domain`, or old cookies; change `SESSION_COOKIE` |
-| Verification and welcome emails never arrive | Queue worker is not running |
-| `Target class ...Seeders\... does not exist` | Run `composer update slakbal/tenancy-foundation` so the autoload map refreshes |
-| Spatie team errors on roles | `permission.teams` and `team_foreign_key = tenant_id` were not set before migrating |
+| Admin | `AdminPolicy`, `ContactRequestPolicy`, `TenantPolicy`, `UserPolicy` |
+| Tenant | `InvitationPolicy`, `TenantPolicy`, `UserPolicy` |
+
+Rules in the tenant `UserPolicy`:
+
+- Nobody but an owner can update, delete, remove or re-role an owner.
+- You can't remove or re-role yourself.
+- View-only members have no write abilities.
+- Any non-owner may `leave` as themselves.
+- `forceDelete` is always `false`.
+
+## Registration
+
+The tenant panel exposes `/register` (change it with Filament's `registrationRouteSlug()`). It is a two-step wizard: tenant name and subdomain, then the owner account (name attributes, email, password).
+
+- `RegisterTenantOwner` creates the user and calls `CreateTenant`, which creates the tenant, the owner membership (default tenant if it's the user's first) and the owner role, all in one transaction. `TenantRegistered` is dispatched after commit.
+- Filament sends the verification email. Once the email is verified, `RegistrationResponse` redirects to the tenant domain. The base `User` implements `MustVerifyEmail`.
+- `RegisterTenant` reuses `CreateTenant`. It is only available to a signed-in user who has no tenant (`canView()`).
+- **Override the forms:** extend `RegisterUser` / `RegisterTenant` and override `getTenantFormComponents()` and/or `getUserFormComponents()`. Extra attributes must be fillable. The width is `$maxWidth`. Register your pages with `usingRegisterUserPage()` / `usingRegisterTenantPage()`.
+- **Reserved subdomains:** `reserved_subdomains`.
+- **Business logic:** bind your own subclass of `RegisterTenantOwner` or `CreateTenant` in the container.
+
+Registration always creates a tenant together with its owner. Tenant users never register themselves, and there is no open signup flag. Everyone else joins an existing tenant through an invitation, the tenant panel "create user" form, or the admin panel. If a product needs open signup, add it in the application.
+
+## Invitations
+
+Invitations are on by default and gated by `features.invitations`.
+
+- **Tenant panel resource** (`InvitationResource`): list, an "Invite user" modal (email plus an assignable role), resend and revoke. Viewing the list needs `invitation.view_any` and `invitation.create`.
+- **Admin panel:** an "Invite user" header action on a tenant's Users tab (needs `user.create`). It creates the invitation with no inviter, and the list shows "Support team" as the inviter.
+- **`CreateInvitation`** refuses the owner role, current members and emails whose account is soft deleted (restore the account instead). It also asks `Tenant::canBeInvited($email, $role)` (hook, default `true`). It dispatches `InvitationIssued`, which sends `notifications.invitation_created`.
+- **`ResendInvitation`** gives an unaccepted or expired invitation a new token and expiry, then dispatches `InvitationIssued` again.
+- **Accepting:** the accept page is at `/invitations/accept/{invitation}` (signed route `filament.app.invitations.accept`, from `AcceptInvitation::routeName()`).
+  - A new person sets a name and password and is signed in.
+  - An existing account must sign in as that account first. A guest is redirected to login and then back.
+  - `Actions\Invitation\AcceptInvitation` re-checks the invitation under a row lock and throws `Exceptions\InvalidInvitation` when it fails. It dispatches `InvitationAccepted` after commit.
+- **Cleanup:** deleting a role cancels its pending invitations (`RoleObserver` → `ReleaseRoleInvitations`). Cancelling a tenant deletes its pending invitations. Deleting a tenant deletes all of its invitations. Expired invitations are pruned.
+
+## Tenant members
+
+- **Create user** (tenant panel, `user.create`): `CreateTenantUser` creates the user with an unusable random password and an unverified email, attaches them as an active member, assigns roles and dispatches `TenantUserCreated` inside the transaction.
+  - The package sends nothing for this flow. Users who should sign in go through invitations instead.
+  - Add product-specific behaviour in the `CreatedTenantUser` stub listener.
+  - Override `IsTenantUser::canSignIn()` for user types that must never sign in. Such users can still request a password reset, so blocking them is the app's job.
+- **Edit** (`UpdateTenantUser`): name and tenant roles. Email is read-only. Users in other tenants keep their name.
+- **Activate / deactivate** (`ChangeTenantMemberStatus`, `user.update`): sets `tenant_user.status`. An inactive member can't open that tenant but keeps their other tenants. You can't change your own status or an owner's.
+- **Owners:** `AddTenantOwner` / `RemoveTenantOwner`. The last owner can't be removed.
+- **Remove / delete / leave** (`RemoveTenantMember`):
+  - A user who belongs to other tenants is detached and loses this tenant's roles.
+  - A user whose only tenant this is gets their roles dropped and is soft deleted. The membership stays, so you can restore them.
+  - Owners are never removed.
+  - `TenantMemberRemoved($tenant, $user, $actor, $accountDeleted)` is dispatched after commit. `notifications.member_removed` is mailed unless the user left on their own.
+- **Restore** (`RestoreTenantMember`): restores a soft-deleted user as an active member and gives them a role if they have none.
+- **Admin panel:** the tenant Users tab and the user Tenants tab offer manage roles (`SyncTenantRoles`), make or remove owner, remove from tenant, send password reset, impersonate and invite.
+
+## Cancelling and deleting a tenant
+
+The package owns the generic lifecycle. Your app owns the cancel screen and the cleanup of its own data.
+
+| Piece | Where |
+|---|---|
+| `cancelled_at` and `scheduled_for_deletion_at`, `isCancelled()`, `isDueForDeletion()`, `active()` and `dueForDeletion()` scopes | package (`IsTenant`, migration) |
+| `CancelTenant`: stamps `cancelled_at`, schedules deletion for the end of the day `cancellation.grace_days` later, dispatches `TenantCancelled` after commit | package |
+| `AccountCancelled` mail to every owner (`notifications.cancelled`) | package |
+| Login blocking: a user whose tenants are all cancelled can't sign in. Cancelled tenants leave the switcher and the default tenant. Requests to a cancelled tenant redirect to another active tenant | package (`IsTenantUser`, `EnsureTenantIsNotCancelled`, `EnsureUserHasTenant`) |
+| `ReactivateTenant`: clears both timestamps, dispatches `TenantReactivated` after commit | package |
+| `DeleteTenant` and the daily `DeleteDueTenants` job | package |
+| Admin **Tenants** resource with cancel and reactivate actions (`tenant.view_any`, `tenant.view`, `tenant.update`, `tenant.cancel`, `tenant.reactivate`) | package |
+| Cancel screen, password confirmation, cleanup of **your own** models | application |
+
+`DeleteTenant` only accepts a tenant that is due for deletion. Inside one transaction it:
+
+1. dispatches `TenantDeleting`,
+2. removes the members (`DeleteTenantMembers`: memberships, plus users who belong to no other tenant, which are force deleted),
+3. removes the tenant's role and permission rows (`DeleteTenantPermissionData`, which never touches admin rows),
+4. deletes the tenant.
+
+Listeners run while the tenant and its members still exist. If one throws, nothing is deleted, and `DeleteDueTenants` retries the tenant on the next run (each tenant is wrapped in `rescue()`).
+
+Reactivating does **not** restore the invitations that cancelling deleted. Owners send fresh invitations.
+
+## Events and extension points
+
+### Events
+
+| Event | Dispatched by | Package listener |
+|---|---|---|
+| `Tenant\TenantRegistered` (tenant, owner) | `CreateTenant`, after commit | `SendWelcomeNotification` |
+| `Tenant\TenantCancelled` (tenant) | `CancelTenant`, after commit | `CancelledTenant` (runs `RevokePendingInvitations`), `SendCancellationNotification` |
+| `Tenant\TenantReactivated` (tenant) | `ReactivateTenant`, after commit | `SendReactivationNotification` |
+| `Tenant\TenantDeleting` (tenant) | `DeleteTenant`, inside its transaction, before anything is removed | `DeletedTenant` (runs `DeleteTenantInvitations`) |
+| `Tenant\TenantUserCreated` (tenant, user, actor, data) | `CreateTenantUser`, inside its transaction | none |
+| `Tenant\TenantMemberRemoved` (tenant, user, actor, accountDeleted) | `RemoveTenantMember`, after commit | `SendMemberRemovedNotification` |
+| `Invitation\InvitationIssued` (invitation) | `CreateInvitation`, `ResendInvitation` | `SendInvitationNotification` (only with invitations on) |
+| `Invitation\InvitationAccepted` (invitation, user) | `AcceptInvitation`, after commit | none |
+| `Admin\AdminUserCreated` (admin) | `CreateAdminUser`, after commit | `SendAdminInvitation` |
+| `Admin\RolePermissionsChanged` (roleId, roleName, guardName, added, removed, actor) | `SyncRolePermissions` | `RecordRolePermissionsChange` |
+| `Contact\ContactRequestReceived` (contactRequest) | `CreateContactRequest` | `NotifyAdminsOfContactRequest` (queued, after commit) |
+| `Contact\ContactRequestAnswered` (contactRequest) | `RespondToContactRequest` | `SendContactResponseNotification` |
+
+All event classes live under `Slakbal\TenancyFoundation\Events\…`. The package also listens to Laravel's `PasswordReset` (`ActivateAdminOnPasswordReset`) and `Login` (`UpdateLastLogin`).
+
+The package registers its listeners with `Event::listen`, because Laravel doesn't scan packages. Laravel discovers your own listeners in `app/Listeners`.
+
+### App listeners with `actions()` lists
+
+Each side that owns data has **one general listener per event**, with a protected `actions()` list. Each concern is its own action class, called with `handle(Model $tenant)`. To add behaviour, add a class and list it in `actions()`. Don't add a second listener, a config list or a closure.
+
+```bash
+php artisan vendor:publish --tag=tenancy-foundation-stubs
+```
+
+| Stub (`app/Listeners/Tenant`) | Event | Each action receives |
+|---|---|---|
+| `RegisteredTenant` | `TenantRegistered` | tenant |
+| `CancelledTenant` | `TenantCancelled` | tenant |
+| `ReactivatedTenant` | `TenantReactivated` | tenant |
+| `DeletedTenant` | `TenantDeleting` | tenant (inside the deletion transaction) |
+| `CreatedTenantUser` | `TenantUserCreated` | tenant, user, submitted form data |
+
+```php
+// app/Listeners/Tenant/DeletedTenant.php
+protected function actions(): array
+{
+    return [
+        DeleteSubscriptionData::class,
+        DeleteTenantAddresses::class,
+    ];
+}
+```
+
+### Hooks
+
+| Hook | Where | Use |
+|---|---|---|
+| `canBeInvited(string $email, Model $role): bool` | `IsTenant` (your `Tenant`) | Refuse invitations, for example by email domain |
+| `canSignIn(): bool` | `HasTenantAccess` (your `User`) | Keep user types out of the panel |
+| `getCurrentTenantLabel()` | `IsTenant` | Label under the tenant in the switcher (role names by default) |
+| `currentTenantLabelStyle()` | `TenantPlugin` | Colour of that label |
+| `getTenantFormComponents()`, `getUserFormComponents()` | `RegisterUser`, `RegisterTenant` | Registration fields |
+| `fields()` | `PublicContactForm` | Public contact form fields (swap via `contact_requests.public_form`) |
+| `permissionEnums()`, `viewOnlyPermissions()` | `TenantRolePermissionsSeeder` | App permissions, view-only defaults |
+| `panels()`, `matrixLoader()`, `matrixSchema()` | `ManageRolePermissions` | Role permissions page |
+| `mainComponents()`, `sideComponents()`, `detailsFields()`, `statusEntries()` | user forms and infolists (both panels), `TenantForm`, `TenantInfolist` | Add fields and sections |
+| `rowActions()`, `bulkActions()`, `filters()`, `columns()` | shared `Components\Resources\Users\UsersTable` | Table customisation |
+| Action classes | `src/Actions/*` | Bind a subclass in the container |
+| Plugin `using*()` methods | `AdminPlugin`, `TenantPlugin` | Swap resources and pages |
+| `notifications.*` | config | Swap or disable a notification |
+| Translations | `lang/en.json` (JSON sentence keys) | Override in the app's `lang/en.json` |
+
+## Contact requests
+
+- **Public page:** `GET /{contact_requests.public_path}` on `APP_DOMAIN` (route `public.contact`, view `tenancy-foundation::contact`, Livewire `public-contact-form`). It has a Turnstile captcha and stores requests with source `public`.
+- **Tenant page:** "Contact us" (`ContactUs`, slug `contact`, swap with `usingContactPage()`). It stores requests with source `tenant`.
+- **Admin:** the `ContactRequestResource` lists requests and has a stats widget. Admins can respond (`RespondToContactRequest` mails `notifications.contact_response`) and change status. Permissions are `contact_request.*`.
+- New requests notify admins who can view contact requests, plus super admins, through the bell (`notify_admins`, `notifications.contact_received`).
+- Completed and dismissed requests are pruned after `prune_after_days`.
+
+## Admin users
+
+- `AdminUserResource` (slug `admins`, `admin_user.*` permissions) lists, views, creates and edits admins. It has role, status and trashed filters, plus delete, restore and force delete (force delete is super admin only).
+- Creating an admin (`CreateAdminUser`) stores a random password with status `pending`, dispatches `AdminUserCreated` and mails `AdminInvited` with a set password link. Using the reset link activates the admin and marks the email as verified (`ActivateAdminOnPasswordReset`).
+- `AdminStatus`: `pending`, `active`, `inactive`. Pending and active admins pass `canAccessPanel()`.
+- Row and header actions: activate, deactivate, change role (`ChangeAdminUserRole`) and send password reset link. `AdminAccountGuard` protects your own account and the last active super admin.
+
+## Impersonation
+
+`Components\Tables\Actions\ImpersonateUserAction` (built on `stechstudio/filament-impersonate`) is on the admin users table, the user view and edit pages, and a tenant's Users tab.
+
+- It needs `impersonate.user` (`Admin::canImpersonate()`).
+- It signs in on the `web` guard and redirects to the user's default tenant dashboard on that tenant's subdomain. If the user has no tenant, it stops with a notification.
+- "Back" returns to the referring admin page.
+- It relies on the shared session cookie (`SESSION_DOMAIN`).
+
+## Scheduled jobs
+
+These are registered through the scheduler (`callAfterResolving(Schedule::class)`), each with `onOneServer()->withoutOverlapping()`:
+
+| Schedule | Job | Switch |
+|---|---|---|
+| daily at `cancellation.deletion_time` | `Jobs\DeleteDueTenants` (queued) | `cancellation.schedule_deletion` |
+| daily | `model:prune` (the app's prunable models) | `schedule_pruning` |
+| daily | `model:prune --model=…` (`ContactRequest`, and `Invitation` when invitations are on) | `schedule_pruning` |
+
+## Commands
+
+| Command | Does |
+|---|---|
+| `tenancy-foundation:install` | Publishes the config, warns if spatie teams are off, prints the setup steps |
+| `tenancy-foundation:sync-permissions` | Creates the missing permission rows for both guards: admin from `AdminPermissions`, tenant from the configured `seeders.tenant_role_permissions`. Reports orphaned rows (no enum case) without deleting them and clears the permission cache. Idempotent. Never changes role assignments |
 
 ## Testing
+
+### The package
 
 ```bash
 composer install
 vendor/bin/pest
 ```
 
-Tests run on Orchestra Testbench with sqlite in memory and two test panels that register the plugins.
+Tests run on Orchestra Testbench with SQLite in memory, `tenancy-foundation.domain = tenant.test`, spatie teams on, and two test panels (`tests/Support`) that register the plugins. `stubs/testing` holds the users and permission migrations for Testbench.
+
+### An application built on it
+
+The package's `tests/` folder isn't autoloaded in apps. The app template keeps its own `Tests\Concerns\InteractsWithTenancy`. The essentials:
+
+```php
+Filament::setCurrentPanel(Filament::getPanel(FilamentPanel::TENANT->getPanelId()));
+
+$tenant = Tenant::factory()->create();
+$user = User::factory()->create();
+$tenant->members()->attach($user, ['is_owner' => false, 'is_default_tenant' => true]);
+
+setPermissionsTeamId($tenant->getKey());
+$user->givePermissionTo(TenantPermissions::USER_VIEW_ANY);
+
+$this->actingAs($user, AuthGuard::TENANT->value);
+Filament::setTenant($tenant);
+```
+
+- Admins: call `setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID)` before assigning roles, and use `actingAs($admin, AuthGuard::ADMIN->value)`.
+- Permission rows don't exist until you seed or call `Permission::findOrCreate($name, $guard)`.
+- Tenant URLs are `http://{subdomain}.{tenancy-foundation.domain}/…`.
+- Use `QUEUE_CONNECTION=sync` and `MAIL_MAILER=array`, or `Notification::fake()` / `Event::fake()`, to assert notifications and events.
+
+## Troubleshooting
+
+| Symptom | Cause |
+|---|---|
+| Tenant URL is `https://tenant1./` | `APP_DOMAIN` isn't set |
+| Login succeeds but the tenant asks you to log in again | `SESSION_DOMAIN` isn't `.your-domain`, or old cookies are present (change `SESSION_COOKIE`) |
+| Verification, welcome or invitation emails never arrive | The queue worker isn't running |
+| `/contact` on the main domain is 404 | `APP_DOMAIN` is empty or `contact_requests.public_path` is `null` |
+| New permissions are missing on the Role permissions page | Run `tenancy-foundation:sync-permissions` |
+| `Target class ...Seeders\... does not exist` | Run `composer update slakbal/tenancy-foundation` to refresh the autoload map |
+| Spatie team errors on roles | `permission.teams` and `team_foreign_key = tenant_id` weren't set before migrating |
+| Tenants are never deleted | The scheduler or queue worker isn't running, or `cancellation.schedule_deletion` is `false` |
+
+## Upgrading
+
+Read [CHANGELOG.md](CHANGELOG.md) before you update. Entries marked **Breaking** need action, such as moved namespaces, fresh migrations or config keys to remove. After an upgrade:
+
+```bash
+composer update slakbal/tenancy-foundation
+php artisan migrate
+php artisan tenancy-foundation:sync-permissions
+```
+
+Then grant any new permissions on the Role permissions page.

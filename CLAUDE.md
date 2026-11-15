@@ -1,3 +1,7 @@
+# Project rules
+
+- Keep README.md as the setup and usage guide: update it in the same change whenever config, install steps, env vars, commands, events or extension points change.
+
 <!-- sloppy:begin -->
 
 # Sloppy: code rules for this repository
