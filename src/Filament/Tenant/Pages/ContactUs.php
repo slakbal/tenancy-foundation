@@ -92,12 +92,12 @@ class ContactUs extends Page
             'message' => $this->form->getState()['message'],
         ], ContactSource::TENANT);
 
-        $this->form->fill();
-
         Notification::make()
             ->title(__('Thank you! Your message has been sent.'))
             ->success()
             ->send();
+
+        $this->redirect(Filament::getUrl(), navigate: true);
     }
 
     protected function getSubmitAction(): Action

@@ -11,6 +11,7 @@ class VerifiedColumn
         return IconColumn::make($name)
             ->label(__('Verified'))
             ->boolean()
+            ->alignCenter()
             ->sortable();
     }
 }

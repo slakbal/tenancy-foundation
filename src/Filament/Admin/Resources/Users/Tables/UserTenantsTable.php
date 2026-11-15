@@ -57,6 +57,7 @@ class UserTenantsTable
                 ->label(__('Owner'))
                 ->state(fn (Model $record): bool => (bool) $record->pivot->is_owner)
                 ->boolean()
+                ->alignCenter()
                 ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('tenant_user.is_owner', $direction)),
             TextColumn::make('joined_at')
                 ->label(__('Joined'))

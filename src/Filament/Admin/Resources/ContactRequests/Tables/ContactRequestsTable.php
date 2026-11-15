@@ -54,8 +54,8 @@ class ContactRequestsTable
                 IconColumn::make('responded_at')
                     ->label(__('Responded'))
                     ->boolean()
-                    ->state(fn ($record): bool => $record->isResponded())
-                    ->toggleable(),
+                    ->alignCenter()
+                    ->state(fn ($record): bool => $record->isResponded()),
                 TextColumn::make('responded_by')
                     ->label(__('Responded by'))
                     ->placeholder('-')
