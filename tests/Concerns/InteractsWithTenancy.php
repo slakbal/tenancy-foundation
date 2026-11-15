@@ -4,6 +4,7 @@ namespace Slakbal\TenancyFoundation\Tests\Concerns;
 
 use Filament\Facades\Filament;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
+use Slakbal\TenancyFoundation\Enums\TenantResolution;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
 
@@ -30,8 +31,6 @@ trait InteractsWithTenancy
 
     protected function tenantUrl(Tenant $tenant, string $path = '/'): string
     {
-        $domain = config('tenancy-foundation.domain');
-
-        return "http://{$tenant->subdomain}.{$domain}/".ltrim($path, '/');
+        return 'http://'.TenantResolution::current()->hostFor($tenant).'/'.ltrim($path, '/');
     }
 }

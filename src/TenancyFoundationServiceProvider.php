@@ -15,6 +15,7 @@ use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Console\InstallCommand;
 use Slakbal\TenancyFoundation\Console\SyncPermissionsCommand;
+use Slakbal\TenancyFoundation\Enums\TenantResolution;
 use Slakbal\TenancyFoundation\Events\Admin\AdminUserCreated;
 use Slakbal\TenancyFoundation\Events\Admin\RolePermissionsChanged;
 use Slakbal\TenancyFoundation\Events\Contact\ContactRequestAnswered;
@@ -58,6 +59,26 @@ class TenancyFoundationServiceProvider extends ServiceProvider
         if (config('tenancy-foundation.register_auth_defaults')) {
             $this->registerAuthDefaults();
         }
+
+    }
+
+    protected function bootResolution(): void
+    {
+        if (TenantResolution::current() !== TenantResolution::DOMAIN) {
+            return;
+        }
+
+        // Tenants on unrelated hosts must never share a session cookie, so the cookie is always host-only.
+        config(['session.domain' => null]);
+
+        // Filament's global tenant pattern would also match the app domain; keep that host central. Runs once every route exists.
+        $this->app->booted(function (): void {
+            foreach (Route::getRoutes()->getRoutes() as $route) {
+                if ($route->getDomain() === '{tenant}') {
+                    $route->where('tenant', TenantResolution::DOMAIN->routePattern());
+                }
+            }
+        });
     }
 
     /**
@@ -90,6 +111,7 @@ class TenancyFoundationServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->bootResolution();
         $this->bootResources();
         $this->bootBindings();
         $this->bootMiddlewarePriority();

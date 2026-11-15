@@ -245,7 +245,8 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 
 | Key | Default | Purpose |
 |---|---|---|
-| `domain` | `env('APP_DOMAIN')` | Root domain without scheme or port. Tenants live at `{subdomain}.domain` |
+| `domain` | `env('APP_DOMAIN')` | Root domain without scheme or port. In `subdomain` mode tenants live at `{subdomain}.domain`; in `domain` mode it is the optional central host |
+| `resolution` | `env('TENANCY_RESOLUTION', 'subdomain')` | `subdomain` or `domain`. See [Domains, hosts and sessions](#domains-hosts-and-sessions) for routing and session side effects |
 | `models.tenant` | `Models\Tenant` | Tenant model |
 | `models.user` | `Models\User` | Tenant panel user, also used by the `users` provider |
 | `models.admin` | `Models\Admin` | Admin panel user, also used by the `admins` provider |
@@ -307,7 +308,8 @@ A block switch gates all of its sub-items.
 |---|---|
 | `APP_URL` | Central URL. Deleted-user redirects and the helpers `appUrl()`, `appDomainScheme()` and `appDomainHost()` use it |
 | `APP_DOMAIN` | `tenancy-foundation.domain` |
-| `SESSION_DOMAIN` | Must be `.your-domain` (see below) |
+| `TENANCY_RESOLUTION` | `tenancy-foundation.resolution`: `subdomain` (default) or `domain` |
+| `SESSION_DOMAIN` | `subdomain` mode: must be `.your-domain`. `domain` mode: ignored, the cookie is host-only (see below) |
 | `SESSION_COOKIE` | Change it once to drop old host-only cookies |
 | `QUEUE_CONNECTION` | Queued notifications |
 | `TENANT_CANCELLATION_GRACE_DAYS` | `cancellation.grace_days` |
@@ -317,16 +319,37 @@ A block switch gates all of its sub-items.
 
 ## Domains, hosts and sessions
 
+`tenancy-foundation.resolution` (`TENANCY_RESOLUTION`) decides how the tenant panel finds the tenant from the request host. Both modes share the same `tenants` table: `subdomain` and `domain` are nullable unique columns and only the one for the active mode is used. `TenantResolution::current()` exposes the mode; `urlFor($tenant)` / `hostFor($tenant)` build tenant URLs (emails, redirects, admin links), so never concatenate hosts yourself.
+
+### `subdomain` (default)
+
 | Host | Serves |
 |---|---|
 | `APP_DOMAIN` | Tenant panel login, `/register`, email verification, password reset, `/admin`, public contact page (`/contact`) |
-| `{subdomain}.APP_DOMAIN` | The tenant panel for that tenant (`TenantPlugin` sets `tenantDomain('{tenant:subdomain}.'.domain)`, slug attribute `subdomain`) |
+| `{subdomain}.APP_DOMAIN` | The tenant panel for that tenant (`tenantDomain('{tenant:subdomain}.'.domain)`, slug attribute `subdomain`) |
 
 - `APP_DOMAIN`: if it's empty, tenant URLs render as `tenant1.` and the public contact route is not registered.
 - `SESSION_DOMAIN`: set it to the domain with a leading dot. Login, registration and verification run on the central domain and tenants on subdomains. Without a wildcard session cookie, users are sent back to the login page. If browsers still hold old host-only cookies, change `SESSION_COOKIE` once.
-- After registration or verification, `RegistrationResponse` redirects to `scheme://{subdomain}.APP_DOMAIN` for the user's default tenant, or to tenant registration if the user has no tenant.
-- After logout, users go to `redirects.logout_route`, or to `/` if that is unset.
+- The tenant forms show the `subdomain` field (suffix `.APP_DOMAIN`, `reserved_subdomains` rejected).
 - Local development: any server that routes wildcard subdomains of the app host to the app works. [Lerd](https://github.com/lerd-env/lerd) does this for `*.project.test` (`lerd link project && lerd secure`). Use the same host in `APP_URL`, `APP_DOMAIN` and `SESSION_DOMAIN` (with a leading dot), for example `https://myapp.test`, `myapp.test` and `.myapp.test`.
+
+### `domain`
+
+| Host | Serves |
+|---|---|
+| `APP_DOMAIN` (optional) | Central host: public contact page. Never resolved as a tenant |
+| `tenants.domain` (e.g. `academy.example.com`) | The tenant panel for that tenant, including its own login (`tenantDomain('{tenant:domain}')`, slug attribute `domain`) |
+
+- Tenants can live on unrelated domains. Every tenant host must point at the app (DNS, TLS certificate, web server/Lerd site alias).
+- Sessions: the package forces `session.domain` to `null`, so the session, CSRF and remember-me cookies are host-only and two tenants never share a session, even under a common parent domain. `SESSION_DOMAIN` is ignored. Users sign in on each tenant host separately. Because all hosts share one session store, the tenant panel middleware `BindSessionToHost` also records the host in the session; a session cookie copied to another host is invalidated there (guest, new CSRF token).
+- Filament matches any host on the tenant routes (`{tenant}` allows dots); the package excludes `APP_DOMAIN` from those routes after boot, so the central host is never taken as a tenant.
+- The tenant forms show the `domain` field: lower-case host name only (no scheme, path or port), unique, not `APP_DOMAIN`.
+
+### Both modes
+
+- After registration or verification, `RegistrationResponse` redirects to the default tenant URL (`urlFor`), or to tenant registration if the user has no tenant.
+- After logout, users go to `redirects.logout_route`, or to `/` if that is unset.
+- Switching modes needs no migration, but every tenant needs a value in the new column. Change `SESSION_COOKIE` once when switching so browsers drop the old cookies.
 
 ## Panels and guards
 
@@ -713,9 +736,9 @@ protected function actions(): array
 `Components\Tables\Actions\ImpersonateUserAction` (built on `stechstudio/filament-impersonate`) is on the admin users table, the user view and edit pages, and a tenant's Users tab.
 
 - It needs `impersonate.user` (`Admin::canImpersonate()`).
-- It signs in on the `web` guard and redirects to the user's default tenant dashboard on that tenant's subdomain. If the user has no tenant, it stops with a notification.
+- It signs in on the `web` guard and redirects to the user's default tenant dashboard on that tenant's host. If the user has no tenant, it stops with a notification.
 - "Back" returns to the referring admin page.
-- It relies on the shared session cookie (`SESSION_DOMAIN`).
+- It relies on the shared session cookie (`SESSION_DOMAIN`), so it only works in `subdomain` mode for now; `domain` mode needs the signed handoff (planned).
 
 ## Scheduled jobs
 

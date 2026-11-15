@@ -7,6 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Slakbal\TenancyFoundation\Enums\TenantResolution;
 
 class WelcomeToTenant extends Notification implements ShouldQueue
 {
@@ -34,6 +35,6 @@ class WelcomeToTenant extends Notification implements ShouldQueue
 
     protected function tenantUrl(): string
     {
-        return appDomainScheme().$this->tenant->subdomain.'.'.config('tenancy-foundation.domain');
+        return TenantResolution::current()->urlFor($this->tenant);
     }
 }

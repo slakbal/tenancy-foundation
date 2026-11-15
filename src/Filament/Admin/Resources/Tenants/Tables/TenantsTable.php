@@ -12,6 +12,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Slakbal\TenancyFoundation\Enums\TenantResolution;
 use Slakbal\TenancyFoundation\Enums\TenantStatus;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Actions\CancelTenantAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Actions\ReactivateTenantAction;
@@ -42,8 +43,8 @@ class TenantsTable
                 ->label(__('Name'))
                 ->searchable()
                 ->sortable(),
-            TextColumn::make('subdomain')
-                ->label(__('Subdomain'))
+            TextColumn::make(TenantResolution::current()->attribute())
+                ->label(TenantResolution::current()->getLabel())
                 ->searchable()
                 ->sortable(),
             TextColumn::make('status')

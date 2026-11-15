@@ -9,6 +9,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
+use Slakbal\TenancyFoundation\Enums\TenantResolution;
 use Slakbal\TenancyFoundation\Filament\Components\Schemas\TenantDetailsSchema;
 
 class TenantInfolist
@@ -60,9 +61,9 @@ class TenantInfolist
         return [
             TextEntry::make('name')
                 ->label(__('Tenant name')),
-            TextEntry::make('subdomain')
-                ->label(__('Subdomain'))
-                ->url(fn (Model $record): string => TenantDetailsSchema::url($record->subdomain), shouldOpenInNewTab: true)
+            TextEntry::make(TenantResolution::current()->attribute())
+                ->label(TenantResolution::current()->getLabel())
+                ->url(fn (Model $record): string => TenantDetailsSchema::url($record), shouldOpenInNewTab: true)
                 ->copyable(),
         ];
     }

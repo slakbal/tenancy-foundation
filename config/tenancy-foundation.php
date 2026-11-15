@@ -26,13 +26,45 @@ return [
     |--------------------------------------------------------------------------
     |
     | The root domain the application is served on, without scheme or port
-    | (e.g. "myapp.test"). Every tenant is served on a subdomain of it
-    | ({subdomain}.myapp.test); the registration form shows it as the
-    | subdomain suffix and the tenant URLs in emails and redirects use it.
+    | (e.g. "myapp.test"). With resolution "subdomain" every tenant is served
+    | on a subdomain of it ({subdomain}.myapp.test); the tenant forms show it
+    | as the subdomain suffix and the tenant URLs in emails and redirects use
+    | it. With resolution "domain" it is only the central host of the public
+    | contact page and may be left empty; a tenant may not use it as its own
+    | domain.
     |
     */
 
     'domain' => env('APP_DOMAIN'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tenant resolution
+    |--------------------------------------------------------------------------
+    |
+    | How the tenant panel finds the tenant from the request host.
+    |
+    | subdomain  (default) The tenant is {tenants.subdomain}.{domain}. Login,
+    |            registration and verification run on the central domain, so
+    |            the session cookie must be shared across subdomains: set
+    |            SESSION_DOMAIN to the domain with a leading dot.
+    | domain     The tenant is the full host stored in tenants.domain (e.g.
+    |            "academy.example.com"), so tenants can live on unrelated
+    |            domains. Every tenant signs in on its own host. Side effects:
+    |            the session cookie is forced host-only (session.domain = null,
+    |            SESSION_DOMAIN is ignored) and BindSessionToHost resets a
+    |            session cookie replayed on another tenant host to a guest
+    |            session, so tenants never share a session;
+    |            the tenant host routes never match `domain` (it stays central);
+    |            the admin forms edit "domain" instead of "subdomain"; each
+    |            tenant host must point at the app (DNS and TLS per host).
+    |
+    | Env: TENANCY_RESOLUTION. Both columns exist on the tenants table (the
+    | unused one stays null), so switching needs no migration, only data.
+    |
+    */
+
+    'resolution' => env('TENANCY_RESOLUTION', 'subdomain'),
 
     /*
     |--------------------------------------------------------------------------
@@ -150,7 +182,7 @@ return [
     |
     | Subdomains a tenant may not register, because they are used by the
     | application itself or would be confusing. Enforced by the validation
-    | of the subdomain field on the tenant registration form.
+    | of the subdomain field on the tenant forms (resolution "subdomain").
     |
     */
 

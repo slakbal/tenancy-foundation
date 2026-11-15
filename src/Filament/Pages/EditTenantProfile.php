@@ -23,7 +23,7 @@ class EditTenantProfile extends BaseEditTenantProfile
         return Action::make('copyUrl')
             ->icon(Heroicon::OutlinedClipboardDocument)
             ->tooltip(__('Copy URL'))
-            ->alpineClickHandler(fn (): string => 'window.navigator.clipboard.writeText('.Js::from(TenantDetailsSchema::url($this->tenant->subdomain)).'); $tooltip('.Js::from(__('Copied')).', { timeout: 1500 })');
+            ->alpineClickHandler(fn (): string => 'window.navigator.clipboard.writeText('.Js::from(TenantDetailsSchema::url($this->tenant)).'); $tooltip('.Js::from(__('Copied')).', { timeout: 1500 })');
     }
 
     public static function canView(Model $tenant): bool
@@ -54,7 +54,7 @@ class EditTenantProfile extends BaseEditTenantProfile
                         ->label(__('Tenant name'))
                         ->required()
                         ->maxLength(50),
-                    TenantDetailsSchema::subdomain(ignoreRecord: true)
+                    TenantDetailsSchema::address(ignoreRecord: true)
                         ->readOnly()
                         ->dehydrated(false)
                         ->suffixAction($this->getCopyUrlAction()),

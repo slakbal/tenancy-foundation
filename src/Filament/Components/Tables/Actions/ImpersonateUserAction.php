@@ -7,6 +7,7 @@ use Filament\Notifications\Notification;
 use Filament\Support\Exceptions\Halt;
 use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Enums\FilamentPanel;
+use Slakbal\TenancyFoundation\Enums\TenantResolution;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use STS\FilamentImpersonate\Actions\Impersonate;
 
@@ -35,7 +36,7 @@ class ImpersonateUserAction
                 $tenant = $record->getDefaultTenant($panel);
 
                 return route("filament.{$panel->getId()}.pages.dashboard", [
-                    'tenant' => $tenant->subdomain,
+                    'tenant' => $tenant->getAttribute(TenantResolution::current()->attribute()),
                 ]);
             })
             ->backTo(fn (): string => request()->header('referer') ?: UserResource::getUrl('index'))

@@ -9,6 +9,7 @@ use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\HtmlString;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
+use Slakbal\TenancyFoundation\Enums\TenantResolution;
 use Slakbal\TenancyFoundation\Filament\Pages\EditProfile;
 use Slakbal\TenancyFoundation\Filament\Pages\EditTenantProfile;
 use Slakbal\TenancyFoundation\Filament\Pages\EmailVerificationPrompt;
@@ -19,6 +20,7 @@ use Slakbal\TenancyFoundation\Filament\Tenant\Pages\AcceptInvitation;
 use Slakbal\TenancyFoundation\Filament\Tenant\Pages\ContactUs;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Invitations\InvitationResource;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
+use Slakbal\TenancyFoundation\Http\Middleware\BindSessionToHost;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureTenantIsNotCancelled;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureUserHasTenant;
 use Slakbal\TenancyFoundation\Http\Middleware\RedirectDeletedUserHome;
@@ -121,8 +123,8 @@ class TenantPlugin implements Plugin
         }
 
         $panel
-            ->tenant(config('tenancy-foundation.models.tenant'), slugAttribute: 'subdomain')
-            ->tenantDomain('{tenant:subdomain}.'.config('tenancy-foundation.domain'))
+            ->tenant(config('tenancy-foundation.models.tenant'), slugAttribute: TenantResolution::current()->attribute())
+            ->tenantDomain(TenantResolution::current()->routeDomain())
             ->tenantRegistration($this->registerTenantPage)
             ->tenantProfile($this->editTenantProfilePage)
             ->tenantMiddleware([SyncTenantPermissionsContext::class, EnsureTenantIsNotCancelled::class], isPersistent: true)
@@ -132,7 +134,7 @@ class TenantPlugin implements Plugin
             ->emailChangeVerification(config('tenancy-foundation.email_change_verification', true))
             ->authPasswordBroker(AuthGuard::TENANT->getPasswordBroker())
             ->emailVerification(EmailVerificationPrompt::class)
-            ->middleware([RedirectDeletedUserHome::class, EnsureUserHasTenant::class], isPersistent: true)
+            ->middleware([BindSessionToHost::class, RedirectDeletedUserHome::class, EnsureUserHasTenant::class], isPersistent: true)
             ->resources([$this->userResource])
             ->pages([$this->contactPage])
             ->renderHook(PanelsRenderHook::HEAD_END, fn (): HtmlString => $this->currentTenantLabelStyle());

@@ -29,6 +29,6 @@ class AccountReactivated extends Notification implements ShouldQueue
             ->subject(__('Your :tenant account has been reactivated', ['tenant' => $this->tenant->getFilamentName()]))
             ->line(__('Your account :tenant has been reactivated.', ['tenant' => $this->tenant->getFilamentName()]))
             ->line(__('Everyone can sign in again and the scheduled deletion has been cancelled.'))
-            ->action(__('Open your tenant'), TenantDetailsSchema::url($this->tenant->subdomain));
+            ->action(__('Open your tenant'), TenantDetailsSchema::url($this->tenant));
     }
 }

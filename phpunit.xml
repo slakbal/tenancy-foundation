@@ -4,5 +4,8 @@
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
+        <testsuite name="DomainMode">
+            <directory>tests/DomainMode</directory>
+        </testsuite>
     </testsuites>
 </phpunit>

@@ -7,11 +7,13 @@ use Slakbal\TenancyFoundation\Enums\Authorisation\TenantPermissions;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\Tenant;
 use Slakbal\TenancyFoundation\Models\User;
+use Slakbal\TenancyFoundation\Tests\DomainModeTestCase;
 use Slakbal\TenancyFoundation\Tests\TestCase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 pest()->extend(TestCase::class)->in('Feature');
+pest()->extend(DomainModeTestCase::class)->in('DomainMode');
 
 function adminWithAccess(AdminRoles|AdminPermissions ...$grants): Admin
 {

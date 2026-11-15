@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rules\Password;
 use Slakbal\TenancyFoundation\Actions\Invitation\AcceptInvitation as AcceptInvitationAction;
 use Slakbal\TenancyFoundation\Enums\FilamentPanel;
+use Slakbal\TenancyFoundation\Enums\TenantResolution;
 use Slakbal\TenancyFoundation\Exceptions\InvalidInvitation;
 use Slakbal\TenancyFoundation\Filament\Components\Schemas\UserNameSchema;
 
@@ -145,9 +146,7 @@ class AcceptInvitation extends SimplePage
             ->success()
             ->send();
 
-        return redirect()->to(
-            appDomainScheme().$this->invitation->tenant->subdomain.'.'.config('tenancy-foundation.domain')
-        );
+        return redirect()->to(TenantResolution::current()->urlFor($this->invitation->tenant));
     }
 
     public function content(Schema $schema): Schema

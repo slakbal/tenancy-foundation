@@ -7,6 +7,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
 use Livewire\Features\SupportRedirects\Redirector;
+use Slakbal\TenancyFoundation\Enums\TenantResolution;
 
 class RegistrationResponse implements RegistrationResponseContract
 {
@@ -23,7 +24,7 @@ class RegistrationResponse implements RegistrationResponseContract
             $tenant = $user->getDefaultTenant($panel);
 
             return redirect()->away($tenant
-                ? appDomainScheme().$tenant->subdomain.'.'.config('tenancy-foundation.domain')
+                ? TenantResolution::current()->urlFor($tenant)
                 : $panel->getTenantRegistrationUrl());
         }
 

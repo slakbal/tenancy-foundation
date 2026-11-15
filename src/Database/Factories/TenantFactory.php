@@ -19,10 +19,12 @@ class TenantFactory extends Factory
     public function definition(): array
     {
         $name = fake()->unique()->company();
+        $slug = Str::slug($name).'-'.Str::lower(Str::random(6));
 
         return [
             'name' => $name,
-            'subdomain' => Str::slug($name).'-'.Str::lower(Str::random(6)),
+            'subdomain' => $slug,
+            'domain' => $slug.'.example.test',
         ];
     }
 }

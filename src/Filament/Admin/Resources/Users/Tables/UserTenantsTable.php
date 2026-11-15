@@ -11,6 +11,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Slakbal\TenancyFoundation\Enums\TenantResolution;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\TenantResource;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\MakeUserTenantOwnerAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\RemoveUserFromTenantAction;
@@ -46,8 +47,8 @@ class UserTenantsTable
                 ->label(__('Tenant'))
                 ->searchable()
                 ->sortable(),
-            TextColumn::make('subdomain')
-                ->label(__('Subdomain'))
+            TextColumn::make(TenantResolution::current()->attribute())
+                ->label(TenantResolution::current()->getLabel())
                 ->searchable()
                 ->sortable(),
             RoleBadgeColumn::make('tenant_roles')

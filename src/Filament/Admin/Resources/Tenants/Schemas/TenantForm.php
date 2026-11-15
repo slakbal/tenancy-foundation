@@ -62,8 +62,8 @@ class TenantForm
                 ->label(__('Tenant name'))
                 ->required()
                 ->maxLength(60),
-            TenantDetailsSchema::subdomain(ignoreRecord: true)
-                ->helperText(__('Changing the subdomain changes the address the tenant signs in on.')),
+            TenantDetailsSchema::address(ignoreRecord: true)
+                ->helperText(__('Changing the address changes where the tenant signs in.')),
         ];
     }
 

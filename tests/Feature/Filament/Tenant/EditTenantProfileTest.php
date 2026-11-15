@@ -56,7 +56,7 @@ test('the name can be edited but the subdomain cannot, even when the request is 
 });
 
 test('the full tenant url can be copied to the clipboard', function () {
-    $url = TenantDetailsSchema::url('acme');
+    $url = TenantDetailsSchema::url($this->tenant);
 
     expect($url)->toBe(appDomainScheme().'acme.'.config('tenancy-foundation.domain'));
 
