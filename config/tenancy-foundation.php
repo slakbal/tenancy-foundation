@@ -198,16 +198,35 @@ return [
     | Features
     |--------------------------------------------------------------------------
     |
-    | invitations  Invite people into a tenant by email: the tenant panel
-    |              invitations resource and accept page, the invitation
-    |              permissions and the pruning of old invitations. Set to false
-    |              for a product without invitations. The migrations always run,
-    |              whatever the flags say.
+    | invitations         Invite people into a tenant by email: the tenant panel
+    |                     invitations resource and accept page, the invitation
+    |                     permissions and the pruning of old invitations. Set to
+    |                     false for a product without invitations. The migrations
+    |                     always run, whatever the flags say.
+    | password_auth       (default true) Password sign in on the tenant panel.
+    |                     false removes the password reset routes (tenant and
+    |                     admin panels) and turns off user registration. The
+    |                     login page itself is replaced by the SSO hooks, not by
+    |                     this flag.
+    | registration        (default true) The user registration page of the tenant
+    |                     panel. Only available together with password_auth.
+    | email_verification  (default true) Email verification prompt and routes of
+    |                     the tenant panel. false never asks users to verify;
+    |                     the User model may still implement MustVerifyEmail.
+    | tenant_registration (default null) The "register a tenant" page of the
+    |                     tenant panel. null follows the resolution: on with
+    |                     "subdomain", off with "domain" (tenants are then created
+    |                     by staff). true or false always forces it; set it with
+    |                     TENANCY_TENANT_REGISTRATION.
     |
     */
 
     'features' => [
         'invitations' => true,
+        'password_auth' => true,
+        'registration' => true,
+        'email_verification' => true,
+        'tenant_registration' => env('TENANCY_TENANT_REGISTRATION', true),
     ],
 
     /*

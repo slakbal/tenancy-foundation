@@ -137,19 +137,31 @@ class TenantPlugin implements Plugin
             ->tenant(config('tenancy-foundation.models.tenant'), slugAttribute: TenantResolution::current()->attribute())
             ->tenantDomain(TenantResolution::current()->routeDomain())
             ->resolveTenantUsing(fn (string $key): Model => TenantResolution::current()->tenantForKey($key))
-            ->tenantRegistration($this->registerTenantPage)
             ->tenantProfile($this->editTenantProfilePage)
             ->tenantMiddleware([SyncTenantPermissionsContext::class, EnsureTenantIsNotCancelled::class], isPersistent: true)
-            ->registration($this->registerUserPage)
-            ->passwordReset(resetAction: ResetPassword::class)
             ->profile($this->profilePage)
             ->emailChangeVerification(config('tenancy-foundation.email_change_verification', true))
             ->authPasswordBroker(AuthGuard::TENANT->getPasswordBroker())
-            ->emailVerification(EmailVerificationPrompt::class)
             ->middleware([EnsureKnownTenantHost::class, BindSessionToHost::class, RedirectDeletedUserHome::class, EnsureUserHasTenant::class], isPersistent: true)
             ->resources([$this->userResource])
             ->pages([$this->contactPage])
             ->renderHook(PanelsRenderHook::HEAD_END, fn (): HtmlString => $this->currentTenantLabelStyle());
+
+        if (config('tenancy-foundation.features.tenant_registration') ?? TenantResolution::current() === TenantResolution::SUBDOMAIN) {
+            $panel->tenantRegistration($this->registerTenantPage);
+        }
+
+        if (config('tenancy-foundation.features.password_auth')) {
+            $panel->passwordReset(resetAction: ResetPassword::class);
+
+            if (config('tenancy-foundation.features.registration')) {
+                $panel->registration($this->registerUserPage);
+            }
+        }
+
+        if (config('tenancy-foundation.features.email_verification')) {
+            $panel->emailVerification(EmailVerificationPrompt::class);
+        }
     }
 
     protected function currentTenantLabelStyle(): HtmlString

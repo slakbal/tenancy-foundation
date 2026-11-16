@@ -102,7 +102,11 @@ class AdminPlugin implements Plugin
         }
 
         $panel->databaseNotifications();
-        $panel->passwordReset(resetAction: ResetPassword::class);
+
+        if (config('tenancy-foundation.features.password_auth')) {
+            $panel->passwordReset(resetAction: ResetPassword::class);
+        }
+
         $panel->profile($this->profilePage);
         $panel->emailChangeVerification(config('tenancy-foundation.email_change_verification', true));
         $panel->authPasswordBroker(AuthGuard::ADMIN->getPasswordBroker());
