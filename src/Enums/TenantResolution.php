@@ -4,6 +4,7 @@ namespace Slakbal\TenancyFoundation\Enums;
 
 use Filament\Support\Contracts\HasLabel;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Support\Uri;
@@ -12,6 +13,8 @@ enum TenantResolution: string implements HasLabel
 {
     case SUBDOMAIN = 'subdomain';
     case DOMAIN = 'domain';
+
+    public const string HOST_TENANT = 'tenancy-foundation.host-tenant';
 
     public static function current(): self
     {
@@ -81,6 +84,12 @@ enum TenantResolution: string implements HasLabel
 
     public function tenantForHost(string $host): ?Model
     {
+        $resolved = self::hostTenant();
+
+        if ($resolved !== null && $this->hostFor($resolved) === $host) {
+            return $resolved;
+        }
+
         $value = $this === self::DOMAIN ? $host : self::subdomainOf($host);
 
         if ($value === null) {
@@ -88,6 +97,31 @@ enum TenantResolution: string implements HasLabel
         }
 
         return config('tenancy-foundation.models.tenant')::query()->where($this->attribute(), $value)->first();
+    }
+
+    // Filament's tenant lookup by route key (resolveTenantUsing), reusing the tenant EnsureKnownTenantHost resolved.
+    public function tenantForKey(string $key): Model
+    {
+        $resolved = self::hostTenant();
+
+        if ($resolved !== null && $resolved->getAttribute($this->attribute()) === $key) {
+            return $resolved;
+        }
+
+        return config('tenancy-foundation.models.tenant')::query()->where($this->attribute(), $key)->firstOrFail();
+    }
+
+    // The tenant of the current request's host, kept by EnsureKnownTenantHost so the host is looked up once per request.
+    public static function rememberHostTenant(Request $request, Model $tenant): void
+    {
+        $request->attributes->set(self::HOST_TENANT, $tenant);
+    }
+
+    protected static function hostTenant(): ?Model
+    {
+        $tenant = request()->attributes->get(self::HOST_TENANT);
+
+        return $tenant instanceof Model ? $tenant : null;
     }
 
     // The tenant label of a host under `domain`; null for other hosts and reserved subdomains.

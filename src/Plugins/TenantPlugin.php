@@ -6,6 +6,7 @@ use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Routing\Route as RoutingRoute;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
@@ -135,6 +136,7 @@ class TenantPlugin implements Plugin
         $panel
             ->tenant(config('tenancy-foundation.models.tenant'), slugAttribute: TenantResolution::current()->attribute())
             ->tenantDomain(TenantResolution::current()->routeDomain())
+            ->resolveTenantUsing(fn (string $key): Model => TenantResolution::current()->tenantForKey($key))
             ->tenantRegistration($this->registerTenantPage)
             ->tenantProfile($this->editTenantProfilePage)
             ->tenantMiddleware([SyncTenantPermissionsContext::class, EnsureTenantIsNotCancelled::class], isPersistent: true)

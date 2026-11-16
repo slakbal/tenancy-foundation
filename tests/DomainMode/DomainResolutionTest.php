@@ -3,8 +3,10 @@
 use Filament\Auth\Pages\Login;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenant;
@@ -79,6 +81,18 @@ test('the app domain stays central and is never taken as a tenant host', functio
         ->assertDontSeeLivewire(ContactUs::class);
 
     expect(Filament::getTenant())->toBeNull();
+});
+
+test('the tenant of the host is looked up once per request', function () {
+    Auth::guard(AuthGuard::TENANT->value)->login($this->owner);
+    $lookups = 0;
+    DB::listen(function (QueryExecuted $query) use (&$lookups): void {
+        $lookups += (int) (str_contains($query->sql, 'from "tenants"') && str_contains($query->sql, '"domain" = ?'));
+    });
+
+    $this->get('http://academy.example.com/contact')->assertOk();
+
+    expect($lookups)->toBe(1);
 });
 
 test('a member of one tenant cannot open another tenant on its host', function () {

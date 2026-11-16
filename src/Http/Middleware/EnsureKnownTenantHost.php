@@ -30,6 +30,8 @@ class EnsureKnownTenantHost
             return app(CancelledTenantResponse::class)->toResponse($request, $tenant);
         }
 
+        TenantResolution::rememberHostTenant($request, $tenant);
+
         return $next($request);
     }
 
