@@ -5,8 +5,7 @@ namespace Slakbal\TenancyFoundation\Enums;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
-enum
-DomainRuleType: string implements HasColor, HasLabel
+enum DomainRuleType: string implements HasColor, HasLabel
 {
     case ALLOW = 'allow';
     case BLOCK = 'block';

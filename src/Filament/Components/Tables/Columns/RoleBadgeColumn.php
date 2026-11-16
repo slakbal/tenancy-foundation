@@ -15,7 +15,7 @@ class RoleBadgeColumn
     public static function make(string $name = 'roles.name', string $enum = TenantRoles::class, ?string $label = null): TextColumn
     {
         return TextColumn::make($name)
-            ->label($label ?? __('Tenant role'))
+            ->label($label ?? __('Role'))
             ->badge()
             ->formatStateUsing(fn (string $state): string => $enum::tryFrom($state)?->getLabel() ?? Str::headline($state))
             ->color(fn (string $state): string => $enum::tryFrom($state)?->getColor() ?? 'gray')

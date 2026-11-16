@@ -43,4 +43,3 @@ test('switching tenants opens the other tenant, not the one resolved first', fun
     $this->get($this->tenantUrl($this->second, '/contact'))->assertOk()->assertSee('Second Academy');
     expect(Filament::getTenant()->is($this->second))->toBeTrue();
 })->with(['host check off' => false, 'host check on' => true]);
-

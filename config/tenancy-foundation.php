@@ -212,7 +212,9 @@ return [
     |                     one tenant. Memberships and the data model are unchanged.
     | password_auth       (default true) Password sign in on the tenant panel.
     |                     false removes the password reset routes (tenant and
-    |                     admin panels) and turns off user registration. The
+    |                     admin panels), hides every "Send password reset link"
+    |                     action (tables and view/edit pages) and turns off user
+    |                     registration. The
     |                     login page itself is replaced by the SSO hooks, not by
     |                     this flag.
     | registration        (default true) The user registration page of the tenant

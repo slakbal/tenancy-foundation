@@ -18,7 +18,7 @@ class SendUserPasswordResetLinkAction
             ->label(__('Send password reset link'))
             ->icon(Heroicon::OutlinedKey)
             ->color('info')
-            ->visible(fn (Model $record): bool => ! $record->trashed() && ! Filament::auth()->user()?->is($record))
+            ->visible(fn (Model $record): bool => config('tenancy-foundation.features.password_auth') && ! $record->trashed() && ! Filament::auth()->user()?->is($record))
             ->authorize('sendPasswordResetLink')
             ->requiresConfirmation()
             ->modalHeading(fn (Model $record): string => __('Send a password reset link to :email?', ['email' => $record->email]))
