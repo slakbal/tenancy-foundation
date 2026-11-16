@@ -4,6 +4,7 @@ use Slakbal\TenancyFoundation\Database\Seeders\TenantRolePermissionsSeeder;
 use Slakbal\TenancyFoundation\Livewire\PublicContactForm;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\ContactRequest;
+use Slakbal\TenancyFoundation\Models\DomainRule;
 use Slakbal\TenancyFoundation\Models\Invitation;
 use Slakbal\TenancyFoundation\Models\Role;
 use Slakbal\TenancyFoundation\Models\RolePermissionChange;
@@ -133,6 +134,7 @@ return [
     | role             The Spatie role model.
     | contact_request  Public and tenant contact form submissions.
     | invitation       Invitations to join a tenant (only with features.invitations).
+    | domain_rule      Per tenant allow/block rules for email domains (see the tenant access_policy).
     |
     */
 
@@ -143,6 +145,7 @@ return [
         'role' => Role::class,
         'contact_request' => ContactRequest::class,
         'invitation' => Invitation::class,
+        'domain_rule' => DomainRule::class,
         'role_permission_change' => RolePermissionChange::class,
     ],
 

@@ -154,12 +154,13 @@ The package migrations load automatically (no publishing) and run after Laravel'
 | Migration | Effect |
 |---|---|
 | `add_tenancy_columns_to_users_table` | Adds the missing tenancy columns to `users` (see [Users table](#users-table)) |
-| `create_tenants_table` | `tenants` (`ulid`, `name`, `subdomain`, `billing_email`, `cancelled_at`, `scheduled_for_deletion_at`) and the `tenant_user` pivot (`is_owner`, `is_default_tenant`, `status`, `accepted_invite_at`) |
+| `create_tenants_table` | `tenants` (`ulid`, `name`, `subdomain`, `billing_email`, `access_policy`, `cancelled_at`, `scheduled_for_deletion_at`) and the `tenant_user` pivot (`is_owner`, `is_default_tenant`, `status`, `accepted_invite_at`) |
 | `create_admin_users_table` | `admins` (name attributes, `status`, two factor columns, `locale`, last login, soft deletes) |
 | `create_contact_requests_table` | `contact_requests` |
 | `create_notifications_table` | Laravel `notifications` table, skipped if it already exists (admin bell) |
 | `create_admin_password_reset_tokens_table` | Separate reset tokens for admins, so tokens never cross between an admin and a tenant user who share an email |
 | `create_invitations_table` | `invitations`. Always runs, even with `features.invitations` off |
+| `create_domain_rules_table` | `domain_rules`: per tenant allow/block rule for an email domain. Always runs |
 | `create_role_permission_changes_table` | Audit log of role permission changes |
 
 ### 7. Register the panel plugins
@@ -255,6 +256,7 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 | `models.role` | `Models\Role` | Spatie role model (the `RoleObserver` is attached to it) |
 | `models.contact_request` | `Models\ContactRequest` | Contact form submissions |
 | `models.invitation` | `Models\Invitation` | Tenant invitations |
+| `models.domain_rule` | `Models\DomainRule` | Email domain allow/block rules per tenant |
 | `models.role_permission_change` | `Models\RolePermissionChange` | Audit rows written when role permissions change |
 | `seeders.tenant_role_permissions` | `TenantRolePermissionsSeeder` | The seeder that defines the tenant permission enums. Must be the package seeder or a subclass |
 | `user_name_attributes` | `['name']` | Name column(s), for example `['first_name', 'last_name']` |
@@ -883,3 +885,13 @@ php artisan tenancy-foundation:sync-permissions
 ```
 
 Then grant any new permissions on the Role permissions page.
+
+## Tenant access policy
+
+Decide whether an email address may sign in to a tenant, for products with SSO or any other login that does not use invitations. The package only provides the data and the decision; the sign-in flow calls it.
+
+- `tenants.access_policy` (`AccessPolicy` enum, default `open_except_blocked`): `open_except_blocked` lets every domain in except those with a `block` rule; `allow_list_only` lets in only domains with an `allow` rule. Allow rules are ignored under the first policy and block rules under the second.
+- `domain_rules` (`models.domain_rule`, `Tenant::domainRules()`): `tenant_id`, `domain` (stored lower case, unique per tenant, exact match) and `type` (`DomainRuleType`: `allow` | `block`).
+- `Actions\Auth\EvaluateEmailAccess::handle($tenant, $email)` returns an `EmailAccess` case (`ALLOWED_BY_RULE`, `ALLOWED_BY_POLICY`, `BLOCKED_BY_RULE`, `BLOCKED_BY_POLICY`; `isAllowed()`). Call it on every sign in, not only the first, so a changed rule applies at the next login.
+
+Existing projects are unchanged: with the default policy and no rules every email is allowed. Needs the new `tenants.access_policy` column and `domain_rules` table (`migrate:fresh` in a project that already ran the old create migrations).

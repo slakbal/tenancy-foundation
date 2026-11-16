@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use Slakbal\TenancyFoundation\Enums\AccessPolicy;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Enums\TenantStatus;
 use Slakbal\TenancyFoundation\Models\TenantUser;
@@ -19,6 +21,7 @@ trait IsTenant
     public function initializeIsTenant(): void
     {
         $this->mergeCasts([
+            'access_policy' => AccessPolicy::class,
             'cancelled_at' => 'datetime',
             'scheduled_for_deletion_at' => 'datetime',
         ]);
@@ -86,5 +89,10 @@ trait IsTenant
             ->using(TenantUser::class)
             ->withPivot(['id', 'is_owner', 'is_default_tenant', 'status']) // Register pivot attributes
             ->withTimestamps();
+    }
+
+    public function domainRules(): HasMany
+    {
+        return $this->hasMany(config('tenancy-foundation.models.domain_rule'));
     }
 }

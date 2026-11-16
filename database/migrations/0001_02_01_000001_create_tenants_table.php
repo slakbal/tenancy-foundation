@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Slakbal\TenancyFoundation\Enums\AccessPolicy;
 use Slakbal\TenancyFoundation\Enums\MemberStatus;
 
 return new class extends Migration
@@ -16,6 +17,7 @@ return new class extends Migration
             $table->string('subdomain')->nullable()->unique();
             $table->string('domain')->nullable()->unique();
             $table->string('billing_email')->nullable();
+            $table->string('access_policy')->default(AccessPolicy::OPEN_EXCEPT_BLOCKED);
             $table->timestamp('cancelled_at')->nullable();
             $table->timestamp('scheduled_for_deletion_at')->nullable()->index();
             $table->timestamps();
