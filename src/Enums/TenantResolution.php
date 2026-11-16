@@ -79,6 +79,31 @@ enum TenantResolution: string implements HasLabel
         };
     }
 
+    public function tenantForHost(string $host): ?Model
+    {
+        $value = $this === self::DOMAIN ? $host : self::subdomainOf($host);
+
+        if ($value === null) {
+            return null;
+        }
+
+        return config('tenancy-foundation.models.tenant')::query()->where($this->attribute(), $value)->first();
+    }
+
+    // The tenant label of a host under `domain`; null for other hosts and reserved subdomains.
+    protected static function subdomainOf(string $host): ?string
+    {
+        $suffix = '.'.config('tenancy-foundation.domain');
+
+        if (! str_ends_with($host, $suffix)) {
+            return null;
+        }
+
+        $subdomain = Str::beforeLast($host, $suffix);
+
+        return in_array($subdomain, self::reservedSubdomains(), true) ? null : $subdomain;
+    }
+
     public function hostFor(Model $tenant): string
     {
         return $this->host($tenant->getAttribute($this->attribute()));

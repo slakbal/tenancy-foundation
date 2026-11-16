@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\Rules\Password;
 use Slakbal\TenancyFoundation\Actions\Invitation\AcceptInvitation as AcceptInvitationAction;
 use Slakbal\TenancyFoundation\Enums\FilamentPanel;
@@ -53,14 +54,17 @@ class AcceptInvitation extends SimplePage
 
     public static function signedUrl(Model $invitation, DateTimeInterface $expiresAt): string
     {
-        $urls = clone app('url');
+        $parameters = ['invitation' => $invitation->getRouteKey()];
 
-        // In domain mode the tenant panel answers only on the tenant's own host, so the link is signed for that host.
+        // In domain mode the tenant panel answers only on the tenant's own host. A cloned URL generator keeps the current
+        // host, so the path is signed and the tenant origin prefixed; mount() enforces the host.
         if (TenantResolution::current() === TenantResolution::DOMAIN) {
-            $urls->forceRootUrl(TenantResolution::current()->urlFor($invitation->tenant));
+            $path = URL::temporarySignedRoute(static::routeName(), $expiresAt, $parameters, absolute: false);
+
+            return rtrim(TenantResolution::current()->urlFor($invitation->tenant), '/').$path;
         }
 
-        return $urls->temporarySignedRoute(static::routeName(), $expiresAt, ['invitation' => $invitation->getRouteKey()]);
+        return URL::temporarySignedRoute(static::routeName(), $expiresAt, $parameters);
     }
 
     public function mount(mixed $invitation): void
@@ -68,6 +72,12 @@ class AcceptInvitation extends SimplePage
         $this->invitation = $invitation instanceof Model
             ? $invitation
             : config('tenancy-foundation.models.invitation')::query()->where('ulid', $invitation)->firstOrFail();
+
+        // The link's signature covers the path only in domain mode, so the page opens only on the invitation's tenant host.
+        abort_if(TenantResolution::current() === TenantResolution::DOMAIN
+            && request()->routeIs(static::routeName())
+            && ($this->invitation->tenant === null || TenantResolution::current()->hostFor($this->invitation->tenant) !== request()->getHost()), 404);
+
         $this->isAcceptable = is_null($this->invitation->accepted_at) && Carbon::parse($this->invitation->expires_at)->isFuture();
         $this->isExistingUser = config('tenancy-foundation.models.user')::query()->where('email', $this->invitation->email)->exists();
 
@@ -230,7 +240,7 @@ class AcceptInvitation extends SimplePage
     public static function routes(Panel $panel): void
     {
         Route::get('/'.static::$slug, static::class)
-            ->middleware(['signed'])
+            ->middleware([TenantResolution::current() === TenantResolution::DOMAIN ? 'signed:relative' : 'signed'])
             ->name('invitations.accept');
     }
 

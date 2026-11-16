@@ -68,6 +68,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Verify subdomain hosts
+    |--------------------------------------------------------------------------
+    |
+    | Subdomain mode only (domain mode always verifies). When true, the tenant
+    | panel (login, password reset, invitations included) answers on a
+    | subdomain of `domain` only when it belongs to an existing tenant:
+    | unknown and reserved subdomains and hosts outside `domain` return 404.
+    | The central host (`domain` itself) is never checked, so login and
+    | registration keep working there. A cancelled tenant's subdomain gets the
+    | CancelledTenantResponse (default 404, bind your own to redirect); the
+    | shared session is left alone, because it also serves the user's other
+    | tenants. Needs `domain` (APP_DOMAIN); without it nothing is checked.
+    |
+    | Default false: unchanged, every subdomain shows the tenant login.
+    | Env: TENANCY_VERIFY_SUBDOMAIN_HOSTS.
+    |
+    */
+
+    'verify_subdomain_hosts' => (bool) env('TENANCY_VERIFY_SUBDOMAIN_HOSTS', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Admin panel (backoffice) host
     |--------------------------------------------------------------------------
     |

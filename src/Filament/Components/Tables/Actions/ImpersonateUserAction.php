@@ -6,6 +6,7 @@ use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Support\Exceptions\Halt;
 use Illuminate\Database\Eloquent\Model;
+use Slakbal\TenancyFoundation\Actions\Impersonation\IssueImpersonationHandoff;
 use Slakbal\TenancyFoundation\Enums\FilamentPanel;
 use Slakbal\TenancyFoundation\Enums\TenantResolution;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
@@ -15,7 +16,7 @@ class ImpersonateUserAction
 {
     public static function make(?string $name = null): Impersonate
     {
-        return Impersonate::make(name: $name)
+        $action = Impersonate::make(name: $name)
             ->before(function (Model $record) {
                 $panel = Filament::getPanel(FilamentPanel::TENANT->getPanelId());
                 $tenant = $record->getDefaultTenant($panel);
@@ -43,5 +44,21 @@ class ImpersonateUserAction
             ->guard(guard: FilamentPanel::TENANT->getAuthGuard())
             ->color('warning')
             ->requiresConfirmation();
+
+        if (TenantResolution::current() === TenantResolution::DOMAIN) {
+            // Host-only cookies keep the backoffice session off the tenant host: the admin stays signed in here and opens a one-time link there.
+            $action->action(function (Model $record) use ($action): void {
+                $panel = Filament::getPanel(FilamentPanel::TENANT->getPanelId());
+
+                $action->redirect(app(IssueImpersonationHandoff::class)->handle(
+                    admin: Filament::auth()->user(),
+                    user: $record,
+                    tenant: $record->getDefaultTenant($panel),
+                    backTo: $action->getBackTo(),
+                ), navigate: false);
+            });
+        }
+
+        return $action;
     }
 }

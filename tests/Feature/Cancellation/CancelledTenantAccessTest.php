@@ -62,7 +62,7 @@ test('a request to a cancelled tenant is sent to another active tenant of the us
 
     $this->get($this->tenantUrl($gone))
         ->assertRedirect(Filament::getUrl(Tenant::query()->where('subdomain', 'live')->first()));
-});
+})->group('subdomain'); // domain mode: a cancelled tenant host is a 404 (tests/DomainMode/DomainResolutionTest.php)
 
 test('a request to a cancelled tenant signs the user out and sends them to the login page when they have nowhere else to go', function () {
     $user = userWithTenants(['gone' => true]);
@@ -75,7 +75,7 @@ test('a request to a cancelled tenant signs the user out and sends them to the l
         ->assertSessionHas('filament.notifications');
 
     expect(auth(AuthGuard::TENANT->value)->check())->toBeFalse();
-});
+})->group('subdomain'); // domain mode: a cancelled tenant host is a 404 (tests/DomainMode/DomainResolutionTest.php)
 
 test('a user with an active tenant is not signed out when another of their tenants is cancelled', function () {
     $user = userWithTenants(['gone' => true, 'live' => false]);

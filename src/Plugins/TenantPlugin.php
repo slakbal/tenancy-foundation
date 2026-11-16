@@ -6,7 +6,9 @@ use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Routing\Route as RoutingRoute;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\HtmlString;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\TenantResolution;
@@ -20,6 +22,7 @@ use Slakbal\TenancyFoundation\Filament\Tenant\Pages\AcceptInvitation;
 use Slakbal\TenancyFoundation\Filament\Tenant\Pages\ContactUs;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Invitations\InvitationResource;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
+use Slakbal\TenancyFoundation\Http\Controllers\RedeemImpersonationHandoff;
 use Slakbal\TenancyFoundation\Http\Middleware\BindSessionToHost;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureKnownTenantHost;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureTenantIsNotCancelled;
@@ -121,6 +124,12 @@ class TenantPlugin implements Plugin
         if (config('tenancy-foundation.features.invitations')) {
             $panel->routes(fn (Panel $panel) => $this->acceptInvitationPage::routes($panel));
             $panel->resources([$this->invitationResource]);
+        }
+
+        if (TenantResolution::current() === TenantResolution::DOMAIN) {
+            $panel->routes(fn (): RoutingRoute => Route::get('/impersonation/handoff/{token}', RedeemImpersonationHandoff::class)
+                ->middleware(['signed:relative'])
+                ->name('impersonation.handoff'));
         }
 
         $panel

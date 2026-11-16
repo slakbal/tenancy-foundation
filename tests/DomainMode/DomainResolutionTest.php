@@ -1,6 +1,9 @@
 <?php
 
+use Filament\Auth\Pages\Login;
 use Filament\Facades\Filament;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
@@ -10,8 +13,10 @@ use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\TenantResolution;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\EditTenant;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ListTenants;
+use Slakbal\TenancyFoundation\Filament\Tenant\Pages\AcceptInvitation;
 use Slakbal\TenancyFoundation\Filament\Tenant\Pages\ContactUs;
 use Slakbal\TenancyFoundation\Http\Middleware\BindSessionToHost;
+use Slakbal\TenancyFoundation\Http\Responses\Contracts\CancelledTenantResponse;
 use Slakbal\TenancyFoundation\Http\Responses\RegistrationResponse;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\Invitation;
@@ -19,6 +24,7 @@ use Slakbal\TenancyFoundation\Models\User;
 use Slakbal\TenancyFoundation\Notifications\Invitation\InvitationCreated;
 use Slakbal\TenancyFoundation\Notifications\Tenant\WelcomeToTenant;
 use Symfony\Component\HttpFoundation\Cookie;
+use Symfony\Component\HttpFoundation\Response;
 
 beforeEach(function () {
     $this->owner = User::factory()->create();
@@ -78,7 +84,9 @@ test('the app domain stays central and is never taken as a tenant host', functio
 test('a member of one tenant cannot open another tenant on its host', function () {
     $this->actingAsTenantUser($this->owner, $this->tenant);
 
-    $this->get('http://training.other.org/contact')->assertNotFound();
+    // A browser never carries the session to another host (host-only cookie, BindSessionToHost); the test forces it,
+    // and canAccessPanel() refuses non-members of the host tenant, so Filament answers 403.
+    $this->get('http://training.other.org/contact')->assertForbidden();
 });
 
 test('tenant urls, emails and redirects point at the tenant domain', function () {
@@ -187,6 +195,74 @@ test('the tenant panel, login included, answers only on the host of an existing 
     'deleted tenant host' => ['training.other.org', 404],
 ]);
 
+test('a cancelled tenant host answers like an unknown host, login included', function (string $path) {
+    $this->tenant->forceFill(['cancelled_at' => now()])->save();
+
+    $this->get("http://academy.example.com{$path}")->assertNotFound();
+})->with(['/', '/login', '/password-reset/request']);
+
+test('only members of the host tenant can sign in on its host', function (string $host, bool $canAccess) {
+    app()->instance('request', Request::create("http://{$host}/login"));
+
+    expect($this->owner->canAccessPanel(Filament::getPanel('app')))->toBe($canAccess);
+})->with([
+    'own tenant host' => ['academy.example.com', true],
+    'another tenant host' => ['training.other.org', false],
+]);
+
+test('a user with a pending invitation to the host tenant may sign in there to accept it', function (bool $invitationsOn) {
+    config(['tenancy-foundation.features.invitations' => $invitationsOn]);
+    Invitation::factory()->create(['tenant_id' => $this->other->getKey(), 'email' => $this->owner->email, 'accepted_at' => null, 'expires_at' => now()->addDay()]);
+    app()->instance('request', Request::create('http://training.other.org/login'));
+
+    expect($this->owner->canAccessPanel(Filament::getPanel('app')))->toBe($invitationsOn);
+})->with(['invitations on' => true, 'invitations off' => false]);
+
+test('signing in on another tenant host fails like wrong credentials', function () {
+    $this->owner->forceFill(['password' => 'secret-password'])->save();
+    app()->instance('request', Request::create('http://training.other.org/login'));
+    Filament::setCurrentPanel(Filament::getPanel('app'));
+
+    Livewire::test(Login::class)
+        ->fillForm(['email' => $this->owner->email, 'password' => 'secret-password'])
+        ->call('authenticate')
+        ->assertHasFormErrors(['email']);
+
+    expect(auth(AuthGuard::TENANT->value)->check())->toBeFalse();
+});
+
+test('an app can answer a cancelled tenant host with its own response, and the session is still dropped', function () {
+    app()->bind(CancelledTenantResponse::class, fn () => new class implements CancelledTenantResponse
+    {
+        public function toResponse(Request $request, Model $tenant): Response
+        {
+            return redirect()->away('https://example.com/come-back');
+        }
+    });
+    Auth::guard(AuthGuard::TENANT->value)->login($this->owner);
+    $this->tenant->forceFill(['cancelled_at' => now()])->save();
+
+    $this->get('http://academy.example.com/login')->assertRedirect('https://example.com/come-back');
+    $this->get('http://nope.example.com/login')->assertNotFound();
+
+    auth()->forgetGuards();
+    expect(auth(AuthGuard::TENANT->value)->check())->toBeFalse();
+});
+
+test('a member is signed out on a cancelled tenant host and stays signed out after reactivation', function () {
+    // A real session sign-in, so the test sees whether the session itself is dropped.
+    Auth::guard(AuthGuard::TENANT->value)->login($this->owner);
+    $this->get('http://academy.example.com/contact')->assertOk();
+
+    $this->tenant->forceFill(['cancelled_at' => now()])->save();
+    $this->get('http://academy.example.com/contact')->assertNotFound();
+
+    auth()->forgetGuards();
+    $this->tenant->forceFill(['cancelled_at' => null])->save();
+
+    $this->get('http://academy.example.com/contact')->assertRedirect('http://academy.example.com/login');
+});
+
 test('an invitation link is signed for the tenant host and opens there', function () {
     $invitation = Invitation::factory()->create(['tenant_id' => $this->tenant->getKey(), 'expires_at' => now()->addDays(7)]);
 
@@ -195,4 +271,20 @@ test('an invitation link is signed for the tenant host and opens there', functio
     expect($url)->toStartWith('http://academy.example.com/invitations/accept/');
 
     $this->get($url)->assertOk()->assertSee('Join Academy');
+});
+
+test('an invitation link points at the tenant host even after URLs for another host were generated', function () {
+    $invitation = Invitation::factory()->create(['tenant_id' => $this->tenant->getKey(), 'expires_at' => now()->addDays(7)]);
+
+    // A real backoffice or queue request has built route URLs before, which the cloned URL generator used to keep.
+    route('filament.admin.auth.login');
+
+    expect(AcceptInvitation::signedUrl($invitation, now()->addHour()))->toStartWith('http://academy.example.com/invitations/accept/');
+});
+
+test('an invitation link opens only on its tenant host', function () {
+    $invitation = Invitation::factory()->create(['tenant_id' => $this->tenant->getKey(), 'expires_at' => now()->addDays(7)]);
+    $url = AcceptInvitation::signedUrl($invitation, now()->addHour());
+
+    $this->get(str_replace('academy.example.com', $this->other->domain, $url))->assertNotFound();
 });

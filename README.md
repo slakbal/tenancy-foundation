@@ -246,6 +246,7 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 |---|---|---|
 | `domain` | `env('APP_DOMAIN')` | Root domain without scheme or port. In `subdomain` mode tenants live at `{subdomain}.domain`; in `domain` mode it is the optional central host |
 | `resolution` | `env('TENANCY_RESOLUTION', 'subdomain')` | `subdomain` or `domain`. See [Domains, hosts and sessions](#domains-hosts-and-sessions) for routing and session side effects |
+| `verify_subdomain_hosts` | `env('TENANCY_VERIFY_SUBDOMAIN_HOSTS', false)` | `subdomain` mode only: tenant panel answers on a subdomain only when it belongs to an active tenant (404 for unknown, reserved, foreign hosts; `CancelledTenantResponse` for cancelled). The central host is never checked. Needs `domain`. `domain` mode always verifies |
 | `admin.domain` | `env('ADMIN_DOMAIN')` | Host of the admin panel. `null`: any host in `subdomain` mode, `domain` (`APP_DOMAIN`) in `domain` mode. Reserved for tenants |
 | `admin.path` | `env('ADMIN_PATH', 'admin')` | Path prefix of the admin panel; may be `''` on its own host |
 | `models.tenant` | `Models\Tenant` | Tenant model |
@@ -310,6 +311,7 @@ A block switch gates all of its sub-items.
 | `APP_URL` | Central URL. Deleted-user redirects and the helpers `appUrl()`, `appDomainScheme()` and `appDomainHost()` use it |
 | `APP_DOMAIN` | `tenancy-foundation.domain` |
 | `TENANCY_RESOLUTION` | `tenancy-foundation.resolution`: `subdomain` (default) or `domain` |
+| `TENANCY_VERIFY_SUBDOMAIN_HOSTS` | `tenancy-foundation.verify_subdomain_hosts`: `false` (default) or `true` |
 | `ADMIN_DOMAIN`, `ADMIN_PATH` | `tenancy-foundation.admin.domain` / `admin.path`: admin panel host and path |
 | `SESSION_DOMAIN` | `subdomain` mode: must be `.your-domain`. `domain` mode: ignored, the cookie is host-only (see below) |
 | `SESSION_COOKIE` | Change it once to drop old host-only cookies |
@@ -334,6 +336,7 @@ A block switch gates all of its sub-items.
 - `APP_DOMAIN`: if it's empty, tenant URLs render as `tenant1.` and the public contact route is not registered.
 - `SESSION_DOMAIN`: set it to the domain with a leading dot. Login, registration and verification run on the central domain and tenants on subdomains. Without a wildcard session cookie, users are sent back to the login page. If browsers still hold old host-only cookies, change `SESSION_COOKIE` once.
 - The tenant forms show the `subdomain` field (suffix `.APP_DOMAIN`, `reserved_subdomains` and the admin host's subdomain rejected).
+- By default every subdomain shows the tenant login, also unknown and cancelled ones. Set `verify_subdomain_hosts` (`TENANCY_VERIFY_SUBDOMAIN_HOSTS=true`) to answer 404 on unknown, reserved and foreign hosts and the [cancelled tenant response](#cancelled-tenant-hosts) on a cancelled tenant's subdomain. `APP_DOMAIN` itself is never checked. The shared session is not touched there, because it also serves the user's other tenants.
 - Local development: any server that routes wildcard subdomains of the app host to the app works. [Lerd](https://github.com/lerd-env/lerd) does this for `*.project.test` (`lerd link project && lerd secure`). Use the same host in `APP_URL`, `APP_DOMAIN` and `SESSION_DOMAIN` (with a leading dot), for example `https://myapp.test`, `myapp.test` and `.myapp.test`.
 
 ### `domain`
@@ -347,10 +350,12 @@ A block switch gates all of its sub-items.
 - Tenants can live on unrelated domains. Every tenant host must point at the app (DNS, TLS certificate, web server/Lerd site alias).
 - Sessions: the package forces `session.domain` to `null`, so the session, CSRF and remember-me cookies are host-only and two tenants never share a session, even under a common parent domain. `SESSION_DOMAIN` is ignored. Users sign in on each tenant host separately. Because all hosts share one session store, the tenant panel middleware `BindSessionToHost` also records the host in the session; a session cookie copied to another host is invalidated there (guest, new CSRF token).
 - Filament matches any host on the tenant routes (`{tenant}` allows dots); the package excludes `APP_DOMAIN` and the admin host from those routes after boot, so they are never taken as a tenant.
-- Every tenant panel route, including login, password reset and the invitation accept page, answers only on the host of an existing tenant (`EnsureKnownTenantHost`, first in the tenant panel middleware): unknown hosts, `APP_DOMAIN` and the admin host get a 404. Invitation links are signed for the tenant's host (`AcceptInvitation::signedUrl()`).
+- Every tenant panel route, including login, password reset and the invitation accept page, answers only on the host of an existing, active tenant (`EnsureKnownTenantHost`, first in the tenant panel middleware): unknown hosts, `APP_DOMAIN` and the admin host get a 404; a cancelled tenant's host gets the [cancelled tenant response](#cancelled-tenant-hosts) (default 404, so it is indistinguishable from an unknown host) and any session on it is invalidated, so members are not signed in again when the tenant is reactivated. Invitation links point at the tenant's host with a signed path (`AcceptInvitation::signedUrl()`, `signed:relative`) and open only on that host (404 elsewhere).
 - The admin panel is bound to `ADMIN_DOMAIN`, or to `APP_DOMAIN` when that is empty, so tenant hosts return 404 for the admin path. One of them is required: with both empty `AdminPlugin` throws `InvalidTenancyConfiguration` at boot instead of serving the admin panel on every tenant host.
 - The tenant forms show the `domain` field: lower-case host name only (no scheme, path or port), unique, not `APP_DOMAIN` or the admin host.
+- Sign in on a tenant host accepts only that tenant's active members, plus users with a pending invitation to it (they sign in there to accept, with `features.invitations` on). Anyone else gets Filament's "These credentials do not match our records", so the host does not reveal accounts of other tenants (`canAccessPanel()` in `HasTenantAccess`).
 - After logout, users return to the login page of the panel on the same host (`redirects.logout_route` is not used), because each host is its own site.
+- Impersonation crosses from the admin host to the tenant host with a signed, single-use, 60 second link (see [Impersonation](#impersonation)).
 
 ### Both modes
 
@@ -637,7 +642,7 @@ The package owns the generic lifecycle. Your app owns the cancel screen and the 
 | `cancelled_at` and `scheduled_for_deletion_at`, `isCancelled()`, `isDueForDeletion()`, `active()` and `dueForDeletion()` scopes | package (`IsTenant`, migration) |
 | `CancelTenant`: stamps `cancelled_at`, schedules deletion for the end of the day `cancellation.grace_days` later, dispatches `TenantCancelled` after commit | package |
 | `AccountCancelled` mail to every owner (`notifications.cancelled`) | package |
-| Login blocking: a user whose tenants are all cancelled can't sign in. Cancelled tenants leave the switcher and the default tenant. Requests to a cancelled tenant redirect to another active tenant | package (`IsTenantUser`, `EnsureTenantIsNotCancelled`, `EnsureUserHasTenant`) |
+| Login blocking: a user whose tenants are all cancelled can't sign in. Cancelled tenants leave the switcher and the default tenant. Requests to a cancelled tenant redirect to another active tenant (without host verification) or get the `CancelledTenantResponse` (see below) | package (`IsTenantUser`, `EnsureTenantIsNotCancelled`, `EnsureUserHasTenant`) |
 | `ReactivateTenant`: clears both timestamps, dispatches `TenantReactivated` after commit | package |
 | `DeleteTenant` and the daily `DeleteDueTenants` job | package |
 | Admin **Tenants** resource with cancel and reactivate actions (`tenant.view_any`, `tenant.view`, `tenant.update`, `tenant.cancel`, `tenant.reactivate`) | package |
@@ -653,6 +658,43 @@ The package owns the generic lifecycle. Your app owns the cancel screen and the 
 Listeners run while the tenant and its members still exist. If one throws, nothing is deleted, and `DeleteDueTenants` retries the tenant on the next run (each tenant is wrapped in `rescue()`).
 
 Reactivating does **not** restore the invitations that cancelling deleted. Owners send fresh invitations.
+
+### Cancelled tenant hosts
+
+`EnsureKnownTenantHost` (first in the tenant panel middleware) answers every tenant panel route on a cancelled tenant's host, login included, with `Http\Responses\Contracts\CancelledTenantResponse`: always in `domain` mode, in `subdomain` mode with `verify_subdomain_hosts`. The default, `Http\Responses\CancelledTenantResponse`, returns 404, so the host looks exactly like an unknown one. In `domain` mode the session on that host is invalidated first, so members are not signed in again when the tenant is reactivated. Unknown hosts are always a plain 404 (there is no tenant to pass).
+
+Bind your own implementation in a service provider's `register()` to answer differently, for example a SaaS "come back" page:
+
+```php
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Slakbal\TenancyFoundation\Http\Responses\Contracts\CancelledTenantResponse;
+use Symfony\Component\HttpFoundation\Response;
+
+$this->app->bind(CancelledTenantResponse::class, fn () => new class implements CancelledTenantResponse
+{
+    public function toResponse(Request $request, Model $tenant): Response
+    {
+        return redirect()->away('https://example.com/come-back');
+    }
+});
+```
+
+The response is public: anyone can trigger it for a cancelled host. Never reactivate, or reveal owner details, from a URL alone. Whatever page reactivates must authenticate the owner itself (signed link, sign in on a central host, or the payment provider's verified webhook) and then call `ReactivateTenant`.
+
+### Subscriptions and billing
+
+The package has no subscription logic, and `cancelled_at` means "closed, waiting for deletion", not "unpaid". Keep the two apart:
+
+| | Subscription lapsed (application) | Cancelled (package) |
+|---|---|---|
+| Tenant | Active, `cancelled_at` empty | `cancelled_at` set, deleted after `cancellation.grace_days` |
+| Owner | Signs in; only the billing page works until they subscribe again | Cannot sign in on the tenant host |
+| Tenant host | Normal | `CancelledTenantResponse` |
+
+For the lapsed state use Filament's tenant billing on the tenant panel: `->tenantBillingProvider($provider)->requiresTenantSubscription()` (for example with Laravel Cashier). Filament adds the provider's subscribed middleware to each page and resource route, not to the billing route, so the owner reaches billing and subscribes again without a reactivation step. Who may use the billing page and what other members see meanwhile is up to the provider and the app. Package pages follow the panel setting; override `isTenantSubscriptionRequired()` on a page (for example the contact page) that must stay reachable.
+
+Call `CancelTenant` only when the account is given up (for example after a long lapse, or when the owner closes it). `ReactivateTenant` still undoes it during the grace period.
 
 ## Events and extension points
 
@@ -710,6 +752,7 @@ protected function actions(): array
 |---|---|---|
 | `canBeInvited(string $email, Model $role): bool` | `IsTenant` (your `Tenant`) | Refuse invitations, for example by email domain |
 | `canSignIn(): bool` | `HasTenantAccess` (your `User`) | Keep user types out of the panel |
+| `CancelledTenantResponse` | container binding (`Http\Responses\Contracts\CancelledTenantResponse`) | What a cancelled tenant's host answers (default 404). See [Cancelled tenant hosts](#cancelled-tenant-hosts) |
 | `getCurrentTenantLabel()` | `IsTenant` | Label under the tenant in the switcher (role names by default) |
 | `currentTenantLabelStyle()` | `TenantPlugin` | Colour of that label |
 | `getTenantFormComponents()`, `getUserFormComponents()` | `RegisterUser`, `RegisterTenant` | Registration fields |
@@ -745,7 +788,12 @@ protected function actions(): array
 - It needs `impersonate.user` (`Admin::canImpersonate()`).
 - It signs in on the `web` guard and redirects to the user's default tenant dashboard on that tenant's host. If the user has no tenant, it stops with a notification.
 - "Back" returns to the referring admin page.
-- It relies on the shared session cookie (`SESSION_DOMAIN`), so it only works in `subdomain` mode for now; `domain` mode needs the signed handoff (planned).
+- `subdomain` mode: it signs in within the shared session cookie (`SESSION_DOMAIN`); "Leave" in the banner restores the admin in that session.
+- `domain` mode: the tenant host never sees the backoffice session (host-only cookies), so the admin stays signed in on the admin host and is redirected to a one-time handoff link on the tenant's host:
+  - `Actions\Impersonation\IssueImpersonationHandoff` checks `canImpersonate()` (and `canBeImpersonated()` if the user model has it), stores the admin, user, tenant and return URL in the cache under a random 64-character token and returns a link on the tenant host whose path is signed (`signed:relative`; the controller enforces the host) (`/impersonation/handoff/{token}`, route `filament.app.impersonation.handoff`, registered by `TenantPlugin` in `domain` mode only). The link expires after 60 seconds (`IssueImpersonationHandoff::TTL_SECONDS`).
+  - `Http\Controllers\RedeemImpersonationHandoff` accepts it once (cache lock plus pull), only on the tenant's own host, only while the admin can still access the admin panel and the user can still access the tenant. It replaces the tenant host session (new session id, earlier data dropped), signs the user in on the `web` guard without a `Login` event (so no last login update) and stores the impersonation the way `filament-impersonate` does, so its banner shows. Reused, expired, tampered or foreign-host links get 403 (404 on hosts that are not a tenant).
+  - "Leave" (`filament-impersonate/leave`) runs `Http\Middleware\LeaveImpersonationOnTenantHost` first (added to `filament-impersonate.leave_middleware` in `domain` mode): it drops the tenant host session and returns to the admin page the action started from. That URL is accepted only on the admin host (http or https); anything else falls back to the admin users list.
+  - Needs a cache store with atomic locks shared by all app servers (`redis`, `database`, `memcached`, `dynamodb`; `file` and `array` only on a single server). `EnterImpersonation` and `LeaveImpersonation` fire as in `subdomain` mode.
 
 ## Scheduled jobs
 

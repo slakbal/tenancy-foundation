@@ -9,6 +9,7 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -28,6 +29,9 @@ use Slakbal\TenancyFoundation\Events\Tenant\TenantReactivated;
 use Slakbal\TenancyFoundation\Events\Tenant\TenantRegistered;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureKnownTenantHost;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureUserHasTenant;
+use Slakbal\TenancyFoundation\Http\Middleware\LeaveImpersonationOnTenantHost;
+use Slakbal\TenancyFoundation\Http\Responses\CancelledTenantResponse;
+use Slakbal\TenancyFoundation\Http\Responses\Contracts\CancelledTenantResponse as CancelledTenantResponseContract;
 use Slakbal\TenancyFoundation\Http\Responses\LogoutResponse;
 use Slakbal\TenancyFoundation\Http\Responses\RegistrationResponse;
 use Slakbal\TenancyFoundation\Jobs\DeleteDueTenants;
@@ -61,6 +65,22 @@ class TenancyFoundationServiceProvider extends ServiceProvider
             $this->registerAuthDefaults();
         }
 
+        $this->registerImpersonationLeave();
+    }
+
+    protected function registerImpersonationLeave(): void
+    {
+        if (TenantResolution::current() !== TenantResolution::DOMAIN) {
+            return;
+        }
+
+        // filament-impersonate reads this when it loads its "leave" route, so it is set before any provider boots.
+        $this->app->booting(function (): void {
+            config(['filament-impersonate.leave_middleware' => [
+                ...Arr::wrap(config('filament-impersonate.leave_middleware', 'web')),
+                LeaveImpersonationOnTenantHost::class,
+            ]]);
+        });
     }
 
     protected function bootResolution(): void
@@ -150,6 +170,7 @@ class TenancyFoundationServiceProvider extends ServiceProvider
     {
         $this->app->bind(LogoutResponseContract::class, LogoutResponse::class);
         $this->app->bind(RegistrationResponseContract::class, RegistrationResponse::class);
+        $this->app->bindIf(CancelledTenantResponseContract::class, CancelledTenantResponse::class);
     }
 
     protected function bootMiddlewarePriority(): void
