@@ -105,6 +105,11 @@ class TenantRolePermissionsSeeder extends Seeder
             $permissions->whereIn('name', $viewOnly),
         );
 
+        $this->applyDefaults(
+            $roleClass::findOrCreate(name: TenantRoles::CUSTOMER->value, guardName: $guard),
+            $permissions->whereIn('name', $viewOnly),
+        );
+
         $registrar->forgetCachedPermissions();
     }
 }

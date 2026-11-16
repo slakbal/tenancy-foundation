@@ -488,7 +488,7 @@ Columns are added in their original order on MySQL and MariaDB. Existing columns
 | Guard | Roles (`enum`) | Team id |
 |---|---|---|
 | `admin` | `AdminRoles`: `super_admin`, `admin`, `support` | `Admin::PERMISSIONS_TEAM_ID` (`0`, never a tenant id, so no placeholder tenant is needed) |
-| `web` | `TenantRoles`: `owner`, `admin`, `view_only` | the tenant id, set per request by `SyncTenantPermissionsContext` |
+| `web` | `TenantRoles`: `owner`, `admin`, `view_only`, `customer` | the tenant id, set per request by `SyncTenantPermissionsContext` |
 
 Permission enums: `AdminPermissions` (impersonate, permissions, admin users, tenants, contact requests, users), `TenantPermissions` (users, tenant) and `InvitationPermissions` (only when `features.invitations` is on). Values are `resource.action`, for example `user.view_any`.
 
@@ -513,6 +513,7 @@ Permission enums: `AdminPermissions` (impersonate, permissions, admin users, ten
 | tenant `owner` | none (always cleared, bypass) |
 | tenant `admin` | every tenant permission (including invitation ones when enabled) |
 | tenant `view_only` | `viewOnlyPermissions()`: `user.view_any`, `user.view` |
+| tenant `customer` | same defaults as `view_only`; the role for customers who join a tenant themselves (for example on first SSO login), so the product can give them its own permissions |
 
 The enums are the permission registry. After an upgrade, or after you add permissions to your own enums, run `php artisan tenancy-foundation:sync-permissions` (see [Commands](#commands)). It never grants anything, so assign new permissions to roles yourself, or on the Role permissions page.
 

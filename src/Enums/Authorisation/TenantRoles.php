@@ -11,6 +11,7 @@ enum TenantRoles: string implements HasColor, HasIcon, HasLabel
     case OWNER = 'owner';
     case ADMIN = 'admin';
     case VIEW_ONLY = 'view_only';
+    case CUSTOMER = 'customer';
 
     /**
      * @return array<string, string>
@@ -37,6 +38,7 @@ enum TenantRoles: string implements HasColor, HasIcon, HasLabel
             self::OWNER => __('Owner'),
             self::ADMIN => __('Admin'),
             self::VIEW_ONLY => __('View Only'),
+            self::CUSTOMER => __('Customer'),
         };
     }
 
@@ -46,6 +48,7 @@ enum TenantRoles: string implements HasColor, HasIcon, HasLabel
             self::OWNER => 'warning',
             self::ADMIN => 'primary',
             self::VIEW_ONLY => 'info',
+            self::CUSTOMER => 'success',
         };
     }
 
@@ -55,6 +58,7 @@ enum TenantRoles: string implements HasColor, HasIcon, HasLabel
             self::OWNER => 'heroicon-o-shield-check',
             self::ADMIN => 'heroicon-o-user-group',
             self::VIEW_ONLY => 'heroicon-o-eye',
+            self::CUSTOMER => 'heroicon-o-user',
         };
     }
 }
