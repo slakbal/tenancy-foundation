@@ -113,7 +113,8 @@ class UserInfolist
                 ->label(__('Email verified'))
                 ->inlineLabel()
                 ->dateTime()
-                ->placeholder('-'),
+                ->placeholder('-')
+                ->visible(fn (): bool => (bool) config('tenancy-foundation.features.email_verification')),
             TextEntry::make('created_at')
                 ->label(__('Created'))
                 ->inlineLabel()

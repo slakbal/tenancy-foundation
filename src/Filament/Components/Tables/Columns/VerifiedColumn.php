@@ -12,6 +12,7 @@ class VerifiedColumn
             ->label(__('Verified'))
             ->boolean()
             ->alignCenter()
-            ->sortable();
+            ->sortable()
+            ->visible(fn (): bool => (bool) config('tenancy-foundation.features.email_verification'));
     }
 }

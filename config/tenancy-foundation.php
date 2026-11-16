@@ -206,6 +206,10 @@ return [
     |                     permissions and the pruning of old invitations. Set to
     |                     false for a product without invitations. The migrations
     |                     always run, whatever the flags say.
+    | multi_tenant_users  (default true) Users may belong to, or own, more than one
+    |                     tenant. false hides the "Owner of" and "Member of"
+    |                     columns of the user tables, which would only repeat the
+    |                     one tenant. Memberships and the data model are unchanged.
     | password_auth       (default true) Password sign in on the tenant panel.
     |                     false removes the password reset routes (tenant and
     |                     admin panels) and turns off user registration. The
@@ -215,7 +219,11 @@ return [
     |                     panel. Only available together with password_auth.
     | email_verification  (default true) Email verification prompt and routes of
     |                     the tenant panel. false never asks users to verify;
-    |                     the User model may still implement MustVerifyEmail.
+    |                     the User model may still implement MustVerifyEmail. It also
+    |                     hides the "Verified" column and filter of the user and
+    |                     admin tables, the "Email verified" infolist entries and the
+    |                     "Mark email verified" action; the columns stay in the
+    |                     database.
     | tenant_registration (default null) The "register a tenant" page of the
     |                     tenant panel. null follows the resolution: on with
     |                     "subdomain", off with "domain" (tenants are then created
@@ -226,6 +234,7 @@ return [
 
     'features' => [
         'invitations' => true,
+        'multi_tenant_users' => true,
         'password_auth' => true,
         'registration' => true,
         'email_verification' => true,

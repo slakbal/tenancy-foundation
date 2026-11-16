@@ -25,6 +25,7 @@ class TenantNamesColumn
             ->state(fn (Model $record): array => $record->tenants
                 ->filter(fn (Model $tenant): bool => (bool) $tenant->pivot->is_owner === $isOwner)
                 ->pluck('name')
-                ->all());
+                ->all())
+            ->visible(fn (): bool => (bool) config('tenancy-foundation.features.multi_tenant_users'));
     }
 }

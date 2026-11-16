@@ -10,6 +10,7 @@ class VerifiedFilter
     {
         return TernaryFilter::make($name)
             ->label(__('Verified'))
-            ->nullable();
+            ->nullable()
+            ->visible(fn (): bool => (bool) config('tenancy-foundation.features.email_verification'));
     }
 }

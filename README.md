@@ -262,9 +262,10 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 | `user_name_attributes` | `['name']` | Name column(s), for example `['first_name', 'last_name']` |
 | `email_change_verification` | `true` | Email changes on the profile page take effect after the new address confirms (both panels) |
 | `features.invitations` | `true` | Invitations resource, accept page, invitation permissions and pruning |
+| `features.multi_tenant_users` | `true` | `false` hides the "Owner of" and "Member of" columns of the user tables (each user has one tenant). Memberships and the data model are unchanged |
 | `features.password_auth` | `true` | Password sign in. `false` removes password reset (both panels) and user registration |
 | `features.registration` | `true` | User registration page of the tenant panel (needs `password_auth`) |
-| `features.email_verification` | `true` | Email verification prompt and routes of the tenant panel |
+| `features.email_verification` | `true` | Email verification prompt and routes of the tenant panel. `false` also hides the "Verified" column and filter of the user and admin tables, the "Email verified" infolist entries and the "Mark email verified" action (the columns stay in the database) |
 | `features.tenant_registration` | `env('TENANCY_TENANT_REGISTRATION')` (`null`) | "Register a tenant" page. `null` follows the resolution (on for `subdomain`, off for `domain`); `true` or `false` always forces it |
 | `invitations.expiry_days` | `env('INVITATION_EXPIRY_DAYS', 7)` | Days an invitation link stays valid |
 | `invitations.retention_days` | `env('INVITATION_RETENTION_DAYS', 30)` | Pruning window for invitations |
