@@ -22,7 +22,7 @@ enum FilamentPanel: string implements HasColor, HasIcon, HasLabel
     public function getPath(): string
     {
         return match ($this) {
-            self::ADMIN => (string) config('tenancy-foundation.admin.path', 'admin'),
+            self::ADMIN => trim((string) config('tenancy-foundation.admin.path', 'admin'), '/'),
             self::TENANT => '',
         };
     }

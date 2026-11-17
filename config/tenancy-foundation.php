@@ -109,7 +109,8 @@ return [
     |         the session cookie is host-only, so staff sign in on this host
     |         only. Env: ADMIN_DOMAIN.
     | path    URL path prefix of the admin panel. Default "admin"; may be
-    |         empty ("") when the panel has its own domain. Env: ADMIN_PATH.
+    |         empty ("") or "/" when the panel has its own domain (both mean no
+    |         prefix; slashes are trimmed). Env: ADMIN_PATH.
     |
     */
 
