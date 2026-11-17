@@ -14,6 +14,8 @@ use Filament\Support\SupportServiceProvider;
 use Filament\Tables\TablesServiceProvider;
 use Filament\Widgets\WidgetsServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Horizon\HorizonServiceProvider;
+use Opcodes\LogViewer\LogViewerServiceProvider;
 use l3aro\FilamentTurnstile\FilamentTurnstileServiceProvider;
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
@@ -48,6 +50,8 @@ abstract class TestCase extends Orchestra
             FilamentTurnstileServiceProvider::class,
             FilamentImpersonateServiceProvider::class,
             PermissionServiceProvider::class,
+            HorizonServiceProvider::class,
+            LogViewerServiceProvider::class,
             TenancyFoundationServiceProvider::class,
             AdminPanelProvider::class,
             TenantPanelProvider::class,

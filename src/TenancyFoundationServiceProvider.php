@@ -10,14 +10,19 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Translation\Translator;
+use Laravel\Horizon\Horizon;
 use Livewire\Livewire;
+use Opcodes\LogViewer\Facades\LogViewer;
 use Slakbal\TenancyFoundation\Console\CreateAdminCommand;
 use Slakbal\TenancyFoundation\Console\InstallCommand;
 use Slakbal\TenancyFoundation\Console\SyncPermissionsCommand;
+use Slakbal\TenancyFoundation\Enums\AuthGuard;
+use Slakbal\TenancyFoundation\Enums\FilamentPanel;
 use Slakbal\TenancyFoundation\Enums\TenantResolution;
 use Slakbal\TenancyFoundation\Events\Admin\AdminUserCreated;
 use Slakbal\TenancyFoundation\Events\Admin\RolePermissionsChanged;
@@ -52,7 +57,9 @@ use Slakbal\TenancyFoundation\Listeners\Tenant\SendMemberRemovedNotification;
 use Slakbal\TenancyFoundation\Listeners\Tenant\SendReactivationNotification;
 use Slakbal\TenancyFoundation\Listeners\Tenant\SendWelcomeNotification;
 use Slakbal\TenancyFoundation\Livewire\PublicContactForm;
+use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Observers\RoleObserver;
+use Slakbal\TenancyFoundation\Support\AdminAccountGuard;
 
 class TenancyFoundationServiceProvider extends ServiceProvider
 {
@@ -69,6 +76,35 @@ class TenancyFoundationServiceProvider extends ServiceProvider
         }
 
         $this->registerImpersonationLeave();
+        $this->registerSystemToolHosts();
+    }
+
+    // Horizon and Log Viewer register their routes while booting, so the host is decided here, before that. An application value wins.
+    protected function registerSystemToolHosts(): void
+    {
+        $host = FilamentPanel::ADMIN->getDomain();
+
+        if ($host === null) {
+            return;
+        }
+
+        config([
+            'horizon.domain' => config('horizon.domain') ?? $host,
+            'log-viewer.route_domain' => config('log-viewer.route_domain') ?? $host,
+        ]);
+    }
+
+    protected function bootSystemToolAccess(): void
+    {
+        // These routes are outside the admin panel, which is what sets the permissions team, so an admin's roles would not be found without it.
+        $isSuperAdmin = function (): bool {
+            setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
+
+            return AdminAccountGuard::isSuperAdmin(Auth::guard(AuthGuard::ADMIN->getAuthGuard())->user());
+        };
+
+        Horizon::auth($isSuperAdmin);
+        LogViewer::auth($isSuperAdmin);
     }
 
     protected function registerImpersonationLeave(): void
@@ -140,6 +176,7 @@ class TenancyFoundationServiceProvider extends ServiceProvider
         $this->bootBindings();
         $this->bootMiddlewarePriority();
         $this->bootSecurityHeaders();
+        $this->bootSystemToolAccess();
         $this->bootEventListeners();
         $this->bootSchedule();
         $this->bootConsole();
@@ -226,6 +263,10 @@ class TenancyFoundationServiceProvider extends ServiceProvider
     protected function bootSchedule(): void
     {
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+            $schedule->command('horizon:snapshot')
+                ->everyFiveMinutes()
+                ->onOneServer();
+
             if (config('tenancy-foundation.cancellation.schedule_deletion')) {
                 $schedule->job(new DeleteDueTenants)
                     ->dailyAt(config('tenancy-foundation.cancellation.deletion_time'))

@@ -4,9 +4,15 @@ namespace Slakbal\TenancyFoundation\Plugins;
 
 use Asignua\FilamentCspNonce\CspNoncePlugin;
 use Filament\Contracts\Plugin;
+use Filament\Navigation\NavigationGroup;
+use Filament\Navigation\NavigationItem;
 use Filament\Panel;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Enums\FilamentPanel;
@@ -106,6 +112,13 @@ class AdminPlugin implements Plugin
             $panel->plugin(CspNoncePlugin::make());
         }
 
+        $this->registerNavigationGroups($panel);
+
+        $panel->navigationItems([
+            $this->systemNavigationItem(__('Horizon'), 'horizon.index', Heroicon::OutlinedQueueList, 1),
+            $this->systemNavigationItem(__('Log Viewer'), 'log-viewer.index', Heroicon::OutlinedDocumentText, 2),
+        ]);
+
         $panel->databaseNotifications();
 
         if (config('tenancy-foundation.features.password_auth')) {
@@ -117,6 +130,33 @@ class AdminPlugin implements Plugin
         $panel->authPasswordBroker(AuthGuard::ADMIN->getPasswordBroker());
         $panel->pages([$this->rolePermissionsPage]);
         $panel->resources([$this->userResource, $this->adminUserResource, $this->tenantResource, $this->contactRequestResource]);
+    }
+
+    // The panel sorts unlisted groups after the listed ones, so listing the package groups in their natural order and System last keeps System at the end. Groups the application lists itself stay in front.
+    protected function registerNavigationGroups(Panel $panel): void
+    {
+        $labels = collect([$this->tenantResource, $this->userResource, $this->adminUserResource, $this->contactRequestResource, $this->rolePermissionsPage])
+            ->filter(fn (string $component): bool => filled($component::getNavigationGroup()))
+            ->sortBy(fn (string $component): int => $component::getNavigationSort() ?? 0)
+            ->map(fn (string $component): string => (string) $component::getNavigationGroup())
+            ->push(__('System'))
+            ->unique()
+            ->values();
+
+        $existing = $panel->getNavigationGroups();
+        $asObjects = Arr::first($existing) instanceof NavigationGroup;
+
+        $panel->navigationGroups($labels->map(fn (string $label): NavigationGroup|string => $asObjects ? NavigationGroup::make($label) : $label)->all());
+    }
+
+    protected function systemNavigationItem(string $label, string $route, Heroicon $icon, int $sort): NavigationItem
+    {
+        return NavigationItem::make($label)
+            ->group(__('System'))
+            ->icon($icon)
+            ->sort($sort)
+            ->url(fn (): string => route($route), shouldOpenInNewTab: true)
+            ->visible(fn (): bool => Route::has($route) && AdminAccountGuard::isSuperAdmin(Auth::guard(AuthGuard::ADMIN->getAuthGuard())->user()));
     }
 
     public function boot(Panel $panel): void

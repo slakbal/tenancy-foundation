@@ -326,5 +326,8 @@
     "Invitation revoked": "Einladung widerrufen",
     "The user can sign in to the admin panel again.": "Der Benutzer kann sich wieder im Backoffice anmelden.",
     "Verified": "Bestätigt",
-    "Tenant roles": "Mandantenrollen"
+    "Tenant roles": "Mandantenrollen",
+    "Horizon": "Horizon",
+    "System": "System",
+    "Log Viewer": "Log-Viewer"
 }

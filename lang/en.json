@@ -326,5 +326,8 @@
     "Invitation revoked": "Invitation revoked",
     "The user can sign in to the admin panel again.": "The user can sign in to the admin panel again.",
     "Verified": "Verified",
-    "Tenant roles": "Tenant roles"
+    "Tenant roles": "Tenant roles",
+    "Horizon": "Horizon",
+    "System": "System",
+    "Log Viewer": "Log Viewer"
 }

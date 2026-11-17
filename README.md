@@ -130,6 +130,16 @@ See [Domains, hosts and sessions](#domains-hosts-and-sessions) and [Environment 
 
 All package notifications are queued, so run `php artisan queue:work` (with `QUEUE_CONNECTION=sync` they send immediately). Tenant deletion and pruning run on the scheduler, so `schedule:run` must run every minute in production (see [Scheduled jobs](#scheduled-jobs)).
 
+### Horizon and Log Viewer
+
+The package requires `laravel/horizon` and `opcodesio/log-viewer` (Horizon needs a Redis queue connection) and wires them into the backoffice for every project:
+
+- **Access:** only a signed in super admin (admin guard) can open either tool, in every environment, including local. The package sets `Horizon::auth()` and `LogViewer::auth()`; do not override them in the application.
+- **Host:** both are served on the admin panel host (`admin.domain`, or `domain` in `domain` mode) so tenant hosts never expose them. The package fills `horizon.domain` and `log-viewer.route_domain` with that host when they are empty; an application value wins. Without an admin host they follow the application's own settings.
+- **Navigation:** the admin panel gets a **System** group with a Horizon and a Log Viewer item that open in a new tab, shown to super admins only.
+- **Scheduler:** `horizon:snapshot` runs every five minutes (Horizon metrics).
+- **Application tweaks:** everything else is the application's configuration, for example `config/horizon.php` (publish it to change supervisors and queues), `config/log-viewer.php`, `HORIZON_PATH` and `after_commit` on the queue connections. Run `php artisan horizon` under Supervisor and `horizon:terminate` on deploy.
+
 ### 5. Spatie permissions with teams
 
 ```bash
@@ -399,6 +409,7 @@ A block switch gates all of its sub-items.
 - Database notifications, password reset (`ResetPassword`), profile (`EditProfile`), email change verification, the `admins` broker.
 - Resources: `Users\UserResource` (tenant users), `AdminUsers\AdminUserResource` (slug `admins`), `Tenants\TenantResource`, `ContactRequests\ContactRequestResource`.
 - Page: `ManageRolePermissions` (Security > Role permissions).
+- Navigation group **System** with **Horizon** and **Log Viewer** items that open in a new tab, visible to super admins only (see [Horizon and Log Viewer](#horizon-and-log-viewer)).
 - On boot: `setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID)`, a `Gate::before` (`SoleOwnerGuard`, then `AdminAccountGuard`, then `super_admin` → allow), and policy resolution for the `Admin` namespace.
 
 Overrides: `usingUserResource()`, `usingAdminUserResource()`, `usingTenantResource()`, `usingContactRequestResource()`, `usingProfilePage()`, `usingRolePermissionsPage()`.
@@ -423,7 +434,8 @@ Overrides: `usingUserResource()`, `usingRegisterUserPage()`, `usingRegisterTenan
 - The package event listeners (see [Events](#events)) and the `UpdateLastLogin` listener on `Login` (disable with `register_last_login_listener`).
 - `RoleObserver` on `models.role` when invitations are on.
 - Migrations, JSON translations (`lang/en.json`), views (namespace `tenancy-foundation`), the `public-contact-form` Livewire component and the `public.contact` route.
-- The scheduled jobs and the commands.
+- The scheduled jobs (including `horizon:snapshot` every five minutes) and the commands.
+- Access to Horizon and the Log Viewer (see below).
 - `FilamentDefaultsServiceProvider` (Filament defaults).
 
 ## Models and traits
