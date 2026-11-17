@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
+use Slakbal\TenancyFoundation\Console\CreateAdminCommand;
 use Slakbal\TenancyFoundation\Console\InstallCommand;
 use Slakbal\TenancyFoundation\Console\SyncPermissionsCommand;
 use Slakbal\TenancyFoundation\Enums\TenantResolution;
@@ -251,7 +252,7 @@ class TenancyFoundationServiceProvider extends ServiceProvider
             return;
         }
 
-        $this->commands([InstallCommand::class, SyncPermissionsCommand::class]);
+        $this->commands([InstallCommand::class, SyncPermissionsCommand::class, CreateAdminCommand::class]);
 
         $this->publishes([
             __DIR__.'/../config/tenancy-foundation.php' => config_path('tenancy-foundation.php'),

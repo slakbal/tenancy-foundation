@@ -25,6 +25,7 @@ class InstallCommand extends Command
             'Register AdminPlugin / TenantPlugin in your Filament panel providers.',
             'Optional: php artisan vendor:publish --tag=tenancy-foundation-stubs for the app listeners that react to a tenant being registered, cancelled, reactivated or deleted.',
             'Seed roles with the package AdminRolePermissionsSeeder and TenantRolePermissionsSeeder. Seeding applies role defaults on first install only; re-running it never resets a role that already has permissions.',
+            'Invite the first super admin with php artisan tenancy-foundation:create-admin {email}.',
             'After adding permissions (package upgrade or your own enums) run php artisan tenancy-foundation:sync-permissions. It creates the missing rows and reports orphans, but never assigns them to a role.',
         ]);
 

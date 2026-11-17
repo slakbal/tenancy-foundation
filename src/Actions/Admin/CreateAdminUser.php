@@ -17,11 +17,11 @@ readonly class CreateAdminUser
     /**
      * @param  array<string, mixed>  $data
      */
-    public function handle(array $data, Model $actor): Model
+    public function handle(array $data, ?Model $actor): Model
     {
         $role = $data['role'] ?? null;
 
-        if ($role === AdminRoles::SUPER_ADMIN->value && ! AdminAccountGuard::isSuperAdmin($actor)) {
+        if ($role === AdminRoles::SUPER_ADMIN->value && $actor !== null && ! AdminAccountGuard::isSuperAdmin($actor)) {
             throw new AuthorizationException(__('Only a super admin can assign the super admin role.'));
         }
 

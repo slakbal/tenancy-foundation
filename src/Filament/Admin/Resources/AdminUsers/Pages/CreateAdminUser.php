@@ -22,7 +22,9 @@ class CreateAdminUser extends CreateRecord
 
     protected function getCreatedNotificationTitle(): ?string
     {
-        return __('Admin created. An email to set a password has been sent.');
+        return config('tenancy-foundation.features.password_auth')
+            ? __('Admin created. An email to set a password has been sent.')
+            : __('Admin created. An email with a sign in link has been sent.');
     }
 
     protected function getRedirectUrl(): string

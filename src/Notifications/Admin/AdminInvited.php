@@ -25,6 +25,10 @@ class AdminInvited extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
+        if (! config('tenancy-foundation.features.password_auth')) {
+            return $this->signInMail();
+        }
+
         $broker = AuthGuard::ADMIN->getPasswordBroker();
         $token = Password::broker($broker)->createToken($notifiable);
 
@@ -34,5 +38,14 @@ class AdminInvited extends Notification implements ShouldQueue
             ->line(__('Choose your password to activate the account.'))
             ->action(__('Set your password'), Filament::getPanel(FilamentPanel::ADMIN->getPanelId())->getResetPasswordUrl($token, $notifiable))
             ->line(__('This link expires in :minutes minutes. Ask an admin to resend the invitation after that.', ['minutes' => (int) config("auth.passwords.{$broker}.expire")]));
+    }
+
+    protected function signInMail(): MailMessage
+    {
+        return (new MailMessage)
+            ->subject(__('You have been invited to the :app admin panel', ['app' => config('app.name')]))
+            ->line(__('An admin account has been created for you on :app.', ['app' => config('app.name')]))
+            ->line(__('Sign in to activate the account.'))
+            ->action(__('Sign in'), Filament::getPanel(FilamentPanel::ADMIN->getPanelId())->getLoginUrl());
     }
 }

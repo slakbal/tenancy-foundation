@@ -214,9 +214,11 @@ return [
     |                     false removes the password reset routes (tenant and
     |                     admin panels), hides every "Send password reset link"
     |                     action (tables and view/edit pages) and turns off user
-    |                     registration. The
-    |                     login page itself is replaced by the SSO hooks, not by
-    |                     this flag.
+    |                     registration. The admin invitation (admin_invited) then
+    |                     links to the admin login page instead of a set password
+    |                     page; the app activates the pending admin on first
+    |                     sign in (for example in its SSO callback). The login
+    |                     page itself is the app's to replace, not this flag's.
     | registration        (default true) The user registration page of the tenant
     |                     panel. Only available together with password_auth.
     | email_verification  (default true) Email verification prompt and routes of
@@ -285,7 +287,9 @@ return [
     | cancelled         Emailed to the tenant owners when the tenant is cancelled.
     | reactivated       Emailed to the tenant owners when a cancelled tenant is
     |                   reactivated.
-    | admin_invited     Emailed to a new admin with a link to set their password.
+    | admin_invited     Emailed to a new admin with a link to set their password
+    |                   (with features.password_auth off: a link to the admin
+    |                   login page).
     | contact_response  Emailed to the requestor when an admin responds to
     |                   their contact request.
     | contact_received  Sent to the admin panel bell (database notification)

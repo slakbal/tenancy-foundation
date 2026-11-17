@@ -220,7 +220,13 @@ $this->call([AdminRolePermissionsSeeder::class, TenantRolePermissionsSeeder::cla
 
 If you registered your own tenant seeder subclass (see [App permissions](#app-permissions)), call that subclass instead.
 
-Create the first super admin under the admin team id:
+Invite the first super admin (it asks for the name attributes, creates a `pending` admin and mails `AdminInvited`):
+
+```bash
+php artisan tenancy-foundation:create-admin admin@example.com
+```
+
+Or create an active one directly under the admin team id:
 
 ```php
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
@@ -263,7 +269,7 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 | `email_change_verification` | `true` | Email changes on the profile page take effect after the new address confirms (both panels) |
 | `features.invitations` | `true` | Invitations resource, accept page, invitation permissions and pruning |
 | `features.multi_tenant_users` | `true` | `false` hides the "Owner of" and "Member of" columns of the user tables (each user has one tenant). Memberships and the data model are unchanged |
-| `features.password_auth` | `true` | Password sign in. `false` removes password reset (both panels), hides the "Send password reset link" actions and turns off user registration |
+| `features.password_auth` | `true` | Password sign in. `false` removes password reset (both panels), hides the "Send password reset link" actions, turns off user registration and makes the admin invitation a sign in link |
 | `features.registration` | `true` | User registration page of the tenant panel (needs `password_auth`) |
 | `features.email_verification` | `true` | Email verification prompt and routes of the tenant panel. `false` also hides the "Verified" column and filter of the user and admin tables, the "Email verified" infolist entries and the "Mark email verified" action (the columns stay in the database) |
 | `features.tenant_registration` | `env('TENANCY_TENANT_REGISTRATION')` (`null`) | "Register a tenant" page. `null` follows the resolution (on for `subdomain`, off for `domain`); `true` or `false` always forces it |
@@ -273,7 +279,7 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 | `notifications.welcome` | `WelcomeToTenant` | Mailed to the new owner after registration |
 | `notifications.cancelled` | `AccountCancelled` | Mailed to every owner on cancellation |
 | `notifications.reactivated` | `AccountReactivated` | Mailed to every owner on reactivation |
-| `notifications.admin_invited` | `AdminInvited` | Mailed to a new admin with a set password link |
+| `notifications.admin_invited` | `AdminInvited` | Mailed to a new admin with a set password link (with `password_auth` off: a sign in link to the admin login page) |
 | `notifications.contact_response` | `ContactRequestResponded` | Mailed to the requester when an admin responds |
 | `notifications.contact_received` | `NewContactRequest` | Database notification (admin bell) for a new contact request |
 | `notifications.member_removed` | `MemberRemoved` | Mailed to a user removed from a tenant (not when they left on their own) |
@@ -786,6 +792,8 @@ protected function actions(): array
 
 - `AdminUserResource` (slug `admins`, `admin_user.*` permissions) lists, views, creates and edits admins. It has role, status and trashed filters, plus delete, restore and force delete (force delete is super admin only).
 - Creating an admin (`CreateAdminUser`) stores a random password with status `pending`, dispatches `AdminUserCreated` and mails `AdminInvited` with a set password link. Using the reset link activates the admin and marks the email as verified (`ActivateAdminOnPasswordReset`).
+- With `features.password_auth` off, `AdminInvited` links to the admin login page instead, and the create and resend texts say so. The pending admin record is the invitation: it has no expiry, and deactivating or deleting the admin revokes it. The package does not activate the admin then; do it in your sign in flow (for example the SSO callback sets `status = active` on the first sign in of a pending admin).
+- `tenancy-foundation:create-admin` creates the first admin from the command line (see [Commands](#commands)).
 - `AdminStatus`: `pending`, `active`, `inactive`. Pending and active admins pass `canAccessPanel()`.
 - Row and header actions: activate, deactivate, change role (`ChangeAdminUserRole`) and send password reset link. `AdminAccountGuard` protects your own account and the last active super admin.
 
@@ -818,6 +826,7 @@ These are registered through the scheduler (`callAfterResolving(Schedule::class)
 | Command | Does |
 |---|---|
 | `tenancy-foundation:install` | Publishes the config, warns if spatie teams are off, prints the setup steps |
+| `tenancy-foundation:create-admin {email} {--role=super_admin}` | Asks for the `user_name_attributes`, creates a `pending` admin through `CreateAdminUser` (no actor, so it may create a super admin) and mails `AdminInvited`. Fails on an invalid email, an email of an existing or deleted admin, an unknown role, or a role that was not seeded yet. Meant for the first super admin on a new install |
 | `tenancy-foundation:sync-permissions` | Creates the missing permission rows for both guards: admin from `AdminPermissions`, tenant from the configured `seeders.tenant_role_permissions`. Reports orphaned rows (no enum case) without deleting them and clears the permission cache. Idempotent. Never changes role assignments |
 
 ## Testing

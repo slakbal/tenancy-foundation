@@ -215,3 +215,13 @@ it('rejects an older invitation link once a new one has been sent', function () 
 
     expect($admin->fresh()->status)->toBe(AdminStatus::PENDING);
 });
+
+it('links to the admin login page when password sign in is off', function () {
+    config(['tenancy-foundation.features.password_auth' => false]);
+    $admin = Admin::factory()->pending()->create();
+
+    $mail = (new AdminInvited)->toMail($admin);
+
+    expect($mail->actionText)->toBe('Sign in')
+        ->and($mail->actionUrl)->toBe(Filament::getPanel('admin')->getLoginUrl());
+});

@@ -21,7 +21,9 @@ class ResendAdminInvitationAction
             ->visible(fn (Model $record): bool => InviteAdminUser::isEnabled() && $record->status === AdminStatus::PENDING && ! $record->trashed())
             ->requiresConfirmation()
             ->modalHeading(fn (Model $record): string => __('Resend the invitation to :email?', ['email' => $record->email]))
-            ->modalDescription(__('A new link to set a password is emailed. Earlier links stop working.'))
+            ->modalDescription(fn (): string => config('tenancy-foundation.features.password_auth')
+                ? __('A new link to set a password is emailed. Earlier links stop working.')
+                : __('The sign in link is emailed again.'))
             ->action(function (Model $record): void {
                 app(InviteAdminUser::class)->handle($record);
 
