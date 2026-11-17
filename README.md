@@ -70,7 +70,7 @@ composer require slakbal/tenancy-foundation
 php artisan tenancy-foundation:install
 ```
 
-`tenancy-foundation:install` publishes `config/tenancy-foundation.php`. It warns if spatie teams are off and prints the remaining steps below.
+`tenancy-foundation:install` publishes `config/tenancy-foundation.php` (an existing one is kept unless you confirm overwriting it). It warns if spatie teams are off and prints the remaining steps below. Run interactively with teams on, it then offers to run the migrations, seed the roles (step 8) and invite the first admin; each question defaults to no.
 
 Publish tags:
 
@@ -825,9 +825,9 @@ These are registered through the scheduler (`callAfterResolving(Schedule::class)
 
 | Command | Does |
 |---|---|
-| `tenancy-foundation:install` | Publishes the config, warns if spatie teams are off, prints the setup steps |
+| `tenancy-foundation:install` | Publishes the config (asks before overwriting an existing one), warns if spatie teams are off, prints the setup steps. Interactive with teams on: offers to migrate, seed `AdminRolePermissionsSeeder` and the `seeders.tenant_role_permissions` seeder, and run `create-admin` (each defaults to no). Without interaction it never overwrites and lists those steps instead |
 | `tenancy-foundation:create-admin {email} {--role=}` | Interactive. Asks for the email (when not given) and each `user_name_attributes` field, validating as you type, then offers the admin guard roles from the database as a choice (default `super_admin`; app roles included). Creates a `pending` admin through `CreateAdminUser` (no actor, so it may create a super admin) and mails `AdminInvited`. Without interaction the role defaults to `super_admin`. Fails when no admin roles are seeded, on an email of an existing or deleted admin, or on an unknown `--role` (lists the available ones). Meant for the first super admin on a new install |
-| `tenancy-foundation:sync-permissions` | Creates the missing permission rows for both guards: admin from `AdminPermissions`, tenant from the configured `seeders.tenant_role_permissions`. Reports orphaned rows (no enum case) without deleting them and clears the permission cache. Idempotent. Never changes role assignments |
+| `tenancy-foundation:sync-permissions` | Creates the missing permission rows for both guards: admin from `AdminPermissions`, tenant from the configured `seeders.tenant_role_permissions`. Reports orphaned rows (no enum case) and, when run interactively, asks per guard whether to delete them (default no; deleting also removes them from every role). Clears the permission cache. Idempotent. Never assigns permissions to roles |
 
 ## Testing
 

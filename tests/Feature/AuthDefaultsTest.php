@@ -13,8 +13,8 @@ test('install command runs and publishes the config', function () {
     $published = config_path('tenancy-foundation.php');
     $existed = File::exists($published);
 
-    $this->artisan('tenancy-foundation:install')
-        ->expectsOutputToContain('Published config/tenancy-foundation.php')
+    $this->artisan('tenancy-foundation:install', ['--no-interaction' => true])
+        ->expectsOutputToContain($existed ? 'Kept the existing config/tenancy-foundation.php' : 'Published config/tenancy-foundation.php')
         ->assertSuccessful();
 
     expect(File::exists($published))->toBeTrue();

@@ -84,7 +84,7 @@ describe('sync command', function () {
     });
 
     it('creates the missing rows for the app enum cases and leaves assignments alone', function () {
-        $this->artisan(APP_SYNC_COMMAND)->assertSuccessful();
+        $this->artisan(APP_SYNC_COMMAND, ['--no-interaction' => true])->assertSuccessful();
 
         foreach (AppPermissions::cases() as $case) {
             expect(Permission::where('name', $case->value)->where('guard_name', AuthGuard::TENANT->value)->exists())->toBeTrue();
@@ -96,19 +96,19 @@ describe('sync command', function () {
     });
 
     it('reports a database permission in no enum as an orphan but not an app enum case', function () {
-        $this->artisan(APP_SYNC_COMMAND)->assertSuccessful();
+        $this->artisan(APP_SYNC_COMMAND, ['--no-interaction' => true])->assertSuccessful();
         Permission::create(['name' => 'legacy.thing', 'guard_name' => AuthGuard::TENANT->value]);
 
-        $this->artisan(APP_SYNC_COMMAND)
+        $this->artisan(APP_SYNC_COMMAND, ['--no-interaction' => true])
             ->expectsOutputToContain('legacy.thing')
             ->assertSuccessful();
     });
 
     it('would report the app rows as orphans without the configured seeder', function () {
-        $this->artisan(APP_SYNC_COMMAND)->assertSuccessful();
+        $this->artisan(APP_SYNC_COMMAND, ['--no-interaction' => true])->assertSuccessful();
         config([TenantPermissionEnums::CONFIG_KEY => TenantRolePermissionsSeeder::class]);
 
-        $this->artisan(APP_SYNC_COMMAND)->expectsOutputToContain(AppPermissions::INVOICE_APPROVE->value)->assertSuccessful();
+        $this->artisan(APP_SYNC_COMMAND, ['--no-interaction' => true])->expectsOutputToContain(AppPermissions::INVOICE_APPROVE->value)->assertSuccessful();
     });
 });
 
@@ -120,7 +120,7 @@ describe('role permissions page', function () {
 
         $this->seed(TenantRolePermissionsSeeder::class);
         useAppSeeder();
-        $this->artisan(APP_SYNC_COMMAND)->assertSuccessful();
+        $this->artisan(APP_SYNC_COMMAND, ['--no-interaction' => true])->assertSuccessful();
 
         $this->actingAs(adminWithAccess(AdminRoles::SUPER_ADMIN), AuthGuard::ADMIN->value);
     });
