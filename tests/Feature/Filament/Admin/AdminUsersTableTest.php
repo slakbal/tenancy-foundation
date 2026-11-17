@@ -147,3 +147,16 @@ it('shows labels for the grouped row actions', function () {
 
     expect($missing)->toBe([]);
 });
+
+it('lists the super admin role in the role filter unless it is hidden from the actor', function (bool $hide, AdminRoles $actorRole, bool $listed) {
+    config(['tenancy-foundation.admin.hide_super_admins' => $hide]);
+    tableActor($actorRole);
+
+    $options = Livewire::test(ListAdminUsers::class)->instance()->getTable()->getFilter('role')->getOptions();
+
+    expect(array_key_exists(AdminRoles::SUPER_ADMIN->value, $options))->toBe($listed);
+})->with([
+    'shown by default' => [false, AdminRoles::ADMIN, true],
+    'hidden from an admin' => [true, AdminRoles::ADMIN, false],
+    'shown to a super admin' => [true, AdminRoles::SUPER_ADMIN, true],
+]);

@@ -111,12 +111,21 @@ return [
     | path    URL path prefix of the admin panel. Default "admin"; may be
     |         empty ("") or "/" when the panel has its own domain (both mean no
     |         prefix; slashes are trimmed). Env: ADMIN_PATH.
+    | hide_super_admins  Default false: every admin sees the super admins. true
+    |         hides admins who hold the super_admin role from every admin who is
+    |         not a super admin (a global scope on the Admin model while an admin
+    |         is signed in: lists, searches, counts, pickers, relations). Super
+    |         admins still see each other, and sign in, commands, jobs and guests
+    |         are not filtered. Create such a super admin with
+    |         tenancy-foundation:create-admin; the role is only assignable by a
+    |         super admin. Env: ADMIN_HIDE_SUPER_ADMINS.
     |
     */
 
     'admin' => [
         'domain' => env('ADMIN_DOMAIN'),
         'path' => env('ADMIN_PATH', 'admin'),
+        'hide_super_admins' => env('ADMIN_HIDE_SUPER_ADMINS', false),
     ],
 
     /*

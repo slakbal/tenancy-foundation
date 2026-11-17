@@ -4,6 +4,7 @@ namespace Slakbal\TenancyFoundation\Models;
 
 use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -14,9 +15,11 @@ use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Models\Concerns\Admin\CanImpersonate;
 use Slakbal\TenancyFoundation\Models\Concerns\Admin\IsAdminUser;
 use Slakbal\TenancyFoundation\Models\Concerns\HasUlidKey;
+use Slakbal\TenancyFoundation\Models\Scopes\HideSuperAdmins;
 use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['name', 'email', 'password'])]
+#[ScopedBy(HideSuperAdmins::class)]
 class Admin extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<AdminFactory> */

@@ -20,7 +20,9 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 use Slakbal\TenancyFoundation\Enums\AdminStatus;
+use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ActivateAdminUserAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ChangeAdminUserRoleAction;
@@ -28,6 +30,7 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\Deacti
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ResendAdminInvitationAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\SendAdminPasswordResetLinkAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\NameColumn;
+use Slakbal\TenancyFoundation\Support\AdminAccountGuard;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\VerifiedColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Filters\VerifiedFilter;
@@ -80,7 +83,10 @@ class AdminUsersTable
         return [
             SelectFilter::make('role')
                 ->label(__('Role'))
-                ->options(collect(AdminRoles::cases())->mapWithKeys(fn (AdminRoles $role): array => [$role->value => $role->getLabel()])->all())
+                ->options(fn (): array => collect(AdminRoles::cases())
+                    ->reject(fn (AdminRoles $role): bool => $role === AdminRoles::SUPER_ADMIN && config('tenancy-foundation.admin.hide_super_admins') && ! AdminAccountGuard::isSuperAdmin(Auth::guard(AuthGuard::ADMIN->getAuthGuard())->user()))
+                    ->mapWithKeys(fn (AdminRoles $role): array => [$role->value => $role->getLabel()])
+                    ->all())
                 ->query(fn (Builder $query, array $data): Builder => $query->when(
                     $data['value'] ?? null,
                     fn (Builder $query, string $role): Builder => $query->whereHas('roles', fn (Builder $roles) => $roles->where('roles.name', $role)),

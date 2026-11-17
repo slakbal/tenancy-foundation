@@ -257,6 +257,7 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 | `verify_subdomain_hosts` | `env('TENANCY_VERIFY_SUBDOMAIN_HOSTS', false)` | `subdomain` mode only: tenant panel answers on a subdomain only when it belongs to an active tenant (404 for unknown, reserved, foreign hosts; `CancelledTenantResponse` for cancelled). The central host is never checked. Needs `domain`. `domain` mode always verifies |
 | `admin.domain` | `env('ADMIN_DOMAIN')` | Host of the admin panel. `null`: any host in `subdomain` mode, `domain` (`APP_DOMAIN`) in `domain` mode. Reserved for tenants |
 | `admin.path` | `env('ADMIN_PATH', 'admin')` | Path prefix of the admin panel; `''` or `'/'` (no prefix) on its own host. Slashes are trimmed |
+| `admin.hide_super_admins` | `env('ADMIN_HIDE_SUPER_ADMINS', false)` | `true` hides admins with the `super_admin` role from every admin who is not a super admin (global scope on `Admin` while an admin is signed in). Super admins see each other; sign in, commands, jobs and guests are not filtered |
 | `models.tenant` | `Models\Tenant` | Tenant model |
 | `models.user` | `Models\User` | Tenant panel user, also used by the `users` provider |
 | `models.admin` | `Models\Admin` | Admin panel user, also used by the `admins` provider |
