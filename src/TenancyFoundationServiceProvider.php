@@ -13,6 +13,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Translation\Translator;
 use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Console\CreateAdminCommand;
 use Slakbal\TenancyFoundation\Console\InstallCommand;
@@ -155,6 +156,8 @@ class TenancyFoundationServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadJsonTranslationsFrom(__DIR__.'/../lang');
+        // A string translated earlier in boot has already cached the JSON lines of the locale, so the path above would be ignored.
+        $this->callAfterResolving('translator', fn (Translator $translator) => $translator->setLoaded([]));
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'tenancy-foundation');
 
         Livewire::component('public-contact-form', config('tenancy-foundation.contact_requests.public_form', PublicContactForm::class));

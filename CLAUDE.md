@@ -4,6 +4,7 @@
 - This package serves many projects. Only add or change behaviour that works for different project variants (example: tenant resolution by `subdomain` or full `domain`). Project-specific behaviour belongs in the app.
 - Every variant is config driven, with a safe default that keeps existing projects working unchanged. Never hard-code one project's choice.
 - Document each config key in `config/tenancy-foundation.php` itself: what it does, the allowed values, the default, and its side effects (for example required env vars, session/cookie behaviour, routes or features it turns on or off, and migrations it needs). Also document it in README.md.
+- Keep `lang/en.json` and `lang/de.json` in sync: every key exists in both with the same key set, and a changed, renamed or new `__()` string is updated in both files in the same change (`tests/Feature/Support/TranslationsTest.php` checks this).
 
 <!-- sloppy:begin -->
 

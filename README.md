@@ -38,6 +38,7 @@ This README is the setup and usage guide. Release notes are in [CHANGELOG.md](CH
 - Tenant registration wizard, email verification, password reset and profile pages for both panels. Email change verification is optional.
 - Admin resources: tenants (cancel and reactivate), tenant users (impersonate), admin users, contact requests, and a role permission matrix.
 - Tenant resources: users (create, edit, roles, activate or deactivate, owners, remove, leave, restore) and invitations.
+- Translations: English source strings with a complete German `lang/de.json`.
 - Tenant lifecycle: cancellation with a grace period, reactivation and scheduled deletion. Each step dispatches an event.
 - A public contact form, a tenant "Contact us" page, and contact request handling in the admin panel.
 - Business logic lives in Action classes (`src/Actions/<Domain>`), which you can replace through the container. You can swap models, policies, pages and resources from the app.
