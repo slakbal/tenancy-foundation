@@ -25,8 +25,6 @@ trait HasTenantAccess
             && $this->canSignIn()
             && ! $this->hasNoAccessibleTenants()
             && $this->canAccessHostTenant();
-
-        // todo also do checks so that e.g. models have a specific role or permission to access the admin panel, e.g. 'admin' role or 'access admin panel' permission
     }
 
     // Domain mode: each host is one tenant, so only its active members, and users with a pending invitation to it (who

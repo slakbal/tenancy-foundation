@@ -49,7 +49,8 @@ class InstallCommand extends Command
 
     protected function publishConfig(): void
     {
-        $exists = File::exists(config_path('tenancy-foundation.php'));
+        $target = config_path('tenancy-foundation.php');
+        $exists = File::exists($target);
 
         if ($exists && (! $this->input->isInteractive() || ! confirm('config/tenancy-foundation.php already exists. Overwrite it with the package defaults?', default: false))) {
             $this->components->info('Kept the existing config/tenancy-foundation.php');
@@ -57,7 +58,8 @@ class InstallCommand extends Command
             return;
         }
 
-        $this->callSilently('vendor:publish', ['--tag' => 'tenancy-foundation-config', '--force' => $exists]);
+        File::ensureDirectoryExists(dirname($target));
+        File::copy(__DIR__.'/../../config/tenancy-foundation.php', $target);
         $this->components->info('Published config/tenancy-foundation.php');
     }
 

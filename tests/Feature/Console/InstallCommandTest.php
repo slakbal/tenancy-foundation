@@ -11,14 +11,14 @@ use Spatie\Permission\Models\Role;
 const INSTALL_COMMAND = 'tenancy-foundation:install';
 
 beforeEach(function () {
+    $this->configPath = sys_get_temp_dir().'/tenancy-foundation-install-'.uniqid();
+    File::ensureDirectoryExists($this->configPath);
+    $this->app->useConfigPath($this->configPath);
     $this->publishedConfig = config_path('tenancy-foundation.php');
-    $this->originalConfig = File::exists($this->publishedConfig) ? File::get($this->publishedConfig) : null;
 });
 
 afterEach(function () {
-    $this->originalConfig === null
-        ? File::delete($this->publishedConfig)
-        : File::put($this->publishedConfig, $this->originalConfig);
+    File::deleteDirectory($this->configPath);
 });
 
 it('keeps an existing config unless overwriting is confirmed', function (string $answer, bool $overwritten) {
@@ -39,7 +39,6 @@ it('keeps an existing config unless overwriting is confirmed', function (string 
 
 it('seeds the roles and invites the first admin when asked', function () {
     Notification::fake();
-    File::delete($this->publishedConfig);
 
     $this->artisan(INSTALL_COMMAND)
         ->expectsConfirmation('Run the migrations now?', 'no')
@@ -57,8 +56,6 @@ it('seeds the roles and invites the first admin when asked', function () {
 });
 
 it('asks nothing and lists the remaining steps without interaction', function () {
-    File::delete($this->publishedConfig);
-
     $this->artisan(INSTALL_COMMAND, ['--no-interaction' => true])
         ->expectsOutputToContain('Published config/tenancy-foundation.php')
         ->expectsOutputToContain('tenancy-foundation:create-admin')

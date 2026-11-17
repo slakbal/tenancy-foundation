@@ -34,7 +34,7 @@ function tenantsActor(AdminPermissions ...$permissions): Admin
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
-    setPermissionsTeamId(1);
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
     $this->owner = User::factory()->create();
     $this->member = User::factory()->create();

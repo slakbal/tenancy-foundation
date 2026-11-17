@@ -47,6 +47,9 @@ return [
     // Schema & Table display-format defaults (driven by the values below)
     'format_defaults' => true,
 
+    // Panel → topNavigation() + maxContentWidth() (sub-items under `panel` below)
+    'panel_defaults' => true,
+
     /*
     |--------------------------------------------------------------------------
     | Action defaults (sub-items of `action_defaults`)

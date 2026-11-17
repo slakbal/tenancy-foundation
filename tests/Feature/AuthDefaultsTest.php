@@ -10,16 +10,15 @@ test('logout response falls back to the root url without a configured route', fu
 });
 
 test('install command runs and publishes the config', function () {
-    $published = config_path('tenancy-foundation.php');
-    $existed = File::exists($published);
+    $configPath = sys_get_temp_dir().'/tenancy-foundation-auth-defaults-'.uniqid();
+    File::ensureDirectoryExists($configPath);
+    $this->app->useConfigPath($configPath);
 
     $this->artisan('tenancy-foundation:install', ['--no-interaction' => true])
-        ->expectsOutputToContain($existed ? 'Kept the existing config/tenancy-foundation.php' : 'Published config/tenancy-foundation.php')
+        ->expectsOutputToContain('Published config/tenancy-foundation.php')
         ->assertSuccessful();
 
-    expect(File::exists($published))->toBeTrue();
+    expect(File::exists(config_path('tenancy-foundation.php')))->toBeTrue();
 
-    if (! $existed) {
-        File::delete($published);
-    }
+    File::deleteDirectory($configPath);
 });

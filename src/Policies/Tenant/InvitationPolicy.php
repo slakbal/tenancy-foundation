@@ -24,7 +24,7 @@ class InvitationPolicy extends AuthorisationPolicy
             return false;
         }
 
-        return $user->can(InvitationPermissions::INVITATION_DELETE);
+        return $user->can(InvitationPermissions::INVITATION_DELETE) && $this->isInCurrentTenant($invitation);
     }
 
     protected function permissionMap(): array

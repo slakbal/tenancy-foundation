@@ -43,7 +43,7 @@ function assertListQueryCountIsConstant(string $page, Closure $addRows): void
 test('the admin users list runs the same number of queries regardless of row count', function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
-    setPermissionsTeamId(1);
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 
     $this->actingAs(adminWithAccess(AdminPermissions::USER_VIEW_ANY), AuthGuard::ADMIN->value);
 

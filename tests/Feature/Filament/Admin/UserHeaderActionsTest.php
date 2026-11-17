@@ -21,7 +21,7 @@ use Slakbal\TenancyFoundation\Models\User;
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
-    setPermissionsTeamId(1);
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
     $this->seed(AdminRolePermissionsSeeder::class);
 
     $this->user = User::factory()->unverified()->create();

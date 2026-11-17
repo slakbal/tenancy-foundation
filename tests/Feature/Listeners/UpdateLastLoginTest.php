@@ -4,6 +4,7 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Event;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Listeners\Auth\UpdateLastLogin;
+use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Models\User;
 
 test('logging in records the login time and ip without touching updated_at or firing model events', function () {
@@ -21,4 +22,12 @@ test('logging in records the login time and ip without touching updated_at or fi
         ->and($user->updated_at->equalTo($originalUpdatedAt))->toBeTrue();
 
     Event::assertNotDispatched('eloquent.updated: '.User::class);
+});
+
+test('logging in records the login time of an admin too', function () {
+    $admin = Admin::factory()->create();
+
+    (new UpdateLastLogin)->handle(new Login(AuthGuard::ADMIN->value, $admin, false));
+
+    expect($admin->refresh()->last_login_at)->not->toBeNull();
 });

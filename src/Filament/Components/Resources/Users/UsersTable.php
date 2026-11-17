@@ -42,7 +42,7 @@ class UsersTable
     {
         return [
             DeleteBulkAction::make()->authorizeIndividualRecords('delete'),
-            ForceDeleteBulkAction::make()->authorizeIndividualRecords('delete'),
+            ForceDeleteBulkAction::make()->authorizeIndividualRecords('forceDelete'),
             RestoreBulkAction::make(),
         ];
     }

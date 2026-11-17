@@ -21,7 +21,7 @@ function userViewActor(AdminPermissions ...$permissions): Admin
 beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
-    setPermissionsTeamId(1);
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 });
 
 it('shows the user with the tenant count and last login on the view page', function () {

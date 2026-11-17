@@ -8,10 +8,10 @@
         "filament/filament": "^5.0",
         "laravel/framework": "^13.17",
         "spatie/laravel-permission": "^8.3",
-        "stechstudio/filament-impersonate": "^5.6",
-        "l3aro/filament-turnstile": "*"
+        "stechstudio/filament-impersonate": "^5.6"
     },
     "require-dev": {
+        "l3aro/filament-turnstile": "^1.1",
         "heyosseus/sloppy": "^1.8",
         "laramint/laravel-brain": "^2.7",
         "brianium/paratest": "<7.28",
@@ -19,6 +19,9 @@
         "orchestra/testbench": "^11.0",
         "pestphp/pest": "^5.1",
         "pestphp/pest-plugin-laravel": "^5.0"
+    },
+    "suggest": {
+        "l3aro/filament-turnstile": "Adds a Turnstile captcha to the public contact form (TURNSTILE_SITE_KEY, TURNSTILE_SECRET_KEY)"
     },
     "autoload": {
         "psr-4": {

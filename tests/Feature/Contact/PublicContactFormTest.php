@@ -15,6 +15,14 @@ class CustomPublicContactForm extends PublicContactForm
     }
 }
 
+class RedirectingPublicContactForm extends PublicContactForm
+{
+    protected function redirectUrlAfterSubmit(): ?string
+    {
+        return 'https://example.com/home';
+    }
+}
+
 beforeEach(function () {
     config(['filament-turnstile.key' => 'site-key', 'filament-turnstile.secret' => 'secret-key']);
 });
@@ -106,3 +114,25 @@ test('the message is limited to 1024 characters', function (int $length, bool $a
     'too long' => [1025, false],
     'at the limit' => [1024, true],
 ]);
+
+test('a subclass can redirect after a submission', function () {
+    fakeTurnstile(true);
+
+    Livewire::test(RedirectingPublicContactForm::class)
+        ->fillForm(['name' => 'Jane Doe', 'email' => 'jane@example.com', 'message' => 'Hello there', 'captcha' => 'token'])
+        ->call('submit')
+        ->assertHasNoFormErrors()
+        ->assertNotified(__('Thank you! Your message has been sent.'))
+        ->assertRedirect('https://example.com/home');
+
+    expect(ContactRequest::query()->count())->toBe(1);
+});
+
+test('the default form stays on the page after a submission', function () {
+    fakeTurnstile(true);
+
+    Livewire::test(PublicContactForm::class)
+        ->fillForm(['name' => 'Jane Doe', 'email' => 'jane@example.com', 'message' => 'Hello there', 'captcha' => 'token'])
+        ->call('submit')
+        ->assertNoRedirect();
+});

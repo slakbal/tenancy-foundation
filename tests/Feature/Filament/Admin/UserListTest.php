@@ -14,7 +14,7 @@ beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
 
-    setPermissionsTeamId(1);
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 });
 
 test('an admin with USER_VIEW_ANY sees users from every tenant in the table', function () {
@@ -63,4 +63,23 @@ test('searching the users table by name or email finds matching users', function
 
 it('has no create page for tenant users', function () {
     expect(array_keys(UserResource::getPages()))->not->toContain('create');
+});
+
+test('bulk force delete needs the force delete permission, not just delete', function () {
+    $user = User::factory()->create();
+    $user->delete();
+
+    $this->actingAs(adminWithAccess(AdminPermissions::USER_VIEW_ANY, AdminPermissions::USER_DELETE, AdminPermissions::USER_RESTORE), AuthGuard::ADMIN->value);
+
+    Livewire::test(ListUsers::class)
+        ->filterTable('trashed', true)
+        ->assertTableBulkActionHidden('forceDelete');
+
+    $this->actingAs(adminWithAccess(AdminPermissions::USER_VIEW_ANY, AdminPermissions::USER_FORCE_DELETE), AuthGuard::ADMIN->value);
+
+    Livewire::test(ListUsers::class)
+        ->filterTable('trashed', true)
+        ->callTableBulkAction('forceDelete', [$user]);
+
+    expect(User::withTrashed()->whereKey($user->getKey())->exists())->toBeFalse();
 });

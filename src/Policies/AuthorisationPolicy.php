@@ -3,7 +3,9 @@
 namespace Slakbal\TenancyFoundation\Policies;
 
 use BackedEnum;
+use Filament\Facades\Filament;
 use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Shared authorization dispatch for the parallel Slakbal\TenancyFoundation\Policies\Admin\* and
@@ -27,6 +29,11 @@ use Illuminate\Contracts\Auth\Access\Authorizable;
  * ownership or self-lockout checks) without violating PHP's rule that an
  * overriding method's parameters must be at least as permissive as the
  * parent's.
+ *
+ * Inside a tenant panel the record abilities (view, update, delete, restore,
+ * forceDelete) also require the record to belong to the current tenant: the
+ * tenant itself, or a model with a tenant() relation pointing at it. Other
+ * models (users belong to many tenants) and the admin panel are unaffected.
  */
 abstract class AuthorisationPolicy
 {
@@ -49,7 +56,7 @@ abstract class AuthorisationPolicy
      */
     public function view($user, $model): bool
     {
-        return $this->resolve('view', $user);
+        return $this->resolve('view', $user) && $this->isInCurrentTenant($model);
     }
 
     /**
@@ -66,7 +73,7 @@ abstract class AuthorisationPolicy
      */
     public function update($user, $model): bool
     {
-        return $this->resolve('update', $user);
+        return $this->resolve('update', $user) && $this->isInCurrentTenant($model);
     }
 
     /**
@@ -75,7 +82,7 @@ abstract class AuthorisationPolicy
      */
     public function delete($user, $model): bool
     {
-        return $this->resolve('delete', $user);
+        return $this->resolve('delete', $user) && $this->isInCurrentTenant($model);
     }
 
     /**
@@ -92,7 +99,7 @@ abstract class AuthorisationPolicy
      */
     public function restore($user, $model): bool
     {
-        return $this->resolve('restore', $user);
+        return $this->resolve('restore', $user) && $this->isInCurrentTenant($model);
     }
 
     /**
@@ -109,7 +116,7 @@ abstract class AuthorisationPolicy
      */
     public function forceDelete($user, $model): bool
     {
-        return $this->resolve('forceDelete', $user);
+        return $this->resolve('forceDelete', $user) && $this->isInCurrentTenant($model);
     }
 
     /**
@@ -118,6 +125,27 @@ abstract class AuthorisationPolicy
     public function forceDeleteAny($user): bool
     {
         return $this->resolve('forceDeleteAny', $user);
+    }
+
+    protected function isInCurrentTenant(mixed $model): bool
+    {
+        $tenant = Filament::getTenant();
+
+        if ($tenant === null || ! $model instanceof Model) {
+            return true;
+        }
+
+        $tenantModel = config('tenancy-foundation.models.tenant');
+
+        if ($model instanceof $tenantModel) {
+            return $model->is($tenant);
+        }
+
+        if (method_exists($model, 'tenant')) {
+            return (string) $model->getAttribute($model->tenant()->getForeignKeyName()) === (string) $tenant->getKey();
+        }
+
+        return true;
     }
 
     /**

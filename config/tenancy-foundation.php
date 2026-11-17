@@ -350,8 +350,12 @@ return [
     | public_path       Path of the public contact page on the main domain
     |                   (route name public.contact). null disables the page and
     |                   the route. It is only registered when `domain` is set.
+    |                   The form has a Turnstile captcha only when the app
+    |                   requires l3aro/filament-turnstile (TURNSTILE_* env).
     | public_form       Livewire component behind the public page. Extend
-    |                   PublicContactForm and override fields() to change it.
+    |                   PublicContactForm and override fields() to change it,
+    |                   or redirectUrlAfterSubmit() to leave the page after a
+    |                   submission (default null: stay and reset the form).
     |
     */
 

@@ -16,8 +16,6 @@ trait IsAdminUser
             && in_array($this->status, [AdminStatus::ACTIVE, AdminStatus::PENDING], true)
             && ! $this->trashed();
 
-        // A pending admin has only a random password, so cannot sign in, but must pass this check for Filament to accept the password reset link
-
-        // todo also do checks so that e.g. models have a specific role or permission to access the admin panel, e.g. 'admin' role or 'access admin panel' permission
+        // A pending admin passes so the set password link (password_auth) or the app's first sign in (SSO) can activate them.
     }
 }

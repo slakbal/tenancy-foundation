@@ -46,7 +46,8 @@ This README is the setup and usage guide. Release notes are in [CHANGELOG.md](CH
 ## Requirements
 
 - PHP 8.3+ (`^8.3`), Laravel `^13.17`, Filament `^5.0`.
-- Pulled in as dependencies: `spatie/laravel-permission` `^8.3` (you configure it, see [step 5](#5-spatie-permissions-with-teams)), `stechstudio/filament-impersonate` `^5.6` and `l3aro/filament-turnstile` (the captcha on the public contact form).
+- Pulled in as dependencies: `spatie/laravel-permission` `^8.3` (you configure it, see [step 5](#5-spatie-permissions-with-teams)) and `stechstudio/filament-impersonate` `^5.6`.
+- Suggested: `l3aro/filament-turnstile`, the captcha on the public contact form. Require it in your app (`composer require l3aro/filament-turnstile`) when the public contact page is on; without it the form has no captcha. Set `contact_requests.public_path` to `null` if you don't use the page.
 - A database, a queue worker, a mailer and the scheduler (`schedule:run`).
 - Wildcard DNS and a wildcard TLS certificate for `*.your-domain` in production. Locally, use a server that routes wildcard subdomains to the app ([Lerd](https://github.com/lerd-env/lerd) serves `*.project.test` automatically for a linked site).
 
@@ -313,7 +314,7 @@ Every `notifications.*` entry takes a class, or `null` to stop that notification
 | `page_defaults` + `page.*` | `validation_notification`, `sticky_form_actions` |
 | `table_defaults` + `table.*` | `table`, `image_column`, `select_filter` |
 | `format_defaults` + `formats.*` | Currency (`zar`), date, datetime and time display formats, number locale |
-| `panel_defaults` (not in the file, defaults to `true`) + `panel.*` | `top_navigation` (`true`), `max_content_width` (`'container'`, `null` keeps Filament's `7xl`) |
+| `panel_defaults` + `panel.*` | `top_navigation` (`true`), `max_content_width` (`'container'`, `null` keeps Filament's `7xl`) |
 
 A block switch gates all of its sub-items.
 
@@ -332,7 +333,7 @@ A block switch gates all of its sub-items.
 | `TENANT_CANCELLATION_GRACE_DAYS` | `cancellation.grace_days` |
 | `INVITATION_EXPIRY_DAYS`, `INVITATION_RETENTION_DAYS` | `invitations.*` |
 | `CONTACT_REQUEST_PRUNE_AFTER_DAYS` | `contact_requests.prune_after_days` |
-| `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Captcha on the public contact form (`l3aro/filament-turnstile`) |
+| `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Captcha on the public contact form (only with `l3aro/filament-turnstile` installed) |
 
 ## Domains, hosts and sessions
 
@@ -771,6 +772,7 @@ protected function actions(): array
 | `currentTenantLabelStyle()` | `TenantPlugin` | Colour of that label |
 | `getTenantFormComponents()`, `getUserFormComponents()` | `RegisterUser`, `RegisterTenant` | Registration fields |
 | `fields()` | `PublicContactForm` | Public contact form fields (swap via `contact_requests.public_form`) |
+| `redirectUrlAfterSubmit()` | `PublicContactForm` | Where to go after a submission (default `null`: stay and reset the form); the success notification shows on the next page |
 | `permissionEnums()`, `viewOnlyPermissions()` | `TenantRolePermissionsSeeder` | App permissions, view-only defaults |
 | `panels()`, `matrixLoader()`, `matrixSchema()` | `ManageRolePermissions` | Role permissions page |
 | `mainComponents()`, `sideComponents()`, `detailsFields()`, `statusEntries()` | user forms and infolists (both panels), `TenantForm`, `TenantInfolist` | Add fields and sections |
@@ -782,7 +784,7 @@ protected function actions(): array
 
 ## Contact requests
 
-- **Public page:** `GET /{contact_requests.public_path}` on `APP_DOMAIN` (route `public.contact`, view `tenancy-foundation::contact`, Livewire `public-contact-form`). It has a Turnstile captcha and stores requests with source `public`.
+- **Public page:** `GET /{contact_requests.public_path}` on `APP_DOMAIN` (route `public.contact`, view `tenancy-foundation::contact`, Livewire `public-contact-form`). It has a Turnstile captcha when `l3aro/filament-turnstile` is installed (no captcha otherwise) and stores requests with source `public`.
 - **Tenant page:** "Contact us" (`ContactUs`, slug `contact`, swap with `usingContactPage()`). It stores requests with source `tenant`.
 - **Admin:** the `ContactRequestResource` lists requests and has a stats widget. Admins can respond (`RespondToContactRequest` mails `notifications.contact_response`) and change status. Permissions are `contact_request.*`.
 - New requests notify admins who can view contact requests, plus super admins, through the bell (`notify_admins`, `notifications.contact_received`).

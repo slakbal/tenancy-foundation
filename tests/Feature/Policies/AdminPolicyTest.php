@@ -8,7 +8,7 @@ beforeEach(function () {
     Filament::setCurrentPanel(Filament::getPanel('admin'));
     Filament::bootCurrentPanel();
 
-    setPermissionsTeamId(1);
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
 });
 
 test('each ability requires its permission', function (string $ability, AdminPermissions $permission, bool $onRecord) {

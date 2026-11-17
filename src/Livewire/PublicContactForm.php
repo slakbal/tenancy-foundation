@@ -60,7 +60,7 @@ class PublicContactForm extends Component implements HasActions, HasSchemas
      */
     protected static function fields(): array
     {
-        return [
+        return collect([
             TextInput::make('name')
                 ->label(__('Your full name'))
                 ->required()
@@ -76,9 +76,20 @@ class PublicContactForm extends Component implements HasActions, HasSchemas
                 ->rows(5)
                 ->maxLength(1024)
                 ->required(),
-            Turnstile::make('captcha')
-                ->alignCenter(),
-        ];
+            static::hasCaptcha() ? Turnstile::make('captcha')->alignCenter() : null,
+        ])->filter()->values()->all();
+    }
+
+    protected static function hasCaptcha(): bool
+    {
+        return class_exists(Turnstile::class);
+    }
+
+    protected function resetCaptcha(): void
+    {
+        if (static::hasCaptcha()) {
+            $this->dispatch(FilamentTurnstileFacade::getResetEventName());
+        }
     }
 
     public function content(Schema $schema): Schema
@@ -101,17 +112,26 @@ class PublicContactForm extends Component implements HasActions, HasSchemas
 
         $this->form->fill();
 
-        $this->dispatch(FilamentTurnstileFacade::getResetEventName());
+        $this->resetCaptcha();
 
         Notification::make()
             ->title(__('Thank you! Your message has been sent.'))
             ->success()
             ->send();
+
+        if (filled($url = $this->redirectUrlAfterSubmit())) {
+            $this->redirect($url);
+        }
+    }
+
+    protected function redirectUrlAfterSubmit(): ?string
+    {
+        return null;
     }
 
     protected function onValidationError(ValidationException $exception): void
     {
-        $this->dispatch(FilamentTurnstileFacade::getResetEventName());
+        $this->resetCaptcha();
     }
 
     protected function getSubmitFormAction(): Action
