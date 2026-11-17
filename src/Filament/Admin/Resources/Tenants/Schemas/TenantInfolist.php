@@ -103,24 +103,28 @@ class TenantInfolist
     protected static function statusEntries(): array
     {
         return [
-            TextEntry::make('status')
-                ->label(__('Status'))
-                ->inlineLabel()
-                ->badge(),
+            ...(config('tenancy-foundation.cancellation.enabled') ? [
+                TextEntry::make('status')
+                    ->label(__('Status'))
+                    ->inlineLabel()
+                    ->badge(),
+            ] : []),
             TextEntry::make('created_at')
                 ->label(__('Created'))
                 ->inlineLabel()
                 ->dateTime(),
-            TextEntry::make('cancelled_at')
-                ->label(__('Cancelled'))
-                ->inlineLabel()
-                ->dateTime()
-                ->placeholder('-'),
-            TextEntry::make('scheduled_for_deletion_at')
-                ->label(__('Deletion scheduled'))
-                ->inlineLabel()
-                ->dateTime()
-                ->placeholder('-'),
+            ...(config('tenancy-foundation.cancellation.enabled') ? [
+                TextEntry::make('cancelled_at')
+                    ->label(__('Cancelled'))
+                    ->inlineLabel()
+                    ->dateTime()
+                    ->placeholder('-'),
+                TextEntry::make('scheduled_for_deletion_at')
+                    ->label(__('Deletion scheduled'))
+                    ->inlineLabel()
+                    ->dateTime()
+                    ->placeholder('-'),
+            ] : []),
         ];
     }
 }

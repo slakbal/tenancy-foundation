@@ -31,6 +31,7 @@ use Slakbal\TenancyFoundation\Events\Tenant\TenantRegistered;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureKnownTenantHost;
 use Slakbal\TenancyFoundation\Http\Middleware\EnsureUserHasTenant;
 use Slakbal\TenancyFoundation\Http\Middleware\LeaveImpersonationOnTenantHost;
+use Slakbal\TenancyFoundation\Http\Middleware\SetSecurityHeaders;
 use Slakbal\TenancyFoundation\Http\Responses\CancelledTenantResponse;
 use Slakbal\TenancyFoundation\Http\Responses\Contracts\CancelledTenantResponse as CancelledTenantResponseContract;
 use Slakbal\TenancyFoundation\Http\Responses\LogoutResponse;
@@ -137,9 +138,17 @@ class TenancyFoundationServiceProvider extends ServiceProvider
         $this->bootResources();
         $this->bootBindings();
         $this->bootMiddlewarePriority();
+        $this->bootSecurityHeaders();
         $this->bootEventListeners();
         $this->bootSchedule();
         $this->bootConsole();
+    }
+
+    protected function bootSecurityHeaders(): void
+    {
+        if (config('tenancy-foundation.features.security_headers')) {
+            $this->app->make(HttpKernel::class)->pushMiddleware(SetSecurityHeaders::class);
+        }
     }
 
     protected function bootResources(): void

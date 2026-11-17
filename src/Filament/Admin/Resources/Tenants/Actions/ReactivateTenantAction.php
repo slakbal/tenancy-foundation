@@ -17,7 +17,7 @@ class ReactivateTenantAction
             ->icon(Heroicon::OutlinedArrowUturnLeft)
             ->color('success')
             ->authorize('reactivate')
-            ->visible(fn (Model $record): bool => $record->isCancelled())
+            ->visible(fn (Model $record): bool => config('tenancy-foundation.cancellation.enabled') && $record->isCancelled())
             ->requiresConfirmation()
             ->modalHeading(fn (Model $record): string => __('Reactivate :tenant?', ['tenant' => $record->name]))
             ->modalDescription(__('Everyone can sign in again and the scheduled deletion is cancelled.'))

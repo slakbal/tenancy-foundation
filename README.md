@@ -274,6 +274,9 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 | `features.registration` | `true` | User registration page of the tenant panel (needs `password_auth`) |
 | `features.email_verification` | `true` | Email verification prompt and routes of the tenant panel. `false` also hides the "Verified" column and filter of the user and admin tables, the "Email verified" infolist entries and the "Mark email verified" action (the columns stay in the database) |
 | `features.tenant_registration` | `env('TENANCY_TENANT_REGISTRATION')` (`null`) | "Register a tenant" page. `null` follows the resolution (on for `subdomain`, off for `domain`); `true` or `false` always forces it |
+| `features.csp` | `env('TENANCY_CSP', false)` | Nonce based Content-Security-Policy on both panels through `asignua/filament-csp-nonce` (a dependency of this package; `AdminPlugin` and `TenantPlugin` register its plugin). Tune it in the app's `config/csp-nonce.php` (`php artisan vendor:publish --tag=csp-nonce-config`): `report_only` (env `CSP_REPORT_ONLY`; the dependency default enforces, start with `true`), `directives` for extra sources, the report endpoint `POST /csp/report` and its storage. Pages outside the panels add the `csp.nonce` middleware themselves. Run `php artisan view:clear` once after turning it on |
+| `features.security_headers` | `env('TENANCY_SECURITY_HEADERS', false)` | Global middleware adding `X-Content-Type-Options`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy`, `Permissions-Policy` to every response, plus `Strict-Transport-Security` in production over HTTPS |
+| `response_headers` | `[]` | Extra response headers (`name => value`) added with `features.security_headers`. Merged over the defaults: the same name replaces one, `null` or `''` removes it |
 | `invitations.expiry_days` | `env('INVITATION_EXPIRY_DAYS', 7)` | Days an invitation link stays valid |
 | `invitations.retention_days` | `env('INVITATION_RETENTION_DAYS', 30)` | Pruning window for invitations |
 | `reserved_subdomains` | `www, admin, app, api, mail, dev, test` | Subdomains the registration form refuses |
@@ -285,6 +288,7 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 | `notifications.contact_received` | `NewContactRequest` | Database notification (admin bell) for a new contact request |
 | `notifications.member_removed` | `MemberRemoved` | Mailed to a user removed from a tenant (not when they left on their own) |
 | `notifications.invitation_created` | `InvitationCreated` | Mailed to the invitee with a signed accept link |
+| `cancellation.enabled` | `env('TENANT_CANCELLATION_ENABLED', true)` | `false` hides cancelling in the admin UI: cancel and reactivate actions (policy denies both) and the status, cancelled and deletion scheduled columns, entries and filters of the tenants resource. Existing cancelled tenants and the lifecycle code, middleware and daily job are unchanged |
 | `cancellation.grace_days` | `env('TENANT_CANCELLATION_GRACE_DAYS', 30)` | Days between cancellation and deletion |
 | `cancellation.schedule_deletion` | `true` | Registers the daily `DeleteDueTenants` job |
 | `cancellation.deletion_time` | `'01:00'` | Time of day (server time) the deletion job runs |

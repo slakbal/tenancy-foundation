@@ -2,6 +2,7 @@
 
 namespace Slakbal\TenancyFoundation\Plugins;
 
+use Asignua\FilamentCspNonce\CspNoncePlugin;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\View\PanelsRenderHook;
@@ -122,6 +123,10 @@ class TenantPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
+        if (config('tenancy-foundation.features.csp')) {
+            $panel->plugin(CspNoncePlugin::make());
+        }
+
         if (config('tenancy-foundation.features.invitations')) {
             $panel->routes(fn (Panel $panel) => $this->acceptInvitationPage::routes($panel));
             $panel->resources([$this->invitationResource]);

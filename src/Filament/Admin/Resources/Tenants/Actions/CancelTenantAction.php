@@ -17,7 +17,7 @@ class CancelTenantAction
             ->icon(Heroicon::OutlinedXCircle)
             ->color('danger')
             ->authorize('cancel')
-            ->visible(fn (Model $record): bool => ! $record->isCancelled())
+            ->visible(fn (Model $record): bool => config('tenancy-foundation.cancellation.enabled') && ! $record->isCancelled())
             ->requiresConfirmation()
             ->modalHeading(fn (Model $record): string => __('Cancel :tenant?', ['tenant' => $record->name]))
             ->modalDescription(__('Everyone is locked out and the owners are emailed. All data is deleted after :days days and cannot be recovered.', [

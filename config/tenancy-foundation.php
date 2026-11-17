@@ -233,6 +233,27 @@ return [
     |                     "subdomain", off with "domain" (tenants are then created
     |                     by staff). true or false always forces it; set it with
     |                     TENANCY_TENANT_REGISTRATION.
+    | csp                 (default false) A nonce based Content-Security-Policy
+    |                     on the admin and tenant panels, through
+    |                     asignua/filament-csp-nonce (installed with this package;
+    |                     the plugin is registered by AdminPlugin and TenantPlugin).
+    |                     Tune it in the application's config/csp-nonce.php
+    |                     (publish with `php artisan vendor:publish
+    |                     --tag=csp-nonce-config`): report_only (env
+    |                     CSP_REPORT_ONLY, the dependency default is false =
+    |                     enforcing; start with true), directives for extra
+    |                     script, style, font, image or frame sources, and the
+    |                     violation report endpoint (POST /csp/report). Public
+    |                     pages outside the panels add the `csp.nonce` middleware
+    |                     themselves. Run `php artisan view:clear` once after
+    |                     turning it on. Env: TENANCY_CSP.
+    | security_headers    (default false) Adds X-Content-Type-Options,
+    |                     X-Frame-Options (SAMEORIGIN), Referrer-Policy
+    |                     (strict-origin-when-cross-origin) and Permissions-Policy
+    |                     (camera, microphone, geolocation and payment off) to
+    |                     every response, and Strict-Transport-Security (one
+    |                     year) in production over HTTPS. Registered as global
+    |                     middleware. Env: TENANCY_SECURITY_HEADERS.
     |
     */
 
@@ -243,7 +264,25 @@ return [
         'registration' => true,
         'email_verification' => true,
         'tenant_registration' => env('TENANCY_TENANT_REGISTRATION', true),
+        'csp' => env('TENANCY_CSP', false),
+        'security_headers' => env('TENANCY_SECURITY_HEADERS', false),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Response headers
+    |--------------------------------------------------------------------------
+    |
+    | Header name => value pairs the application adds to every response when
+    | features.security_headers is on, for example
+    | ['Cross-Origin-Opener-Policy' => 'same-origin']. They are merged over
+    | the package defaults, so a name that matches a default (for example
+    | 'X-Frame-Options') replaces it, and null or an empty string removes it.
+    | Default: [] (the package defaults only). No effect with the feature off.
+    |
+    */
+
+    'response_headers' => [],
 
     /*
     |--------------------------------------------------------------------------
@@ -318,6 +357,14 @@ return [
     | Tenant cancellation
     |--------------------------------------------------------------------------
     |
+    | enabled            Whether tenants can be cancelled. Default true. false hides
+    |                    the cancel and reactivate actions (tenant list, view and
+    |                    edit pages; the policy denies both abilities), and the
+    |                    status, cancelled and deletion scheduled columns, entries
+    |                    and filters in the admin tenant resource. Existing
+    |                    cancelled tenants stay cancelled and the lifecycle code,
+    |                    middleware and daily job still run; no migration or env
+    |                    var is needed. Env: TENANT_CANCELLATION_ENABLED.
     | grace_days         Days between a tenant being cancelled and its data being
     |                    deleted. The tenant can be reactivated until then.
     | schedule_deletion  Register the scheduled job that deletes tenants whose
@@ -328,6 +375,7 @@ return [
     */
 
     'cancellation' => [
+        'enabled' => env('TENANT_CANCELLATION_ENABLED', true),
         'grace_days' => env('TENANT_CANCELLATION_GRACE_DAYS', 30),
         'schedule_deletion' => true,
         'deletion_time' => '01:00',

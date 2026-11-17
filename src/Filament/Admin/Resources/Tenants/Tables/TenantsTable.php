@@ -47,25 +47,29 @@ class TenantsTable
                 ->label(TenantResolution::current()->getLabel())
                 ->searchable()
                 ->sortable(),
-            TextColumn::make('status')
-                ->label(__('Status'))
-                ->badge()
-                ->sortable(query: fn (Builder $query, string $direction) => $query->orderBy('cancelled_at', $direction)),
+            ...(config('tenancy-foundation.cancellation.enabled') ? [
+                TextColumn::make('status')
+                    ->label(__('Status'))
+                    ->badge()
+                    ->sortable(query: fn (Builder $query, string $direction) => $query->orderBy('cancelled_at', $direction)),
+            ] : []),
             TextColumn::make('created_at')
                 ->label(__('Created'))
                 ->dateTime()
                 ->sortable(),
-            TextColumn::make('cancelled_at')
-                ->label(__('Cancelled'))
-                ->dateTime()
-                ->placeholder('-')
-                ->sortable(),
-            TextColumn::make('scheduled_for_deletion_at')
-                ->label(__('Deletion scheduled'))
-                ->dateTime()
-                ->description(fn (Model $record): ?string => $record->scheduled_for_deletion_at?->diffForHumans())
-                ->placeholder('-')
-                ->sortable(),
+            ...(config('tenancy-foundation.cancellation.enabled') ? [
+                TextColumn::make('cancelled_at')
+                    ->label(__('Cancelled'))
+                    ->dateTime()
+                    ->placeholder('-')
+                    ->sortable(),
+                TextColumn::make('scheduled_for_deletion_at')
+                    ->label(__('Deletion scheduled'))
+                    ->dateTime()
+                    ->description(fn (Model $record): ?string => $record->scheduled_for_deletion_at?->diffForHumans())
+                    ->placeholder('-')
+                    ->sortable(),
+            ] : []),
         ];
     }
 
@@ -74,6 +78,10 @@ class TenantsTable
      */
     protected static function filters(): array
     {
+        if (! config('tenancy-foundation.cancellation.enabled')) {
+            return [];
+        }
+
         return [
             SelectFilter::make('status')
                 ->label(__('Status'))

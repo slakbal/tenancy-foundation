@@ -18,11 +18,11 @@ class TenantPolicy extends AuthorisationPolicy
 
     public function cancel($user, $tenant): bool
     {
-        return $user->can(AdminPermissions::TENANT_CANCEL);
+        return config('tenancy-foundation.cancellation.enabled') && $user->can(AdminPermissions::TENANT_CANCEL);
     }
 
     public function reactivate($user, $tenant): bool
     {
-        return $user->can(AdminPermissions::TENANT_REACTIVATE);
+        return config('tenancy-foundation.cancellation.enabled') && $user->can(AdminPermissions::TENANT_REACTIVATE);
     }
 }

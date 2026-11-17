@@ -2,6 +2,7 @@
 
 namespace Slakbal\TenancyFoundation\Plugins;
 
+use Asignua\FilamentCspNonce\CspNoncePlugin;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Illuminate\Auth\Access\Response;
@@ -99,6 +100,10 @@ class AdminPlugin implements Plugin
 
         if ($domain !== null) {
             $panel->domain($domain);
+        }
+
+        if (config('tenancy-foundation.features.csp')) {
+            $panel->plugin(CspNoncePlugin::make());
         }
 
         $panel->databaseNotifications();
