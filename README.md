@@ -220,10 +220,10 @@ $this->call([AdminRolePermissionsSeeder::class, TenantRolePermissionsSeeder::cla
 
 If you registered your own tenant seeder subclass (see [App permissions](#app-permissions)), call that subclass instead.
 
-Invite the first super admin (it asks for the name attributes, creates a `pending` admin and mails `AdminInvited`):
+Invite the first super admin (it asks for the email, the name attributes and the role, creates a `pending` admin and mails `AdminInvited`):
 
 ```bash
-php artisan tenancy-foundation:create-admin admin@example.com
+php artisan tenancy-foundation:create-admin
 ```
 
 Or create an active one directly under the admin team id:
@@ -826,7 +826,7 @@ These are registered through the scheduler (`callAfterResolving(Schedule::class)
 | Command | Does |
 |---|---|
 | `tenancy-foundation:install` | Publishes the config, warns if spatie teams are off, prints the setup steps |
-| `tenancy-foundation:create-admin {email} {--role=super_admin}` | Asks for the `user_name_attributes`, creates a `pending` admin through `CreateAdminUser` (no actor, so it may create a super admin) and mails `AdminInvited`. Fails on an invalid email, an email of an existing or deleted admin, an unknown role, or a role that was not seeded yet. Meant for the first super admin on a new install |
+| `tenancy-foundation:create-admin {email} {--role=}` | Interactive. Asks for the email (when not given) and each `user_name_attributes` field, validating as you type, then offers the admin guard roles from the database as a choice (default `super_admin`; app roles included). Creates a `pending` admin through `CreateAdminUser` (no actor, so it may create a super admin) and mails `AdminInvited`. Without interaction the role defaults to `super_admin`. Fails when no admin roles are seeded, on an email of an existing or deleted admin, or on an unknown `--role` (lists the available ones). Meant for the first super admin on a new install |
 | `tenancy-foundation:sync-permissions` | Creates the missing permission rows for both guards: admin from `AdminPermissions`, tenant from the configured `seeders.tenant_role_permissions`. Reports orphaned rows (no enum case) without deleting them and clears the permission cache. Idempotent. Never changes role assignments |
 
 ## Testing
