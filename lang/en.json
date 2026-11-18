@@ -329,5 +329,7 @@
     "Tenant roles": "Tenant roles",
     "Horizon": "Horizon",
     "System": "System",
-    "Log Viewer": "Log Viewer"
+    "Log Viewer": "Log Viewer",
+    "Filter by tenant": "Filter by tenant",
+    "All tenants": "All tenants"
 }

@@ -269,6 +269,7 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 | `admin.domain` | `env('ADMIN_DOMAIN')` | Host of the admin panel. `null`: any host in `subdomain` mode, `domain` (`APP_DOMAIN`) in `domain` mode. Reserved for tenants |
 | `admin.path` | `env('ADMIN_PATH', 'admin')` | Path prefix of the admin panel; `''` or `'/'` (no prefix) on its own host. Slashes are trimmed |
 | `admin.hide_super_admins` | `env('ADMIN_HIDE_SUPER_ADMINS', false)` | `true` hides admins with the `super_admin` role from every admin who is not a super admin (global scope on `Admin` while an admin is signed in). Super admins see each other; sign in, commands, jobs and guests are not filtered |
+| `admin.tenant_filter` | `env('ADMIN_TENANT_FILTER', false)` | `true` adds an "All tenants / one tenant" select to the admin panel top bar (kept in the session) that limits resources using the `ScopesToAdminTenant` trait: the tenant users list, and the application's own tenant-owned resources (a `tenant_id` column, or override `scopeToAdminTenant()`) |
 | `models.tenant` | `Models\Tenant` | Tenant model |
 | `models.user` | `Models\User` | Tenant panel user, also used by the `users` provider |
 | `models.admin` | `Models\Admin` | Admin panel user, also used by the `admins` provider |

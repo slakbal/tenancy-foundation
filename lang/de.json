@@ -329,5 +329,7 @@
     "Tenant roles": "Mandantenrollen",
     "Horizon": "Horizon",
     "System": "System",
-    "Log Viewer": "Log-Viewer"
+    "Log Viewer": "Log-Viewer",
+    "Filter by tenant": "Nach Mandant filtern",
+    "All tenants": "Alle Mandanten"
 }
