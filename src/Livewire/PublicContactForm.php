@@ -24,6 +24,7 @@ use Livewire\Component;
 use Slakbal\TenancyFoundation\Actions\Contact\CreateContactRequest;
 use Slakbal\TenancyFoundation\Enums\ContactSource;
 use Slakbal\TenancyFoundation\Enums\FilamentPanel;
+use Slakbal\TenancyFoundation\Enums\TenantResolution;
 
 /**
  * @property-read Schema $form
@@ -108,7 +109,7 @@ class PublicContactForm extends Component implements HasActions, HasSchemas
 
     public function submit(): void
     {
-        app(CreateContactRequest::class)->handle($this->form->getState(), ContactSource::PUBLIC);
+        app(CreateContactRequest::class)->handle($this->form->getState(), ContactSource::PUBLIC, TenantResolution::current()->tenantForHost(request()->getHost()));
 
         $this->form->fill();
 

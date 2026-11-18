@@ -7,12 +7,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Prunable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Slakbal\TenancyFoundation\Database\Factories\ContactRequestFactory;
 use Slakbal\TenancyFoundation\Enums\ContactSource;
 use Slakbal\TenancyFoundation\Enums\ContactStatus;
 use Slakbal\TenancyFoundation\Models\Concerns\HasUlidKey;
 
-#[Fillable(['name', 'email', 'message', 'source'])]
+#[Fillable(['name', 'email', 'message', 'source', 'tenant_id', 'user_id'])]
 class ContactRequest extends Model
 {
     /** @use HasFactory<ContactRequestFactory> */
@@ -31,6 +32,16 @@ class ContactRequest extends Model
             'responded_at' => 'datetime',
             'closed_at' => 'datetime',
         ];
+    }
+
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(config('tenancy-foundation.models.tenant'));
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(config('tenancy-foundation.models.user'));
     }
 
     public function prunable(): Builder

@@ -3,6 +3,7 @@
 namespace Slakbal\TenancyFoundation\Support;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -17,19 +18,31 @@ class TenantUserRoles
         return $this->all()->get($user->getKey(), collect());
     }
 
-    public function userIdsWithRole(string $role): array
+    public function userIdsWithRole(string $role): Builder
     {
-        return $this->all()->filter(fn (Collection $names): bool => $names->contains($role))->keys()->all();
+        return $this->assignments()
+            ->where('roles.name', $role)
+            ->select('assigned.'.$this->userKey());
     }
 
     private function all(): Collection
     {
-        return $this->roles ??= DB::table(config('permission.table_names.model_has_roles').' as assigned')
-            ->join(config('permission.table_names.roles').' as roles', 'roles.id', '=', 'assigned.'.(config('permission.column_names.role_pivot_key') ?: 'role_id'))
-            ->where('assigned.'.config('permission.column_names.team_foreign_key'), $this->tenant->getKey())
-            ->where('assigned.model_type', app(config('tenancy-foundation.models.user'))->getMorphClass())
-            ->get(['assigned.'.(config('permission.column_names.model_morph_key') ?: 'model_id').' as user_id', 'roles.name'])
+        return $this->roles ??= $this->assignments()
+            ->get(['assigned.'.$this->userKey().' as user_id', 'roles.name'])
             ->groupBy('user_id')
             ->map(fn (Collection $rows): Collection => $rows->pluck('name'));
+    }
+
+    private function assignments(): Builder
+    {
+        return DB::table(config('permission.table_names.model_has_roles').' as assigned')
+            ->join(config('permission.table_names.roles').' as roles', 'roles.id', '=', 'assigned.'.(config('permission.column_names.role_pivot_key') ?: 'role_id'))
+            ->where('assigned.'.config('permission.column_names.team_foreign_key'), $this->tenant->getKey())
+            ->where('assigned.model_type', app(config('tenancy-foundation.models.user'))->getMorphClass());
+    }
+
+    private function userKey(): string
+    {
+        return config('permission.column_names.model_morph_key') ?: 'model_id';
     }
 }

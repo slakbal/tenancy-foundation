@@ -817,6 +817,7 @@ protected function actions(): array
 - **Public page:** `GET /{contact_requests.public_path}` on `APP_DOMAIN` (route `public.contact`, view `tenancy-foundation::contact`, Livewire `public-contact-form`). It has a Turnstile captcha when `l3aro/filament-turnstile` is installed (no captcha otherwise) and stores requests with source `public`.
 - **Tenant page:** "Contact us" (`ContactUs`, slug `contact`, swap with `usingContactPage()`). It stores requests with source `tenant`.
 - **Admin:** the `ContactRequestResource` lists requests and has a stats widget. Admins can respond (`RespondToContactRequest` mails `notifications.contact_response`) and change status. Permissions are `contact_request.*`.
+- Each request records where it came from: `tenant_id` (the tenant page's tenant, or the tenant of the public form's host; `null` on a central host) and `user_id` (the signed in user on the tenant page). `CreateContactRequest::handle($data, $source, $tenant, $user)` sets them, never from request data. Apps react to new requests by listening to `ContactRequestReceived`.
 - New requests notify admins who can view contact requests, plus super admins, through the bell (`notify_admins`, `notifications.contact_received`).
 - Completed and dismissed requests are pruned after `prune_after_days`.
 

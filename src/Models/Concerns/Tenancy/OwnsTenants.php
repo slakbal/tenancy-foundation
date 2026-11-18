@@ -59,19 +59,19 @@ trait OwnsTenants
             return (bool) $this->attributes['is_sole_owner'];
         }
 
-        return (bool) static::query()
+        return once(fn (): bool => (bool) static::query()
             ->withoutGlobalScopes()
             ->whereKey($this->getKey())
             ->withSoleOwnerFlag()
-            ->value('is_sole_owner');
+            ->value('is_sole_owner'));
     }
 
     public function soleOwnedTenants(): Collection
     {
-        return $this->ownedTenants()->get()->filter(fn (Model $tenant): bool => ! $tenant->members()
-            ->wherePivot('is_owner', true)
-            ->where($this->getQualifiedKeyName(), '!=', $this->getKey())
-            ->whereNull($this->qualifyColumn('deleted_at'))
-            ->exists());
+        return $this->ownedTenants()
+            ->whereDoesntHave('members', fn (Builder $owners): Builder => $owners
+                ->where($this->tenants()->getTable().'.is_owner', true)
+                ->whereKeyNot($this->getKey()))
+            ->get();
     }
 }

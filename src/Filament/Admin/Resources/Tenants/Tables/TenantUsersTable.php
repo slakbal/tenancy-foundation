@@ -89,7 +89,7 @@ class TenantUsersTable
                 ->label(__('Role'))
                 ->options(collect(TenantRoles::cases())->mapWithKeys(fn (TenantRoles $role): array => [$role->value => $role->getLabel()])->all())
                 ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
-                    ? $query->whereKey($roles->userIdsWithRole($data['value']))
+                    ? $query->whereIn($query->getModel()->getQualifiedKeyName(), $roles->userIdsWithRole($data['value']))
                     : $query),
             SelectFilter::make('membership_status')
                 ->label(__('Status'))

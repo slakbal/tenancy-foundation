@@ -4,6 +4,7 @@ namespace Slakbal\TenancyFoundation\Filament\Admin\Resources\ContactRequests\Sch
 
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Schema;
@@ -15,15 +16,7 @@ class ContactRequestForm
     {
         return $schema->components([
             Section::make(__('Request'))
-                ->afterHeader([
-                    Text::make(fn (?Model $record): string => $record?->source->getLabel() ?? '')
-                        ->badge()
-                        ->color(fn (?Model $record): string => $record?->source->getColor() ?? 'gray'),
-                    Text::make(fn (?Model $record): string => $record?->status->getLabel() ?? '')
-                        ->badge()
-                        ->color(fn (?Model $record): string => $record?->status->getColor() ?? 'gray')
-                        ->icon(fn (?Model $record) => $record?->status->getIcon()),
-                ])
+                ->afterHeader(static::headerBadges())
                 ->columns(2)
                 ->schema([
                     TextInput::make('name')->label(__('Name'))->disabled(),
@@ -52,5 +45,23 @@ class ContactRequestForm
                         ->visible(fn (?Model $record): bool => (bool) $record?->isResponded()),
                 ]),
         ]);
+    }
+
+    /**
+     * The badges in the request section header (source, then status). Apps add their own by overriding this method.
+     *
+     * @return array<int, Component>
+     */
+    protected static function headerBadges(): array
+    {
+        return [
+            Text::make(fn (?Model $record): string => $record?->source->getLabel() ?? '')
+                ->badge()
+                ->color(fn (?Model $record): string => $record?->source->getColor() ?? 'gray'),
+            Text::make(fn (?Model $record): string => $record?->status->getLabel() ?? '')
+                ->badge()
+                ->color(fn (?Model $record): string => $record?->status->getColor() ?? 'gray')
+                ->icon(fn (?Model $record) => $record?->status->getIcon()),
+        ];
     }
 }

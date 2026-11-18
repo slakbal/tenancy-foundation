@@ -90,7 +90,7 @@ class ContactUs extends Page
             'name' => $user->name,
             'email' => $user->email,
             'message' => $this->form->getState()['message'],
-        ], ContactSource::TENANT);
+        ], ContactSource::TENANT, Filament::getTenant(), $user);
 
         Notification::make()
             ->title(__('Thank you! Your message has been sent.'))

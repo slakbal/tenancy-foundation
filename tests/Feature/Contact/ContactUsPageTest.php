@@ -39,7 +39,9 @@ test('a message is stored with the name and email of the logged in user and the 
     expect($request->name)->toBe($this->user->name)
         ->and($request->email)->toBe('jane@example.com')
         ->and($request->message)->toBe('Please help')
-        ->and($request->source)->toBe(ContactSource::TENANT);
+        ->and($request->source)->toBe(ContactSource::TENANT)
+        ->and($request->tenant_id)->toBe($this->tenant->getKey())
+        ->and($request->user_id)->toBe($this->user->getKey());
 });
 
 test('the message is required and limited in length', function (string $message, ?string $rule) {

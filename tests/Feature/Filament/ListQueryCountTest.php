@@ -54,6 +54,20 @@ test('the admin users list runs the same number of queries regardless of row cou
     });
 });
 
+test('the admin users list does not query per row for users who are the only owner of a tenant', function () {
+    Filament::setCurrentPanel(Filament::getPanel('admin'));
+    Filament::bootCurrentPanel();
+    setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID);
+
+    $this->actingAs(adminWithAccess(AdminPermissions::USER_VIEW_ANY, AdminPermissions::USER_DELETE), AuthGuard::ADMIN->value);
+
+    assertListQueryCountIsConstant(AdminListUsers::class, function (int $rows): void {
+        User::factory()->count($rows)->create()->each(
+            fn (User $user) => Tenant::factory()->create()->members()->attach($user, ['is_owner' => true, 'is_default_tenant' => true])
+        );
+    });
+});
+
 test('the tenant users list runs the same number of queries regardless of row count', function () {
     Filament::setCurrentPanel(Filament::getPanel('app'));
     Filament::bootCurrentPanel();

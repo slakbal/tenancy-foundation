@@ -91,3 +91,34 @@ test('the flag is added in a single query for the whole list', function () {
 
     expect($queries)->toBe(1);
 });
+
+test('the denial only looks up the solely owned tenants when its message is read', function () {
+    $flagged = User::query()->withSoleOwnerFlag()->findOrFail($this->owner->getKey());
+
+    $queries = 0;
+    DB::listen(function () use (&$queries): void {
+        $queries++;
+    });
+
+    $denial = SoleOwnerGuard::denial('delete', $flagged);
+
+    expect($denial->denied())->toBeTrue()
+        ->and($queries)->toBe(0)
+        ->and($denial->message())->toBe(__(':name is the only owner of :tenants and cannot be deleted. Make another member an owner first.', ['name' => 'Jane Owner', 'tenants' => 'Acme']))
+        ->and($queries)->toBe(1);
+});
+
+test('a user without the preloaded flag is checked with one query however often the guard asks', function () {
+    $user = User::query()->findOrFail($this->owner->getKey());
+
+    $queries = 0;
+    DB::listen(function () use (&$queries): void {
+        $queries++;
+    });
+
+    foreach (['delete', 'forceDelete', 'delete'] as $ability) {
+        expect(SoleOwnerGuard::denial($ability, $user)?->denied())->toBeTrue();
+    }
+
+    expect($queries)->toBe(1);
+});
