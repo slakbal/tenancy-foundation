@@ -1,0 +1,2451 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-18T07:40:46.835Z",
+  "files": {
+    "README.md": {
+      "overview": "The setup and usage guide for slakbal/tenancy-foundation, the multi-tenancy base for Laravel 13 and Filament v5 apps. It explains the two panels, the install steps, the config switches and the extension points. Read it first for the vocabulary used throughout the package.",
+      "sections": [
+        {
+          "title": "Contents and intro",
+          "lineRange": [
+            1,
+            30
+          ],
+          "explanation": "Names the package, points to the companion app template and the changelog, and lists the guide's table of contents. The README is the single place where config, env vars, commands and extension points are documented, so it doubles as an index of the package's features.",
+          "tourOrder": 1
+        },
+        {
+          "title": "What it provides",
+          "lineRange": [
+            31,
+            54
+          ],
+          "explanation": "Summarises the two Filament panels: admin (path `/admin`, guard `admin`) and tenant (panel id `app`, root path, guard `web`, one subdomain per tenant). It also states that tenant users can belong to several tenants through the `tenant_user` pivot, and lists the requirements.",
+          "tourOrder": 1
+        },
+        {
+          "title": "Installation steps",
+          "lineRange": [
+            55,
+            259
+          ],
+          "explanation": "A numbered walkthrough: require the package, create your models by extending the package models, set env vars, configure queue and scheduler, enable Spatie permission teams, migrate, register the two panel plugins, then seed roles and the first admin. The steps follow the order the `tenancy-foundation:install` command suggests."
+        },
+        {
+          "title": "Configuration reference",
+          "lineRange": [
+            260,
+            354
+          ],
+          "explanation": "Documents each key of `config/tenancy-foundation.php` and `config/filament-defaults.php`, plus the environment variables. This mirrors the comments in the config file, as the project rules require every config key to be documented in both places."
+        },
+        {
+          "title": "Domains, hosts, panels",
+          "lineRange": [
+            355,
+            441
+          ],
+          "explanation": "Explains the `subdomain` and `domain` resolution modes, their session cookie consequences, and exactly what `AdminPlugin`, `TenantPlugin` and the service provider register. Use this to see how the plugins and provider divide the work.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Models, roles, policies",
+          "lineRange": [
+            442,
+            625
+          ],
+          "explanation": "Covers the model traits that consuming apps mix in, the name attributes, the users table, and how roles and permissions work with Spatie teams. It also explains seeding, app permissions, the Role permissions page and policy resolution.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Features and operations",
+          "lineRange": [
+            626,
+            929
+          ],
+          "explanation": "Describes registration, invitations, tenant members, cancelling and deleting a tenant, events and listener extension points, contact requests, admin users, impersonation, scheduled jobs and commands. It ends with testing, troubleshooting, upgrading and the tenant access policy."
+        }
+      ]
+    },
+    "composer.json": {
+      "overview": "The Composer manifest of the package. It declares the dependencies on Filament, Horizon, Log Viewer, Spatie permission and impersonation, sets up PSR-4 autoloading, and registers the service provider for Laravel package auto-discovery.",
+      "sections": [
+        {
+          "title": "Package metadata and requirements",
+          "lineRange": [
+            1,
+            28
+          ],
+          "explanation": "Names the package `slakbal/tenancy-foundation` and requires PHP, Filament 5, Laravel 13, Horizon, Log Viewer, spatie/laravel-permission and filament-impersonate. Dev tooling (Pest, Testbench, Pint) is kept in `require-dev`, and the Turnstile captcha is only suggested.",
+          "tourOrder": 1
+        },
+        {
+          "title": "Autoload and discovery",
+          "lineRange": [
+            29,
+            49
+          ],
+          "explanation": "PSR-4 maps `Slakbal\\TenancyFoundation\\` to `src/` and the seeders namespace to `database/seeders/`. A `files` entry loads global helpers. The `extra.laravel.providers` block is what lets Laravel auto-discover `TenancyFoundationServiceProvider` without manual registration.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Scripts and config",
+          "lineRange": [
+            50,
+            64
+          ],
+          "explanation": "The `test` script runs Pest in parallel twice, the second time with `phpunit.domain.xml` to exercise the `domain` resolution mode. Composer config sorts packages and allows the Pest plugin."
+        }
+      ]
+    },
+    "src/TenancyFoundationServiceProvider.php": {
+      "overview": "The package entry point. In `register()` it merges config, registers auth defaults and decides hosts for Horizon and Log Viewer. In `boot()` it wires resources, bindings, middleware priority, security headers, access gates for system tools, event listeners, the schedule and console publishing.",
+      "sections": [
+        {
+          "title": "Imports",
+          "lineRange": [
+            1,
+            64
+          ],
+          "explanation": "A long import list shows everything the provider touches: Filament response contracts, Laravel events, middleware, listeners, Livewire components and support classes. It is a quick map of the package's moving parts."
+        },
+        {
+          "title": "Register: config and auth",
+          "lineRange": [
+            65,
+            81
+          ],
+          "explanation": "Merges the package config and `filament-defaults`, then merges selected sections one level deep so an app that publishes a partial config still receives the other defaults. Auth defaults for the `admin` guard are registered only when `register_auth_defaults` is true.",
+          "tourOrder": 2
+        },
+        {
+          "title": "System tool hosts and access",
+          "lineRange": [
+            83,
+            109
+          ],
+          "explanation": "Horizon and Log Viewer register routes during their own boot, so their host is set in `register()` to the admin host unless the app already set one. Their auth callback sets the Spatie permissions team first because these routes sit outside the admin panel, then only allows super admins."
+        },
+        {
+          "title": "Impersonation and resolution",
+          "lineRange": [
+            111,
+            143
+          ],
+          "explanation": "Only in `domain` resolution mode: the impersonation leave route gets an extra middleware, the session cookie domain is forced to null so tenants never share cookies, and after all routes exist the `{tenant}` domain pattern is constrained so it does not match the central host.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Config merging helpers",
+          "lineRange": [
+            145,
+            171
+          ],
+          "explanation": "`mergeConfigSections` uses `array_merge` per section so app overrides win key by key. `registerAuthDefaults` sets the `admin` guard, `admins` provider and password broker with `config(key, default)` so an app's own definitions are never overwritten."
+        },
+        {
+          "title": "Boot sequence",
+          "lineRange": [
+            173,
+            238
+          ],
+          "explanation": "`boot()` calls one small method per concern. Resources load migrations, translations, views and Livewire components, and a public contact route is added only when both a path and a domain are configured. Bindings use `bindIf` for the cancelled-tenant response so apps can bind their own. Middleware priority places tenant and host checks before authentication so the right response is produced."
+        },
+        {
+          "title": "Event listeners",
+          "lineRange": [
+            240,
+            263
+          ],
+          "explanation": "Maps domain events to listeners such as welcome, cancellation and reactivation notifications. Invitation listeners and the role observer are conditional on the `invitations` feature, and the last-login listener on its config flag. The `CancelledTenant` and `DeletedTenant` listeners are the ones apps can override through published stubs.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Scheduler",
+          "lineRange": [
+            265,
+            302
+          ],
+          "explanation": "Registers the Horizon snapshot, the daily deletion job for due tenants and `model:prune` runs, all `onOneServer`. Registration is deferred with `callAfterResolving(Schedule::class, ...)` so it works with the application's schedule instance."
+        },
+        {
+          "title": "Console and publishing",
+          "lineRange": [
+            304,
+            332
+          ],
+          "explanation": "Under the console only, registers the install, sync-permissions and create-admin commands. Publish tags expose the config, the filament defaults, the views and the app listener stubs, which is how an app customises behaviour without editing vendor code.",
+          "tourOrder": 2
+        }
+      ]
+    },
+    "config/tenancy-foundation.php": {
+      "overview": "The package's main configuration file. Each key is a switch that makes behaviour project specific: domain, tenant resolution, admin panel host, swappable model classes, feature flags, notifications, cancellation and more. Every key is documented in a comment block, as the project rules require.",
+      "sections": [
+        {
+          "title": "Domain and resolution",
+          "lineRange": [
+            1,
+            91
+          ],
+          "explanation": "Imports the default classes, then defines `domain` and `resolution`. `subdomain` mode serves tenants as `{subdomain}.domain` and needs a shared session cookie. `domain` mode uses the full host per tenant and forces host-only cookies. `verify_subdomain_hosts` optionally rejects unknown subdomains.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Admin panel settings",
+          "lineRange": [
+            92,
+            136
+          ],
+          "explanation": "The `admin` array controls the admin host, path prefix, hiding of super admins and the tenant filter in the top bar. The comment spells out the failure case: in domain mode with neither admin domain nor app domain, the app refuses to boot.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Swappable models",
+          "lineRange": [
+            138,
+            168
+          ],
+          "explanation": "Maps role names to model classes. Apps point an entry at their own subclass and actions, resources, factories and guards all resolve the class from here, which is the main extension mechanism for the models.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Seeders and user options",
+          "lineRange": [
+            170,
+            214
+          ],
+          "explanation": "Defines the tenant role permission seeder, the user name attribute columns and the email change verification toggle."
+        },
+        {
+          "title": "Feature flags",
+          "lineRange": [
+            216,
+            286
+          ],
+          "explanation": "Lists booleans for invitations, multi tenant users, password auth, registration, email verification, tenant registration, CSP and security headers. Several flags have side effects described in the comments, for example `password_auth` false removes reset routes and registration. `tenant_registration` follows the resolution mode unless forced."
+        },
+        {
+          "title": "Notifications, cancellation, schedule",
+          "lineRange": [
+            288,
+            492
+          ],
+          "explanation": "Covers response headers, invitation settings, reserved subdomains, the notification class per event, tenant cancellation and deletion timing, contact requests, redirects, pruning and the auth and last-login defaults. All of them have safe defaults so existing projects keep working unchanged."
+        }
+      ]
+    },
+    "src/Console/InstallCommand.php": {
+      "overview": "The `tenancy-foundation:install` Artisan command. It publishes the config and prints the remaining setup checklist. In interactive mode with Spatie teams enabled it offers to migrate, seed roles and create the first admin.",
+      "sections": [
+        {
+          "title": "Command definition",
+          "lineRange": [
+            1,
+            16
+          ],
+          "explanation": "Declares the signature and description and imports `confirm` from Laravel Prompts and the admin role seeder.",
+          "tourOrder": 2
+        },
+        {
+          "title": "handle flow",
+          "lineRange": [
+            17,
+            48
+          ],
+          "explanation": "Publishes the config, then warns if `permission.teams` is off because the migrations depend on it. It prints a checklist of manual steps. Interactive runs continue to the optional steps, while non-interactive runs print the commands to run instead.",
+          "tourOrder": 2
+        },
+        {
+          "title": "Config publishing",
+          "lineRange": [
+            50,
+            64
+          ],
+          "explanation": "Copies the package config to the app. If the target exists it only overwrites after a confirmation, and never in non-interactive mode, so reruns cannot silently clobber app settings."
+        },
+        {
+          "title": "Optional setup steps",
+          "lineRange": [
+            66,
+            82
+          ],
+          "explanation": "Asks, defaulting to no, whether to run migrations, seed the admin and tenant roles, and invite the first admin. Seeding runs the package admin seeder and the configured tenant seeder through `db:seed` with `--force`."
+        }
+      ]
+    },
+    "src/Plugins/AdminPlugin.php": {
+      "overview": "A Filament plugin that configures the backoffice panel. It sets the path and optional host, registers the package resources and pages, builds navigation groups, and adds gate rules for admin authorisation. Apps can replace any resource or page through the fluent `using*` methods.",
+      "sections": [
+        {
+          "title": "Imports and overridable classes",
+          "lineRange": [
+            1,
+            49
+          ],
+          "explanation": "The plugin stores the resource and page classes as protected properties with package defaults, which the setters below can replace. This is how an app swaps in its own subclass without forking the plugin.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Factory and fluent setters",
+          "lineRange": [
+            50,
+            100
+          ],
+          "explanation": "`make()` resolves the plugin from the container so it can itself be extended. `getId()` identifies it to Filament, and each `using*` method swaps one resource or page and returns `$this` for chaining.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Panel registration",
+          "lineRange": [
+            102,
+            140
+          ],
+          "explanation": "Applies the admin path and host from `FilamentPanel::ADMIN`, and throws `InvalidTenancyConfiguration` when domain mode has no admin host. It conditionally adds CSP, the tenant switcher, system navigation items, password reset and the profile, pages and resources.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Navigation groups",
+          "lineRange": [
+            142,
+            167
+          ],
+          "explanation": "Builds the group order from the resources' own navigation groups and appends System last, because Filament sorts unlisted groups after listed ones. System items for Horizon and Log Viewer open in a new tab and are visible only to a super admin when the route exists."
+        },
+        {
+          "title": "Boot: gates and policies",
+          "lineRange": [
+            169,
+            183
+          ],
+          "explanation": "Sets the permissions team id for admins. A `Gate::before` callback applies denial guards first, then grants everything to a super admin; returning null otherwise lets normal policies decide. Policy names are guessed through `PolicyResolver` for the Admin namespace.",
+          "tourOrder": 3
+        }
+      ]
+    },
+    "src/Plugins/TenantPlugin.php": {
+      "overview": "A Filament plugin that sets up the tenant panel (id `app`) with tenancy by subdomain or domain, tenant profile, registration, invitations and a stack of middleware. Like `AdminPlugin`, every page and resource can be replaced fluently.",
+      "sections": [
+        {
+          "title": "Replaceable classes",
+          "lineRange": [
+            40,
+            122
+          ],
+          "explanation": "Protected properties hold the default pages and resources, with `using*` setters to override each. `getId()` is `tenancy-foundation-tenant`.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Feature-based registration",
+          "lineRange": [
+            124,
+            139
+          ],
+          "explanation": "Starts `register()` by adding CSP and, when invitations are enabled, the accept-invitation route and the invitation resource. In domain mode it adds a signed impersonation handoff route so a session can cross tenant hosts.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Tenancy and middleware chain",
+          "lineRange": [
+            141,
+            153
+          ],
+          "explanation": "The core tenancy wiring: the tenant model with the slug attribute from `TenantResolution`, the tenant domain pattern, a custom resolver that reuses the tenant found by host middleware, plus persistent tenant middleware for permissions context and cancelled-tenant checks. Panel middleware checks the host, binds the session to it and ensures the user has a tenant.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Conditional features",
+          "lineRange": [
+            155,
+            175
+          ],
+          "explanation": "Tenant registration follows the config or the resolution mode, password reset and registration depend on `password_auth`, and email verification on its flag. A small render hook colours the current tenant label."
+        },
+        {
+          "title": "Boot: gates",
+          "lineRange": [
+            177,
+            193
+          ],
+          "explanation": "Chains guards for self deletion, sole owner, membership and force delete, in that order, before granting tenant owners every ability. Policy classes are resolved for the Tenant namespace.",
+          "tourOrder": 3
+        }
+      ]
+    },
+    "src/Enums/FilamentPanel.php": {
+      "overview": "A backed enum for the two panels, admin and tenant. It centralises each panel's id, path, host and guard so the rest of the package never hard-codes them. It is one of the most depended-on types in the package.",
+      "sections": [
+        {
+          "title": "Cases and panel id",
+          "lineRange": [
+            1,
+            20
+          ],
+          "explanation": "Two cases, `ADMIN` ('admin') and `TENANT` ('app'), implementing Filament's label, icon and colour contracts. `getPanelId()` maps each case to its panel id.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Path and domain",
+          "lineRange": [
+            22,
+            45
+          ],
+          "explanation": "The admin path is read from config and slash-trimmed; the tenant panel has an empty path. The admin domain is the configured admin host, else the app domain in domain mode, else null. The tenant panel never has a fixed domain because it varies per tenant.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Delegation to AuthGuard",
+          "lineRange": [
+            47,
+            63
+          ],
+          "explanation": "Convenience methods forward to `AuthGuard` so callers can ask the panel for its guard or password broker.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Filament presentation",
+          "lineRange": [
+            65,
+            87
+          ],
+          "explanation": "Provides translated labels, colours and icons as required by the Filament contracts, so the enum can be used directly in selects and badges."
+        }
+      ]
+    },
+    "src/Enums/AuthGuard.php": {
+      "overview": "A tiny enum naming the two auth guards. The admin side uses guard `admin`, the tenant side uses Laravel's default `web` guard, and each has its own password broker.",
+      "sections": [
+        {
+          "title": "Guard enum",
+          "lineRange": [
+            1,
+            22
+          ],
+          "explanation": "Cases `ADMIN` ('admin') and `TENANT` ('web') map to guard names, and `getPasswordBroker()` maps to the `admins` and `users` brokers. Keeping these here avoids repeating string literals across plugins, models and listeners.",
+          "tourOrder": 3
+        }
+      ]
+    },
+    "src/Enums/TenantResolution.php": {
+      "overview": "The enum behind the `subdomain` versus `domain` strategy. It turns config into route patterns, hosts and URLs, and looks tenants up by host or key. Request-level caching avoids repeated queries.",
+      "sections": [
+        {
+          "title": "Cases and current mode",
+          "lineRange": [
+            1,
+            32
+          ],
+          "explanation": "Defines the two cases and a `HOST_TENANT` request attribute key. `current()` reads the config value, accepting either a string or an enum instance, and `getLabel()` gives translated names.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Route domain and attribute",
+          "lineRange": [
+            34,
+            45
+          ],
+          "explanation": "`attribute()` is the tenants column used as the slug. `routeDomain()` yields `{tenant:subdomain}.APP_DOMAIN` for subdomain mode or `{tenant:domain}` for domain mode, which TenantPlugin hands to Filament.",
+          "tourOrder": 3
+        },
+        {
+          "title": "Reserved hosts and pattern",
+          "lineRange": [
+            47,
+            75
+          ],
+          "explanation": "Collects hosts that tenants cannot use (the app and admin domains) and reserved subdomains, including admin hosts that sit under the app domain. `routePattern()` builds a negative-lookahead regex so reserved hosts never match the tenant route."
+        },
+        {
+          "title": "Host building and lookup",
+          "lineRange": [
+            77,
+            125
+          ],
+          "explanation": "`host()` builds a host from a tenant value. `tenantForHost()` and `tenantForKey()` first reuse the tenant that `EnsureKnownTenantHost` stored on the request, then fall back to a query. This keeps the host lookup to once per request."
+        },
+        {
+          "title": "Subdomain parsing and URLs",
+          "lineRange": [
+            127,
+            151
+          ],
+          "explanation": "`subdomainOf()` extracts the label under the app domain, returning null for other hosts or reserved subdomains. `hostFor()` and `urlFor()` generate a tenant's host and URL, preserving the scheme and port of other generated URLs."
+        }
+      ]
+    },
+    "src/Models/Tenant.php": {
+      "overview": "The tenant (account) model. It is deliberately thin: nearly all behaviour comes from the `IsTenant` trait, so apps can extend this class or use the trait on their own model. It implements Filament contracts for tenant name and current-tenant label.",
+      "sections": [
+        {
+          "title": "Tenant model",
+          "lineRange": [
+            1,
+            24
+          ],
+          "explanation": "Uses the `Fillable` attribute for name, subdomain, domain, billing email, access policy and ownership flags, and combines `HasFactory`, `HasUlidKey` and `IsTenant`. `newFactory()` points at the package factory. Because behaviour lives in a trait, consuming apps get tenancy by composing it.",
+          "tourOrder": 4
+        }
+      ]
+    },
+    "src/Models/User.php": {
+      "overview": "The tenant-panel user model. It is an Authenticatable that implements Filament's user and tenant contracts, uses Spatie roles, soft deletes and the `IsTenantUser` trait for memberships in several tenants.",
+      "sections": [
+        {
+          "title": "Class declaration and traits",
+          "lineRange": [
+            1,
+            28
+          ],
+          "explanation": "Implements `FilamentUser`, `HasTenants`, `HasDefaultTenant` and `MustVerifyEmail`. Tenant membership logic is in `IsTenantUser`, roles come from `HasRoles`, and the Spatie guard is fixed to the tenant `web` guard through the enum.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Casts and factory",
+          "lineRange": [
+            30,
+            43
+          ],
+          "explanation": "Casts login and verification times to immutable datetimes and hashes the password automatically. `newFactory()` returns the package's `UserFactory`, since the model lives in a different namespace from the factory.",
+          "tourOrder": 4
+        }
+      ]
+    },
+    "src/Models/Admin.php": {
+      "overview": "The Admin model is the back-office user, authenticated on its own guard and stored in its own table, separate from tenant users. It is composed from traits for impersonation, admin behaviour, ULID keys and Spatie roles. It is part of the core model step of the tour.",
+      "sections": [
+        {
+          "title": "Imports",
+          "lineRange": [
+            1,
+            19
+          ],
+          "explanation": "Brings in Filament's FilamentUser contract, Eloquent attributes, the package's enums, concerns and the HideSuperAdmins scope, plus Spatie's HasRoles trait.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Class declaration and traits",
+          "lineRange": [
+            21,
+            26
+          ],
+          "explanation": "The `#[Fillable]` attribute limits mass assignment to name, email and password, and `#[ScopedBy(HideSuperAdmins::class)]` applies a global scope so super admins are hidden from queries. Behaviour comes from traits: CanImpersonate, IsAdminUser, HasUlidKey, HasRoles, SoftDeletes and Notifiable.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Guard and permission team",
+          "lineRange": [
+            28,
+            34
+          ],
+          "explanation": "`PERMISSIONS_TEAM_ID` is 0, so admin roles live under a fixed team id of Spatie's team feature. `guard_name` ties roles to the admin guard, and a default `status` of active is set on new instances.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Hidden attributes and casts",
+          "lineRange": [
+            36,
+            51
+          ],
+          "explanation": "Secrets such as password and two-factor fields are hidden from serialisation. Casts turn status into the AdminStatus enum, timestamps into immutable dates, and password into a hashed value that is hashed on assignment.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Factory binding",
+          "lineRange": [
+            53,
+            56
+          ],
+          "explanation": "Explicitly points to the package's AdminFactory so factories work even though the model is not in the app namespace.",
+          "tourOrder": 4
+        }
+      ]
+    },
+    "src/Models/TenantUser.php": {
+      "overview": "TenantUser is the pivot model for the tenant_user table, which links users to tenants and is how one user belongs to several tenants. It adds an enum cast and relations back to both sides, resolving class names from config.",
+      "sections": [
+        {
+          "title": "Pivot class and status cast",
+          "lineRange": [
+            9,
+            16
+          ],
+          "explanation": "Extending Pivot lets belongsToMany use this class through `using()`, so pivot rows get casts and behaviour. The `status` column is cast to the MemberStatus enum.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Relations via config",
+          "lineRange": [
+            18,
+            26
+          ],
+          "explanation": "Both `user()` and `tenant()` read the related model class from `tenancy-foundation.models.*`. This lets consuming apps swap in their own User and Tenant classes without changing the package.",
+          "tourOrder": 4
+        }
+      ]
+    },
+    "src/Models/Concerns/Tenancy/IsTenant.php": {
+      "overview": "IsTenant is the trait that gives a consuming app's Tenant model its tenancy behaviour: cancellation state, query scopes, Filament labels, and membership relations. Apps get tenancy by mixing this into their own model, as described in the core models tour step.",
+      "sections": [
+        {
+          "title": "Imports and cast setup",
+          "lineRange": [
+            5,
+            28
+          ],
+          "explanation": "`initializeIsTenant()` is a trait initializer that Eloquent calls on model construction. It merges casts for access policy and the cancellation dates, so the host model does not have to declare them.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Derived status and state checks",
+          "lineRange": [
+            30,
+            43
+          ],
+          "explanation": "Status is not stored. It is computed from `cancelled_at`, giving CANCELLED or ACTIVE. `isDueForDeletion()` requires the tenant to be cancelled and the scheduled deletion time to be in the past.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Query scopes",
+          "lineRange": [
+            45,
+            55
+          ],
+          "explanation": "The `#[Scope]` attribute declares `active` and `dueForDeletion` scopes. They mirror the state checks in SQL and are useful for cleanup jobs.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Invitation hook and Filament names",
+          "lineRange": [
+            57,
+            79
+          ],
+          "explanation": "`canBeInvited()` returns true by default and is an override point for apps. `getFilamentName()` and `getCurrentTenantLabel()` supply the tenant switcher text, showing the current user's roles in the active tenant and otherwise 'Active'.",
+          "tourOrder": 4
+        },
+        {
+          "title": "Membership relations",
+          "lineRange": [
+            81,
+            97
+          ],
+          "explanation": "`members()` is a belongsToMany using TenantUser as pivot and registers pivot columns such as is_owner and status. `owners()` filters it to owners, and `domainRules()` is a hasMany to the configured domain rule model.",
+          "tourOrder": 4
+        }
+      ]
+    },
+    "database/migrations/0001_02_01_000001_create_tenants_table.php": {
+      "overview": "Creates the `tenants` table and the `tenant_user` pivot table. Together they give the Tenant model and TenantUser membership their persistent shape. Only an `up()` method is used, with no down.",
+      "sections": [
+        {
+          "title": "Tenants table",
+          "lineRange": [
+            13,
+            24
+          ],
+          "explanation": "Each tenant has a ULID, a name, and nullable unique `subdomain` and `domain` columns, which supports both tenant resolution strategies. `cancelled_at` and an indexed `scheduled_for_deletion_at` hold the cancellation lifecycle, and access_policy defaults to OPEN_EXCEPT_BLOCKED.",
+          "tourOrder": 5
+        },
+        {
+          "title": "Tenant-user pivot",
+          "lineRange": [
+            26,
+            38
+          ],
+          "explanation": "Foreign keys are built from the configured user and tenant models and cascade on delete. The table holds is_owner, is_default_tenant, an indexed member status and accepted_invite_at. A unique pair of user and tenant prevents duplicate memberships, and an index on tenant and owner speeds owner lookups.",
+          "tourOrder": 5
+        }
+      ]
+    },
+    "database/migrations/0001_02_01_000000_add_tenancy_columns_to_users_table.php": {
+      "overview": "Adds tenancy-related columns to an existing users table instead of creating it. Every change is guarded by a column existence check, so it is safe for apps whose users table already has some of them.",
+      "sections": [
+        {
+          "title": "Guarded column additions",
+          "lineRange": [
+            13,
+            45
+          ],
+          "explanation": "Adds a nullable ULID, the configured name attributes in order, last login time and IP, soft deletes and a created_at index. Each is added only when missing, using `Schema::hasColumn` and `hasIndex`.",
+          "tourOrder": 5
+        },
+        {
+          "title": "Backfill and tighten ULID",
+          "lineRange": [
+            47,
+            55
+          ],
+          "explanation": "If the ULID column was just added, existing rows get a lowercase ULID, then the column is changed to non-nullable and unique. Backfilling first avoids unique violations on existing data.",
+          "tourOrder": 5
+        }
+      ]
+    },
+    "database/migrations/0001_02_01_000002_create_admin_users_table.php": {
+      "overview": "Creates the `admins` table behind the Admin model. It is separate from users so back-office accounts have their own guard, with SSO, two-factor and status columns.",
+      "sections": [
+        {
+          "title": "Admins table",
+          "lineRange": [
+            12,
+            35
+          ],
+          "explanation": "Name columns come from config so they match the users table. Besides credentials, it has a unique nullable sso_id, two-factor secret columns, locale, an indexed status defaulting to pending, login tracking, remember token and soft deletes.",
+          "tourOrder": 5
+        }
+      ]
+    },
+    "database/migrations/0001_02_01_000007_create_invitations_table.php": {
+      "overview": "Creates the invitations table used when tenant owners invite people. Each row has a unique token and optional expiry, and links to a tenant, role and inviter.",
+      "sections": [
+        {
+          "title": "Invitations table",
+          "lineRange": [
+            11,
+            25
+          ],
+          "explanation": "The tenant and inviter foreign keys resolve table names from the configured models. Deleting a tenant cascades, while deleting the inviter sets it to null. The `token` is unique, and `accepted_at` and `expires_at` plus composite indexes support finding pending or expired invitations.",
+          "tourOrder": 5
+        }
+      ]
+    },
+    "src/Actions/Tenant/CreateTenant.php": {
+      "overview": "Action that creates a tenant and makes a given user its owner. It shows the package's Action pattern: a readonly class with `handle()`, a transaction, and events dispatched after commit.",
+      "sections": [
+        {
+          "title": "Constructor and signature",
+          "lineRange": [
+            11,
+            18
+          ],
+          "explanation": "The class is readonly and receives AssignTenantRole through the constructor. `handle` takes tenant data and the owner model, and uses generic Model types so apps can use their own classes.",
+          "tourOrder": 6
+        },
+        {
+          "title": "Transactional creation",
+          "lineRange": [
+            20,
+            36
+          ],
+          "explanation": "Inside a transaction it checks whether this is the owner's first tenant, creates the tenant from the configured model, attaches the owner as is_owner, and marks the first tenant as default. It then assigns the owner role. `DB::afterCommit` dispatches TenantRegistered only once the data is committed, so listeners never see rolled-back data.",
+          "tourOrder": 6
+        }
+      ]
+    },
+    "src/Actions/Tenant/CancelTenant.php": {
+      "overview": "Action that cancels a tenant, sets a deletion date after a grace period, and announces it with an event.",
+      "sections": [
+        {
+          "title": "Idempotent cancellation",
+          "lineRange": [
+            11,
+            29
+          ],
+          "explanation": "The tenant is refreshed inside the transaction and returned early if already cancelled, making repeat calls safe. Otherwise `cancelled_at` and `scheduled_for_deletion_at` (now plus the configured grace days, at end of day) are saved with `forceFill`. TenantCancelled is dispatched after commit.",
+          "tourOrder": 6
+        }
+      ]
+    },
+    "src/Actions/Tenant/AddTenantOwner.php": {
+      "overview": "Action that promotes an existing tenant member to owner, with checks on who is asking and who is promoted.",
+      "sections": [
+        {
+          "title": "Setup",
+          "lineRange": [
+            12,
+            16
+          ],
+          "explanation": "A readonly action that depends on AssignTenantRole. The optional `$actor` is the person performing the change.",
+          "tourOrder": 6
+        },
+        {
+          "title": "Validation and promotion",
+          "lineRange": [
+            18,
+            39
+          ],
+          "explanation": "Members are loaded once and keyed by id. If an actor is given they must be an owner, otherwise AuthorizationException is thrown. The target must be a member and not already an owner. The pivot is updated, the owner role assigned, and relations on the actor and user are cleared so cached roles and tenants are not stale.",
+          "tourOrder": 6
+        }
+      ]
+    },
+    "src/Actions/Tenant/RegisterTenantOwner.php": {
+      "overview": "Action for self-registration: it creates a user and a tenant owned by that user in one transaction by composing CreateTenant.",
+      "sections": [
+        {
+          "title": "Composed registration",
+          "lineRange": [
+            8,
+            26
+          ],
+          "explanation": "CreateTenant is injected, showing actions calling other actions. The user is created from the configured model, then the tenant is created with that user as owner. The outer transaction makes both succeed or fail together, and the inner afterCommit event waits for the outer commit.",
+          "tourOrder": 6
+        }
+      ]
+    },
+    "src/Events/Tenant/TenantCancelled.php": {
+      "overview": "A small event class announcing that a tenant has been cancelled. Listeners handle notifications and cleanup, keeping side effects out of CancelTenant.",
+      "sections": [
+        {
+          "title": "Event payload",
+          "lineRange": [
+            8,
+            13
+          ],
+          "explanation": "Uses the Dispatchable trait so it can be fired with `TenantCancelled::dispatch($tenant)`. The only payload is the tenant model, exposed as a public promoted property.",
+          "tourOrder": 7
+        }
+      ]
+    },
+    "src/Listeners/Tenant/SendCancellationNotification.php": {
+      "overview": "Listener that reacts to TenantCancelled by notifying the tenant's owners. The notification class comes from config, so each project chooses its own message or disables it. It is part of the events-and-listeners step.",
+      "sections": [
+        {
+          "title": "Notify owners on cancellation",
+          "lineRange": [
+            8,
+            23
+          ],
+          "explanation": "The listener reads `tenancy-foundation.notifications.cancelled` and returns early when it is null, which makes the notification opt-in. Otherwise it sends the configured notification class, built with the tenant, to the members whose pivot `is_owner` is true. Keeping this out of the CancelTenant action keeps the action free of side effects.",
+          "tourOrder": 7
+        }
+      ]
+    },
+    "src/Listeners/Tenant/CancelledTenant.php": {
+      "overview": "The package's own cleanup listener for TenantCancelled. It runs a list of action classes against the cancelled tenant. Applications extend the idea with their own listener, published from a stub.",
+      "sections": [
+        {
+          "title": "Cleanup action list",
+          "lineRange": [
+            8,
+            20
+          ],
+          "explanation": "`actions()` returns the cleanup actions the package runs, currently only RevokePendingInvitations. It is protected and wrapped in `array_filter`, so a subclass can override or extend the list easily.",
+          "tourOrder": 7
+        },
+        {
+          "title": "Run each action",
+          "lineRange": [
+            22,
+            28
+          ],
+          "explanation": "`handle()` loops over the actions, logs each one and resolves it from the container with `app()`. Each action receives the cancelled tenant through its own `handle()` method, which follows the Action pattern.",
+          "tourOrder": 7
+        }
+      ]
+    },
+    "stubs/app/CancelledTenant.stub": {
+      "overview": "Stub that the install command publishes into the application as App\\Listeners\\Tenant\\CancelledTenant. It gives the app a place to list its own cleanup actions for a cancelled tenant.",
+      "sections": [
+        {
+          "title": "App listener skeleton",
+          "lineRange": [
+            3,
+            28
+          ],
+          "explanation": "This mirrors the package listener, but its `actions()` list starts empty so the app can add cleanup such as revoking tokens or pausing jobs. The docblock notes that Laravel discovers the listener by itself, so no manual registration is needed. It has no logging, unlike the package version.",
+          "tourOrder": 7
+        }
+      ]
+    },
+    "src/Enums/Authorisation/TenantRoles.php": {
+      "overview": "Backed enum of the roles a tenant member can hold. It also supplies Filament label, colour and icon so roles render consistently in tables and forms. It is part of the authorisation step.",
+      "sections": [
+        {
+          "title": "Role cases and assignable options",
+          "lineRange": [
+            9,
+            25
+          ],
+          "explanation": "The four cases are owner, admin, view_only and customer. `assignableOptions()` builds a value-to-label map without OWNER, so the owner role cannot be picked in invite or role forms.",
+          "tourOrder": 8
+        },
+        {
+          "title": "Locked role",
+          "lineRange": [
+            27,
+            33
+          ],
+          "explanation": "`isLocked()` marks OWNER as locked. A locked role has full access through the gate and its permissions cannot be edited in the permission matrix.",
+          "tourOrder": 8
+        },
+        {
+          "title": "Filament presentation",
+          "lineRange": [
+            35,
+            63
+          ],
+          "explanation": "Implementing HasLabel, HasColor and HasIcon lets Filament use the enum directly. Each method is an exhaustive `match`, and labels go through `__()` so they are translatable.",
+          "tourOrder": 8
+        }
+      ]
+    },
+    "src/Enums/Authorisation/AdminRoles.php": {
+      "overview": "Backed enum of the roles on the admin panel side: super admin, admin and support. It mirrors TenantRoles in shape and Filament integration.",
+      "sections": [
+        {
+          "title": "Cases and locked role",
+          "lineRange": [
+            9,
+            21
+          ],
+          "explanation": "SUPER_ADMIN is the locked role with full gate access, so its permissions cannot be edited.",
+          "tourOrder": 8
+        },
+        {
+          "title": "Filament presentation",
+          "lineRange": [
+            23,
+            48
+          ],
+          "explanation": "Label, colour and icon are exhaustive `match` expressions, with translatable labels. This lets Filament render the enum without extra mapping code.",
+          "tourOrder": 8
+        }
+      ]
+    },
+    "src/Policies/AuthorisationPolicy.php": {
+      "overview": "Abstract base class for the admin and tenant policies. A concrete policy only declares a map from ability name to permission enum case, and this class does the dispatch and the tenant-scope check. It is the shared base in the authorisation step.",
+      "sections": [
+        {
+          "title": "Design notes and contract",
+          "lineRange": [
+            10,
+            43
+          ],
+          "explanation": "The long docblock explains the design. Abilities missing from the map resolve to false, matching Laravel's behaviour. Every ability is a real method because strict authorization checks `method_exists()`, which `__call()` would not satisfy. Parameters are untyped so subclasses can narrow them. The one abstract piece is `permissionMap()`.",
+          "tourOrder": 8
+        },
+        {
+          "title": "Standard ability methods",
+          "lineRange": [
+            45,
+            128
+          ],
+          "explanation": "Each ability calls `resolve()` with its name. Record-level abilities (view, update, delete, restore, forceDelete) also require `isInCurrentTenant()`. The `*Any` and create abilities have no model, so they only check the permission.",
+          "tourOrder": 8
+        },
+        {
+          "title": "Tenant scoping check",
+          "lineRange": [
+            130,
+            149
+          ],
+          "explanation": "Outside a tenant panel, or for non-models, the check passes. A tenant model must be the current tenant. A model with a `tenant()` relation must have a matching foreign key, and the key is compared as strings. Other models, such as users who belong to many tenants, are not restricted.",
+          "tourOrder": 8
+        },
+        {
+          "title": "Permission resolution",
+          "lineRange": [
+            151,
+            164
+          ],
+          "explanation": "`resolve()` looks the ability up in the map and returns false when no enum case is mapped. Otherwise it asks the user `can($permission)`, which goes through the permission package with the enum.",
+          "tourOrder": 8
+        }
+      ]
+    },
+    "src/Support/Permissions/PermissionMatrix.php": {
+      "overview": "Immutable value object holding what the role permissions page shows for one guard. It has the roles, editable permissions grouped by resource, and the read-only or missing ones. It also turns that data into checkbox state.",
+      "sections": [
+        {
+          "title": "Data carried by the matrix",
+          "lineRange": [
+            9,
+            31
+          ],
+          "explanation": "A final readonly class with promoted constructor properties. Besides roles and groups, it keeps `unknown` (database permissions with no enum case), `missing` (enum permissions with no row), `held` (permission names per role id) and the locked role ids.",
+          "tourOrder": 8
+        },
+        {
+          "title": "Role helpers",
+          "lineRange": [
+            33,
+            65
+          ],
+          "explanation": "`guard()` asks the panel for its auth guard. `isLocked()` checks the locked ids with a strict comparison. `editableRoles()` drops locked roles and re-indexes. `heldBy()` and `editableNames()` give simple lookups.",
+          "tourOrder": 8
+        },
+        {
+          "title": "Checkbox state",
+          "lineRange": [
+            67,
+            83
+          ],
+          "explanation": "`state()` builds role id to permission id to boolean for the editable roles only. This is the shape the page binds its Livewire `data` property to.",
+          "tourOrder": 8
+        }
+      ]
+    },
+    "src/Filament/Admin/Pages/ManageRolePermissions.php": {
+      "overview": "Admin-panel Filament page where administrators edit which role holds which permission, across tenants. It loads a matrix per guard tab, tracks unsaved changes, shows a confirmation modal and saves through an action. It is the editing UI in the authorisation step.",
+      "sections": [
+        {
+          "title": "Imports and class setup",
+          "lineRange": [
+            1,
+            67
+          ],
+          "explanation": "Page configuration, plus Livewire state: `data` holds the checkbox state, `activeTab` the visible guard, and `original` is `#[Locked]` so the client cannot claim a panel was loaded. The matrices are cached in a protected property, not Livewire state.",
+          "tourOrder": 8
+        },
+        {
+          "title": "Access, hooks and labels",
+          "lineRange": [
+            69,
+            114
+          ],
+          "explanation": "`canAccess()` requires the PERMISSIONS_MANAGE ability. The panels are admin and tenant. The loader and the schema builder are separate static hooks, so they can be swapped. Navigation labels and the subheading are translatable.",
+          "tourOrder": 8
+        },
+        {
+          "title": "Lazy tab loading",
+          "lineRange": [
+            116,
+            147
+          ],
+          "explanation": "`mount()` loads only the first tab. `updatingActiveTab()` loads a tab on first open, before the property changes, and `updatedActiveTab()` sanitises the value. `loadPanel()` stores the fresh state as both `data` and `original`.",
+          "tourOrder": 8
+        },
+        {
+          "title": "Content and header actions",
+          "lineRange": [
+            149,
+            203
+          ],
+          "explanation": "`content()` shows an unsaved-change badge and the matrix schema. Reset and Save are header actions that are disabled without changes. Save opens a modal with a warning callout and one section per pending role change.",
+          "tourOrder": 8
+        },
+        {
+          "title": "Save and reset",
+          "lineRange": [
+            205,
+            262
+          ],
+          "explanation": "`changeSection()` lists gained and lost permissions. `save()` applies each loaded panel through ApplyPermissionMatrix with a freshly loaded matrix, collects the results and notifies. `resetChanges()` reloads only loaded panels, dropping other state sent by the client.",
+          "tourOrder": 8
+        },
+        {
+          "title": "Change tracking and group toggle",
+          "lineRange": [
+            264,
+            339
+          ],
+          "explanation": "`changeCount()` compares the flattened original and current state, only for loaded panels. `toggleGroup()` checks or unchecks a whole group, depending on whether all of it is checked. `pendingChanges()` and `matrices()` feed the confirmation, and `flatten()` makes comparable keys.",
+          "tourOrder": 8
+        }
+      ]
+    },
+    "src/Actions/Invitation/CreateInvitation.php": {
+      "overview": "Action that issues an invitation to join a tenant. It validates the request with domain-specific exceptions, creates or refreshes the invitation and dispatches an event. It is the first half of the invitation flow in the tour.",
+      "sections": [
+        {
+          "title": "Validation guards",
+          "lineRange": [
+            12,
+            20
+          ],
+          "explanation": "The email is lowercased first. Guards reject the owner role, existing members and soft-deleted accounts, then ask the tenant whether the email may be invited with that role. Each failure throws a named InvalidInvitation exception.",
+          "tourOrder": 9
+        },
+        {
+          "title": "Create or refresh and dispatch",
+          "lineRange": [
+            22,
+            30
+          ],
+          "explanation": "`firstOrNew` on tenant, email and a null `accepted_at` reuses an open invitation instead of creating duplicates. It then fills the inviter and role and calls `refreshToken()`. Finally it dispatches InvitationIssued, which listeners use to send the mail.",
+          "tourOrder": 9
+        }
+      ]
+    },
+    "src/Actions/Invitation/AcceptInvitation.php": {
+      "overview": "Action that accepts an invitation inside a transaction. It re-checks that the invitation is pending under a lock, resolves or creates the user, attaches the membership and role, and dispatches an event after commit.",
+      "sections": [
+        {
+          "title": "Transactional accept",
+          "lineRange": [
+            12,
+            44
+          ],
+          "explanation": "The row is locked with `lockForUpdate()` to prevent double acceptance. The user is added to the tenant without detaching other tenants. The default tenant flag is set only for the user's first tenant. The role is assigned under the tenant's permissions team id. `accepted_at` is stamped and InvitationAccepted is dispatched with `afterCommit`.",
+          "tourOrder": 9
+        },
+        {
+          "title": "Pending check",
+          "lineRange": [
+            46,
+            49
+          ],
+          "explanation": "An invitation is pending when it is not accepted and has an expiry in the future.",
+          "tourOrder": 9
+        },
+        {
+          "title": "Resolve or create the user",
+          "lineRange": [
+            51,
+            68
+          ],
+          "explanation": "An existing account is used only if the acting user is that account, otherwise sign-in is required. A trashed account is refused. A new user is created from the allowed name attributes in config and a hashed password, and the email is marked verified because the invitation proves it.",
+          "tourOrder": 9
+        }
+      ]
+    },
+    "src/Filament/Tenant/Pages/AcceptInvitation.php": {
+      "overview": "Tenant-panel page opened from the invitation link. It shows a registration form for new users, or an accept button for existing users, and delegates the work to the AcceptInvitation action. It also handles signed URLs for both tenant-resolution modes.",
+      "sections": [
+        {
+          "title": "State and signed URLs",
+          "lineRange": [
+            33,
+            68
+          ],
+          "explanation": "The page is a SimplePage with a slug that carries the invitation. `signedUrl()` signs only the path in domain mode and prefixes the tenant origin, because the host differs per tenant. Otherwise it signs the full route.",
+          "tourOrder": 9
+        },
+        {
+          "title": "Mount and account checks",
+          "lineRange": [
+            70,
+            108
+          ],
+          "explanation": "`mount()` resolves the invitation by ulid and, in domain mode, aborts with 404 unless the host matches the tenant. It decides whether the invitation is acceptable and whether the user already exists. Existing users who are not signed in are sent to login, with the intended URL stored.",
+          "tourOrder": 9
+        },
+        {
+          "title": "Form and accept handling",
+          "lineRange": [
+            110,
+            173
+          ],
+          "explanation": "The form reuses UserNameSchema and adds password fields with confirmation. `accept()` calls the action, shows the exception message as a notification on failure, logs in new users and redirects to the tenant URL.",
+          "tourOrder": 9
+        },
+        {
+          "title": "Content and headings",
+          "lineRange": [
+            175,
+            238
+          ],
+          "explanation": "The content depends on state: nothing for expired or other-account cases, an action for existing users, or a form for new ones. The heading and subheading texts explain each situation and are translatable.",
+          "tourOrder": 9
+        },
+        {
+          "title": "Routing and access",
+          "lineRange": [
+            240,
+            261
+          ],
+          "explanation": "The route uses `signed:relative` in domain mode and `signed` otherwise. The page is hidden from navigation and open to everyone, because the signed link is the authorisation.",
+          "tourOrder": 9
+        }
+      ]
+    },
+    "src/Filament/Pages/RegisterTenant.php": {
+      "overview": "Filament tenant registration page, backed by the CreateTenant action. It lets a user without a tenant create one, and it fits the onboarding side of the invitation flow.",
+      "sections": [
+        {
+          "title": "Form components",
+          "lineRange": [
+            15,
+            28
+          ],
+          "explanation": "The form is built from TenantDetailsSchema, and a protected hook lets an application replace the components.",
+          "tourOrder": 9
+        },
+        {
+          "title": "Visibility rule",
+          "lineRange": [
+            30,
+            48
+          ],
+          "explanation": "`canView()` allows registration only for signed-in users who have no tenants yet. Filament then also hides the register button in the tenant switcher.",
+          "tourOrder": 9
+        },
+        {
+          "title": "Registration handling",
+          "lineRange": [
+            50,
+            68
+          ],
+          "explanation": "`handleRegistration()` calls CreateTenant with the form data and the user. On any Throwable it sends a danger notification and throws Halt, so the form stays open.",
+          "tourOrder": 9
+        }
+      ]
+    },
+    "src/Exceptions/InvalidInvitation.php": {
+      "overview": "A RuntimeException subclass that centralises every reason an invitation can be rejected. It uses named static constructors so call sites in the invitation actions read clearly and messages stay translatable in one place. It supports the invitation flow in tour step 9.",
+      "sections": [
+        {
+          "title": "Creation-time failures",
+          "lineRange": [
+            9,
+            22
+          ],
+          "explanation": "`notAllowed`, `ownerRole` and `alreadyMember` cover problems detected when an invitation is created: the email is not permitted for the tenant, the owner role was requested, or the person already belongs to the tenant. Each wraps a `__()` message with the email interpolated, so the text is translatable.",
+          "tourOrder": 9
+        },
+        {
+          "title": "Acceptance-time failures",
+          "lineRange": [
+            24,
+            37
+          ],
+          "explanation": "`notPending`, `deletedAccount` and `signInRequired` are raised when accepting an invitation: it was already used or expired, the matching account was soft-deleted (the message points admins to restore the user instead), or the visitor must sign in as the invited account. Static factories instead of subclasses keep one exception type to catch.",
+          "tourOrder": 9
+        }
+      ]
+    },
+    "src/Filament/Admin/Resources/Tenants/TenantResource.php": {
+      "overview": "The admin panel's Filament resource for tenants. It is a thin shell: it declares navigation, labels and pages, and delegates form, infolist and table definitions to separate Schema and Table classes. Tenants cannot be created here, since creation happens through registration and actions.",
+      "sections": [
+        {
+          "title": "Imports and static settings",
+          "lineRange": [
+            1,
+            27
+          ],
+          "explanation": "Imports the page, schema, table and relation-manager classes that make up the resource, then sets the slug, record title attribute, navigation sort and icon as static properties.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Model and labels",
+          "lineRange": [
+            29,
+            52
+          ],
+          "explanation": "`getModel()` reads the tenant model class from `tenancy-foundation.models.tenant`, so consuming apps can swap in their own model. Labels and navigation group go through `__()`. `canCreate()` returns false to disable the create button, because tenants come from the registration flow and the CreateTenant action.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Schema, table and relations",
+          "lineRange": [
+            54,
+            74
+          ],
+          "explanation": "Form, infolist and table configuration are delegated to `TenantForm`, `TenantInfolist` and `TenantsTable`, keeping the resource short and the pieces reusable. A `UsersRelationManager` lists the tenant's members.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Page routes",
+          "lineRange": [
+            76,
+            83
+          ],
+          "explanation": "Registers index, view and edit pages only. There is deliberately no create route.",
+          "tourOrder": 10
+        }
+      ]
+    },
+    "src/Filament/Admin/Resources/Users/UserResource.php": {
+      "overview": "The admin panel's view of tenant users. It extends the shared base UserResource and adds the ScopesToAdminTenant concern so the list can be narrowed to a selected tenant. It uses a distinct slug so it can coexist with the tenant panel's resource.",
+      "sections": [
+        {
+          "title": "Class setup and tenant scoping",
+          "lineRange": [
+            19,
+            29
+          ],
+          "explanation": "Extends `BaseUserResource` and uses `ScopesToAdminTenant`. The `all-users` slug distinguishes the admin perspective. `scopeToAdminTenant()` limits users with `whereHas('tenants', ...)` on the chosen tenant's key, because users can belong to several tenants.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Labels",
+          "lineRange": [
+            31,
+            39
+          ],
+          "explanation": "Overrides the base labels to say 'Tenant User(s)', making clear in the admin panel that these are users that belong to tenants, as opposed to admins.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Schemas, relations, pages",
+          "lineRange": [
+            41,
+            70
+          ],
+          "explanation": "Delegates form, infolist and table to admin-specific classes, adds a TenantsRelationManager so an admin sees all of a user's tenants, and registers index, view and edit pages (no create).",
+          "tourOrder": 10
+        }
+      ]
+    },
+    "src/Filament/Tenant/Resources/Users/UserResource.php": {
+      "overview": "The tenant panel's user-management resource, used by tenant owners to manage their own members. It reuses the shared base and swaps in tenant-specific schemas, tables and pages, including a create page.",
+      "sections": [
+        {
+          "title": "Slug and ownership relationship",
+          "lineRange": [
+            16,
+            21
+          ],
+          "explanation": "Sets the slug to `users` and `tenantOwnershipRelationshipName` to `tenants`. The latter tells Filament's multi-tenancy that a user is linked to a tenant through a many-to-many `tenants` relationship rather than a single foreign key. The comment on the slug mentions Admin but this is the tenant slug.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Schemas and table",
+          "lineRange": [
+            23,
+            36
+          ],
+          "explanation": "Form, infolist and table configuration are delegated to the Tenant namespace classes, which can differ from the admin ones, for example by hiding fields tenants should not edit.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Pages",
+          "lineRange": [
+            38,
+            46
+          ],
+          "explanation": "Registers index, create, view and edit pages. Unlike the admin resource, this one includes create, since tenant owners add users here.",
+          "tourOrder": 10
+        }
+      ]
+    },
+    "src/Filament/Components/Resources/Users/UserResource.php": {
+      "overview": "Abstract base class shared by the admin and tenant user resources. It holds everything the two perspectives have in common: model resolution from config, navigation, labels, record title and route binding. Subclasses supply schemas, pages and slugs.",
+      "sections": [
+        {
+          "title": "Model and navigation",
+          "lineRange": [
+            14,
+            38
+          ],
+          "explanation": "The abstract class resolves the user model from `tenancy-foundation.models.user` and defines navigation sort, icon, labels and group via `__()`. Sharing this keeps both panels visually consistent.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Record title and relations",
+          "lineRange": [
+            40,
+            54
+          ],
+          "explanation": "`getRecordTitle()` returns the user's name and handles a null record. `getRelations()` returns an empty list as a default for subclasses to override.",
+          "tourOrder": 10
+        },
+        {
+          "title": "Soft-deleted route binding",
+          "lineRange": [
+            56,
+            62
+          ],
+          "explanation": "Removes the SoftDeletingScope from route binding so a trashed user's page can still be opened, which is needed to restore deleted users from the list.",
+          "tourOrder": 10
+        }
+      ]
+    },
+    "src/Actions/Impersonation/IssueImpersonationHandoff.php": {
+      "overview": "Action that lets a backoffice admin start impersonating a tenant user when tenants have their own domain. Because host-only cookies keep the admin session off the tenant host, it issues a short-lived, single-use, signed link on the tenant's host. It is the first half of the handoff in tour step 11, with RedeemImpersonationHandoff as the second half.",
+      "sections": [
+        {
+          "title": "Constants",
+          "lineRange": [
+            15,
+            19
+          ],
+          "explanation": "A 60-second TTL and a cache key prefix. The controller imports the prefix so both sides use the same key.",
+          "tourOrder": 11
+        },
+        {
+          "title": "Issuing the handoff link",
+          "lineRange": [
+            21,
+            44
+          ],
+          "explanation": "Checks authorisation first: the admin must be allowed to impersonate and the target user must be impersonable. Then a 64-character random token is stored in cache with the admin, user, tenant and return URL. A temporary signed relative route is built and prefixed with the tenant's origin from `TenantResolution`, because the URL generator would otherwise keep the current admin host. The controller later enforces the host.",
+          "tourOrder": 11
+        },
+        {
+          "title": "Route name",
+          "lineRange": [
+            46,
+            49
+          ],
+          "explanation": "Builds the Filament tenant panel route name for the handoff, so the route and the issuer cannot drift apart.",
+          "tourOrder": 11
+        },
+        {
+          "title": "Safe return URL",
+          "lineRange": [
+            51,
+            61
+          ],
+          "explanation": "The 'leave' redirect target is accepted only when it is an http(s) URL on the admin host. Anything else falls back to the admin users index. This prevents the link being used as an open redirect.",
+          "tourOrder": 11
+        }
+      ]
+    },
+    "src/Http/Controllers/RedeemImpersonationHandoff.php": {
+      "overview": "Invokable controller on the tenant host that redeems a handoff token and starts the impersonation session. It validates the token, host, admin and membership, then builds a fresh session that mimics filament-impersonate's keys. It completes the flow started by IssueImpersonationHandoff.",
+      "sections": [
+        {
+          "title": "Redeem and verify",
+          "lineRange": [
+            22,
+            41
+          ],
+          "explanation": "Pulls the payload (a missing one gives 403), loads tenant, admin and user from configured model classes, and aborts unless: the request host matches the tenant's host, the admin can still access the admin panel, and the user is still a member. The impersonation permission itself was checked at issue time because the admin gate is not booted on tenant hosts. On success it redirects to the tenant's URL.",
+          "tourOrder": 11
+        },
+        {
+          "title": "Single-use token pull",
+          "lineRange": [
+            43,
+            49
+          ],
+          "explanation": "Takes a cache lock and pulls (get and delete) the token inside it, so two concurrent requests cannot both redeem the same link.",
+          "tourOrder": 11
+        },
+        {
+          "title": "Start impersonation session",
+          "lineRange": [
+            51,
+            74
+          ],
+          "explanation": "Invalidates the session and regenerates the token, so nothing from a previous visitor survives and session fixation is not possible. It then writes the host binding, the tenant guard's login key and filament-impersonate's session keys by hand, so its banner and leave route work. Since no Login event fires, it dispatches `EnterImpersonation` explicitly after forgetting cached guards.",
+          "tourOrder": 11
+        }
+      ]
+    },
+    "src/Http/Middleware/BindSessionToHost.php": {
+      "overview": "Middleware that ties a session to the host it was created on when tenants are resolved by full domain. It stops a session cookie replayed against another tenant's host from carrying a login across tenants. The redeem controller also writes its session key.",
+      "sections": [
+        {
+          "title": "Skip unless domain mode",
+          "lineRange": [
+            10,
+            19
+          ],
+          "explanation": "Defines the session key constant. In any mode other than DOMAIN, or when there is no session, the request passes straight through, because subdomain mode shares one cookie domain by design.",
+          "tourOrder": 11
+        },
+        {
+          "title": "Bind or reset the session",
+          "lineRange": [
+            20,
+            32
+          ],
+          "explanation": "If a host is already bound and differs from the current host, the session is invalidated and its CSRF token regenerated, so the visitor is a guest on the new host. The current host is then stored, which binds new sessions on first request.",
+          "tourOrder": 11
+        }
+      ]
+    },
+    "src/Support/SoleOwnerGuard.php": {
+      "overview": "A small helper that policies can call to block deleting a user who is the only owner of some tenant. It returns an authorisation Response denial or null, matching the shape of a Gate before-style check, so a tenant is never left without an owner.",
+      "sections": [
+        {
+          "title": "Denial check",
+          "lineRange": [
+            11,
+            29
+          ],
+          "explanation": "Only `delete` and `forceDelete` abilities are checked. It takes the first argument as the model and denies when the model has `isSoleOwnerOfAnyTenant()` returning true, with a translated message naming the user and the tenants. Returning null means no opinion, so normal policy rules continue. The `method_exists` check keeps it safe for models without the trait.",
+          "tourOrder": 11
+        },
+        {
+          "title": "Tenant names helper",
+          "lineRange": [
+            31,
+            34
+          ],
+          "explanation": "Collects the names of the tenants the user solely owns, for the denial message. It is protected static so apps can override it.",
+          "tourOrder": 11
+        }
+      ]
+    },
+    "src/Actions/Contact/CreateContactRequest.php": {
+      "overview": "Action that stores a contact request from the public form and announces it. It follows the package's Action pattern: persist in a transaction, then dispatch an event so listeners can notify admins. It is the entry of the contact flow in tour step 11.",
+      "sections": [
+        {
+          "title": "Handle contact submission",
+          "lineRange": [
+            10,
+            27
+          ],
+          "explanation": "Resolves the contact request model class from config, creates the record inside `DB::transaction` with the validated data and the `ContactSource` enum, and then dispatches `ContactRequestReceived` after the transaction completes. Side effects such as admin notifications stay in listeners rather than in the action.",
+          "tourOrder": 11
+        }
+      ]
+    },
+    "src/Actions/Invitation/DeleteTenantInvitations.php": {
+      "overview": "Action that deletes every invitation (pending or accepted) belonging to a tenant and returns the deleted count.",
+      "sections": []
+    },
+    "src/Actions/Invitation/ReleaseRoleInvitations.php": {
+      "overview": "Action run when a role is deleted: removes pending invitations for the role and nulls the role on remaining ones, inside a transaction.",
+      "sections": []
+    },
+    "src/Actions/Invitation/RevokePendingInvitations.php": {
+      "overview": "Action that deletes only the pending invitations of a tenant, used when the tenant is cancelled.",
+      "sections": []
+    },
+    "src/Actions/Tenant/DeleteTenant.php": {
+      "overview": "Action that permanently deletes a tenant that is due for deletion; dispatches TenantDeleting, then removes members and permission data in a transaction.",
+      "sections": []
+    },
+    "src/Actions/Tenant/ReactivateTenant.php": {
+      "overview": "Action that reactivates a cancelled tenant and dispatches the TenantReactivated event.",
+      "sections": []
+    },
+    "src/Events/Admin/AdminUserCreated.php": {
+      "overview": "Event dispatched after a backoffice admin user is created; triggers the invitation mail.",
+      "sections": []
+    },
+    "src/Events/Admin/RolePermissionsChanged.php": {
+      "overview": "Event carrying the role, guard, added and removed permissions and the actor of a role permission change, for auditing.",
+      "sections": []
+    },
+    "src/Events/Contact/ContactRequestAnswered.php": {
+      "overview": "Event dispatched when an admin answers a public contact request.",
+      "sections": []
+    },
+    "src/Events/Tenant/TenantDeleting.php": {
+      "overview": "Event dispatched just before a tenant is deleted so listeners can clean up owned data.",
+      "sections": []
+    },
+    "src/Events/Tenant/TenantMemberRemoved.php": {
+      "overview": "Event dispatched when a member is removed from a tenant, with a helper telling whether they left voluntarily.",
+      "sections": []
+    },
+    "src/Events/Tenant/TenantReactivated.php": {
+      "overview": "Event dispatched when a cancelled tenant is reactivated.",
+      "sections": []
+    },
+    "src/Events/Tenant/TenantRegistered.php": {
+      "overview": "Event dispatched after a new tenant is registered; triggers the welcome notification.",
+      "sections": []
+    },
+    "src/Http/Middleware/EnsureKnownTenantHost.php": {
+      "overview": "Middleware ensuring tenant panel routes answer only on the host of an existing, active tenant; aborts 404 for unknown hosts, shows the cancelled response and drops domain-mode sessions for cancelled tenants.",
+      "sections": []
+    },
+    "src/Http/Middleware/SetSecurityHeaders.php": {
+      "overview": "Middleware adding default security headers (nosniff, frame options, referrer and permissions policy) plus configured extras, and HSTS in production over HTTPS.",
+      "sections": []
+    },
+    "src/Http/Responses/CancelledTenantResponse.php": {
+      "overview": "Default implementation of the cancelled-tenant response contract, rendering the page shown for a cancelled tenant host.",
+      "sections": []
+    },
+    "src/Http/Responses/Contracts/CancelledTenantResponse.php": {
+      "overview": "Contract for the response returned when a request hits a cancelled tenant's host, allowing applications to override it.",
+      "sections": []
+    },
+    "src/Jobs/DeleteDueTenants.php": {
+      "overview": "Queued job that lazily iterates tenants due for deletion and deletes each with DeleteTenant, rescuing per-tenant failures.",
+      "sections": []
+    },
+    "src/Listeners/Admin/ActivateAdminOnPasswordReset.php": {
+      "overview": "Listener activating a pending admin and verifying their email when they complete a password reset.",
+      "sections": []
+    },
+    "src/Listeners/Admin/RecordRolePermissionsChange.php": {
+      "overview": "Listener persisting a role permission change record from the RolePermissionsChanged event.",
+      "sections": []
+    },
+    "src/Listeners/Admin/SendAdminInvitation.php": {
+      "overview": "Listener that sends the invitation to a newly created admin via the InviteAdminUser action.",
+      "sections": []
+    },
+    "src/Listeners/Auth/UpdateLastLogin.php": {
+      "overview": "Listener on the Login event that records last login time and IP quietly without touching timestamps.",
+      "sections": []
+    },
+    "src/Listeners/Contact/SendContactResponseNotification.php": {
+      "overview": "Listener that notifies the requester when their contact request has been answered.",
+      "sections": []
+    },
+    "src/Listeners/Tenant/DeletedTenant.php": {
+      "overview": "Listener running the package's cleanup actions (deleting invitations) when a tenant is being deleted.",
+      "sections": []
+    },
+    "src/Listeners/Tenant/SendMemberRemovedNotification.php": {
+      "overview": "Listener notifying a user that they were removed from a tenant.",
+      "sections": []
+    },
+    "src/Listeners/Tenant/SendReactivationNotification.php": {
+      "overview": "Listener sending the reactivation notification when a tenant is reactivated.",
+      "sections": []
+    },
+    "src/Listeners/Tenant/SendWelcomeNotification.php": {
+      "overview": "Listener sending the welcome notification after a tenant is registered.",
+      "sections": []
+    },
+    "src/Observers/RoleObserver.php": {
+      "overview": "Eloquent observer that releases a role's invitations when the role is being deleted.",
+      "sections": []
+    },
+    "database/seeders/AdminRolePermissionsSeeder.php": {
+      "overview": "Seeds admin-panel roles and permissions from the AdminRoles and AdminPermissions enums, assigning default permission sets per role.",
+      "sections": []
+    },
+    "database/seeders/TenantRolePermissionsSeeder.php": {
+      "overview": "Seeds tenant-panel roles and permissions from the configured permission enums, giving owner, admin and view-only defaults.",
+      "sections": []
+    },
+    "src/Actions/Roles/ApplyPermissionMatrix.php": {
+      "overview": "Action that validates and persists a changed role-permission matrix, raising InvalidRolePermissions on invalid input.",
+      "sections": []
+    },
+    "src/Console/SyncPermissionsCommand.php": {
+      "overview": "Artisan command that syncs permissions from enums into the database per panel and handles orphaned permissions.",
+      "sections": []
+    },
+    "src/Enums/Authorisation/AdminPermissions.php": {
+      "overview": "Backed enum listing admin-panel permission names (resources and actions) used by policies, seeders and the matrix UI.",
+      "sections": []
+    },
+    "src/Enums/Authorisation/InvitationPermissions.php": {
+      "overview": "Backed enum of tenant invitation permission names.",
+      "sections": []
+    },
+    "src/Enums/Authorisation/PermissionAction.php": {
+      "overview": "Enum of permission actions (view, create, update, delete and others) with translatable labels.",
+      "sections": []
+    },
+    "src/Enums/Authorisation/PermissionGroup.php": {
+      "overview": "Enum grouping permissions by resource for display in the permission matrix, with translatable labels.",
+      "sections": []
+    },
+    "src/Enums/Authorisation/TenantPermissions.php": {
+      "overview": "Backed enum of tenant-panel permission names used by tenant policies and seeders.",
+      "sections": []
+    },
+    "src/Exceptions/InvalidPermissionSeeder.php": {
+      "overview": "Runtime exception thrown when a configured permission seeder class is not a valid seeder.",
+      "sections": []
+    },
+    "src/Filament/Admin/Pages/Schemas/PermissionMatrixSchema.php": {
+      "overview": "Builds the Filament schema (tabs, group sections, role headers, checkbox cells, locked cells) rendering a permission matrix.",
+      "sections": []
+    },
+    "src/Policies/Admin/AdminPolicy.php": {
+      "overview": "Admin-panel policy for admin users, mapping abilities to AdminPermissions and protecting accounts via AdminAccountGuard.",
+      "sections": []
+    },
+    "src/Policies/Admin/ContactRequestPolicy.php": {
+      "overview": "Admin policy for contact requests, mapping respond and dismiss abilities to admin permissions.",
+      "sections": []
+    },
+    "src/Policies/Admin/TenantPolicy.php": {
+      "overview": "Admin policy for tenants, mapping cancel and reactivate abilities to admin permissions.",
+      "sections": []
+    },
+    "src/Policies/Admin/UserPolicy.php": {
+      "overview": "Admin policy for tenant users, with password-reset and email-verification abilities mapped to admin permissions.",
+      "sections": []
+    },
+    "src/Policies/Tenant/InvitationPolicy.php": {
+      "overview": "Tenant policy for invitations, mapping abilities to InvitationPermissions.",
+      "sections": []
+    },
+    "src/Policies/Tenant/TenantPolicy.php": {
+      "overview": "Tenant-panel policy for the tenant model, mapping abilities to TenantPermissions.",
+      "sections": []
+    },
+    "src/Policies/Tenant/UserPolicy.php": {
+      "overview": "Tenant-panel policy for members, covering update, removal, role change, activation and leaving with owner and self guards.",
+      "sections": []
+    },
+    "src/Support/Permissions/PermissionChangeSet.php": {
+      "overview": "Computes per-role differences between original and current permission matrices, producing RoleChange objects and difference counts.",
+      "sections": []
+    },
+    "src/Support/Permissions/PermissionLabels.php": {
+      "overview": "Helper producing translatable labels for permission groups, roles and actions.",
+      "sections": []
+    },
+    "src/Support/Permissions/PermissionMatrixLoader.php": {
+      "overview": "Loads a panel's PermissionMatrix from the database and enums, ranking roles and grouping permissions.",
+      "sections": []
+    },
+    "src/Support/Permissions/PermissionSaveNotifications.php": {
+      "overview": "Builds Filament notifications for successful or failed permission saves.",
+      "sections": []
+    },
+    "src/Support/Permissions/RoleChange.php": {
+      "overview": "Readonly value object describing permissions added and removed for a single role.",
+      "sections": []
+    },
+    "src/Support/Permissions/TenantPermissionEnums.php": {
+      "overview": "Resolves and validates the configured tenant permission enum classes and their names, via the tenant seeder.",
+      "sections": []
+    },
+    "src/Actions/Auth/EvaluateEmailAccess.php": {
+      "overview": "Action evaluating whether an email may access a tenant based on its access policy and domain rules.",
+      "sections": []
+    },
+    "src/Actions/Roles/AssignTenantRole.php": {
+      "overview": "Action assigning a tenant role to a user within a tenant's team context.",
+      "sections": []
+    },
+    "src/Actions/Roles/SyncTenantRoles.php": {
+      "overview": "Action syncing the full set of tenant roles for a user within a tenant.",
+      "sections": []
+    },
+    "src/Actions/Tenant/ChangeTenantMemberStatus.php": {
+      "overview": "Action switching a tenant member between active and inactive status.",
+      "sections": []
+    },
+    "src/Actions/Tenant/CreateTenantUser.php": {
+      "overview": "Action creating a user inside a tenant, syncing roles and dispatching TenantUserCreated; guards against taken emails.",
+      "sections": []
+    },
+    "src/Actions/Tenant/RemoveTenantMember.php": {
+      "overview": "Action removing a member from a tenant: detaches if the user has other tenants, otherwise soft deletes the account; blocks owners.",
+      "sections": []
+    },
+    "src/Actions/Tenant/RemoveTenantOwner.php": {
+      "overview": "Action revoking tenant ownership and removing the owner role.",
+      "sections": []
+    },
+    "src/Actions/Tenant/RestoreTenantMember.php": {
+      "overview": "Action restoring a removed tenant member, reactivating status and reassigning roles.",
+      "sections": []
+    },
+    "src/Actions/Tenant/UpdateTenantUser.php": {
+      "overview": "Action updating a tenant user's details and syncing their tenant roles.",
+      "sections": []
+    },
+    "src/Enums/AccessPolicy.php": {
+      "overview": "Enum of tenant access policies controlling who may join a tenant.",
+      "sections": []
+    },
+    "src/Enums/Authorisation/TenantUserAbilities.php": {
+      "overview": "Enum of abilities for managing tenant users, used in policy and action visibility checks.",
+      "sections": []
+    },
+    "src/Enums/EmailAccess.php": {
+      "overview": "Enum of outcomes from evaluating email access to a tenant.",
+      "sections": []
+    },
+    "src/Enums/MemberStatus.php": {
+      "overview": "Filament-aware enum for member status (active/inactive) providing label, color and icon.",
+      "sections": []
+    },
+    "src/Events/Tenant/TenantUserCreated.php": {
+      "overview": "Event dispatched when a user is created within a tenant.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Users/Actions/MakeUserTenantOwnerAction.php": {
+      "overview": "Admin Filament table action making a user owner of a tenant via AddTenantOwner.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Users/Actions/RemoveUserFromTenantAction.php": {
+      "overview": "Admin Filament table action removing a user from a tenant via RemoveTenantMember, with confirmation based on tenant count.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Users/Actions/RemoveUserTenantOwnerAction.php": {
+      "overview": "Admin Filament table action revoking a user's tenant ownership via RemoveTenantOwner, guarded by owner count.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Users/RelationManagers/TenantsRelationManager.php": {
+      "overview": "Read-only relation manager listing a user's tenants in the admin panel, delegating to UserTenantsTable.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Users/Schemas/UserInfolist.php": {
+      "overview": "Admin user infolist extending the shared component infolist.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Users/Tables/UserTenantsTable.php": {
+      "overview": "Builds the admin table of a user's tenants with role badges, tenant links and owner/role/removal actions.",
+      "sections": []
+    },
+    "src/Filament/Components/Resources/Users/UserInfolist.php": {
+      "overview": "Shared base infolist for user resources, composing a main column and a side column with details and status sections.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Actions/ChangeMemberStatusAction.php": {
+      "overview": "Table action factory for activating or deactivating a tenant member, gated by tenant user abilities and delegating to ChangeTenantMemberStatus.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Actions/LeaveTenantAction.php": {
+      "overview": "Table action letting a member leave a tenant, guarded by membership checks and delegating to RemoveTenantMember.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Actions/MakeTenantOwnerAction.php": {
+      "overview": "Table action that promotes a member to tenant owner via AddTenantOwner when the actor is permitted.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Actions/ManageTenantRolesAction.php": {
+      "overview": "Table action opening a form to edit a user's tenant roles, saved through SyncTenantRoles.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Actions/RemoveFromTenantAction.php": {
+      "overview": "Table action that removes a member from a tenant (optionally deleting the account) through RemoveTenantMember with ability and membership guards.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Actions/RemoveTenantOwnerAction.php": {
+      "overview": "Table action that demotes a tenant owner via RemoveTenantOwner when permitted.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Actions/RestoreMemberAction.php": {
+      "overview": "Table action that restores a previously removed tenant member with a chosen role through RestoreTenantMember.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Columns/RoleBadgeColumn.php": {
+      "overview": "Badge table column rendering admin or tenant roles with enum-driven labels and colours.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Columns/TenantNamesColumn.php": {
+      "overview": "Table column factory listing the tenants a user owns or belongs to.",
+      "sections": []
+    },
+    "src/Filament/Tenant/Resources/Users/Pages/CreateUser.php": {
+      "overview": "Tenant-panel create page that delegates user creation to CreateTenantUser and redirects afterwards.",
+      "sections": []
+    },
+    "src/Filament/Tenant/Resources/Users/Pages/EditUser.php": {
+      "overview": "Tenant-panel edit page that prefills roles, updates through UpdateTenantUser and exposes member status and removal header actions.",
+      "sections": []
+    },
+    "src/Filament/Tenant/Resources/Users/Pages/ListUsers.php": {
+      "overview": "Tenant-panel list page for users with a create header action.",
+      "sections": []
+    },
+    "src/Filament/Tenant/Resources/Users/Pages/ViewUser.php": {
+      "overview": "Tenant-panel view page for a user with status, restore, remove and leave header actions.",
+      "sections": []
+    },
+    "src/Filament/Tenant/Resources/Users/Schemas/UserInfolist.php": {
+      "overview": "Tenant-panel user infolist extending the shared one with tenant role and membership status entries.",
+      "sections": []
+    },
+    "src/Filament/Tenant/Resources/Users/Tables/UsersTable.php": {
+      "overview": "Tenant-panel users table assembling columns, role filter, row actions and bulk removal for tenant members, with scoped membership queries.",
+      "sections": []
+    },
+    "src/Models/Concerns/Tenancy/HasTenantAccess.php": {
+      "overview": "Trait implementing Filament panel and tenant access rules for users, including host-tenant checks, pending invitations and default tenant resolution.",
+      "sections": []
+    },
+    "src/Models/Concerns/Tenancy/HasTenantMemberships.php": {
+      "overview": "Trait giving users tenant and member-tenant relations plus membership status helpers.",
+      "sections": []
+    },
+    "src/Support/TenantMembershipGuard.php": {
+      "overview": "Static guard that returns a denial response when a membership ability would orphan a tenant, using tenant counts.",
+      "sections": []
+    },
+    "src/Support/UserTenantRoles.php": {
+      "overview": "Support helper that loads and caches a user's roles per tenant.",
+      "sections": []
+    },
+    "database/migrations/0001_02_01_000009_create_domain_rules_table.php": {
+      "overview": "Migration creating the domain_rules table used for allow/deny email domain rules.",
+      "sections": []
+    },
+    "src/Actions/Contact/ChangeContactRequestStatus.php": {
+      "overview": "Action that transitions a contact request to a new ContactStatus.",
+      "sections": []
+    },
+    "src/Actions/Contact/RespondToContactRequest.php": {
+      "overview": "Action that records a response to a contact request, updates its status and dispatches ContactRequestAnswered.",
+      "sections": []
+    },
+    "src/Database/Factories/ContactRequestFactory.php": {
+      "overview": "Eloquent factory for ContactRequest with tenant, closed and responded states.",
+      "sections": []
+    },
+    "src/Database/Factories/DomainRuleFactory.php": {
+      "overview": "Eloquent factory for DomainRule with an allow state.",
+      "sections": []
+    },
+    "src/Database/Factories/InvitationFactory.php": {
+      "overview": "Eloquent factory for Invitation using the auth guard and tenant role enums.",
+      "sections": []
+    },
+    "src/Database/Factories/TenantFactory.php": {
+      "overview": "Eloquent factory for Tenant models.",
+      "sections": []
+    },
+    "src/Database/Factories/UserFactory.php": {
+      "overview": "Eloquent factory for User with name attribute helpers and an unverified state.",
+      "sections": []
+    },
+    "src/Enums/ContactSource.php": {
+      "overview": "Enum of origins from which a contact request can be submitted.",
+      "sections": []
+    },
+    "src/Enums/ContactStatus.php": {
+      "overview": "Enum of contact request lifecycle statuses with presentation helpers.",
+      "sections": []
+    },
+    "src/Enums/DomainRuleType.php": {
+      "overview": "Enum of domain rule types (allow or deny) for email access evaluation.",
+      "sections": []
+    },
+    "src/Events/Contact/ContactRequestReceived.php": {
+      "overview": "Event dispatched when a new contact request is received, carrying the ContactRequest.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/ContactRequests/ContactRequestResource.php": {
+      "overview": "Filament admin resource for managing contact requests, with navigation badge and list/edit pages; creation disabled.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/ContactRequests/Pages/EditContactRequest.php": {
+      "overview": "Filament edit page for contact requests with respond and status-change actions.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/ContactRequests/Pages/ListContactRequests.php": {
+      "overview": "Filament list page for contact requests showing the stats header widget.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/ContactRequests/Schemas/ContactRequestForm.php": {
+      "overview": "Filament form schema defining the contact request detail and response fields.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/ContactRequests/Tables/ContactRequestsTable.php": {
+      "overview": "Filament table configuration for contact requests with columns, filters and status actions.",
+      "sections": []
+    },
+    "src/Exceptions/InvalidTenancyConfiguration.php": {
+      "overview": "Runtime exception raised when tenancy configuration is invalid, for example a missing admin host.",
+      "sections": []
+    },
+    "src/Filament/Admin/Concerns/ScopesToAdminTenant.php": {
+      "overview": "Trait for admin panel resources that scopes their Eloquent queries using the admin tenant filter.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Tenants/Schemas/TenantForm.php": {
+      "overview": "Admin tenant resource form schema with main and side sections for details and billing, reusing the shared tenant details schema.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Tenants/Schemas/TenantInfolist.php": {
+      "overview": "Admin tenant infolist schema showing details, billing and status sections, adapting to the tenant resolution mode.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Users/Schemas/UserForm.php": {
+      "overview": "Admin user resource form schema with name and email fields, including a custom message for taken emails.",
+      "sections": []
+    },
+    "src/Filament/Components/Resources/Users/UserForm.php": {
+      "overview": "Shared base helper that configures the user form schema for resources.",
+      "sections": []
+    },
+    "src/Filament/Components/Schemas/TenantDetailsSchema.php": {
+      "overview": "Reusable Filament schema components for tenant name, address, subdomain, domain and URL fields, switching on the tenant resolution mode.",
+      "sections": []
+    },
+    "src/Filament/Components/Schemas/UserNameSchema.php": {
+      "overview": "Reusable Filament schema components for user name input fields shared across profile, registration and invitation forms.",
+      "sections": []
+    },
+    "src/Filament/Pages/EditProfile.php": {
+      "overview": "Filament edit-profile page customised to use the shared user name schema components.",
+      "sections": []
+    },
+    "src/Filament/Pages/EditTenantProfile.php": {
+      "overview": "Tenant profile edit page with tenant detail fields and a copy-URL action, restricted by access checks.",
+      "sections": []
+    },
+    "src/Filament/Pages/EmailVerificationPrompt.php": {
+      "overview": "Customised email verification prompt page overriding the page content.",
+      "sections": []
+    },
+    "src/Filament/Pages/RegisterUser.php": {
+      "overview": "Multi-step registration wizard page creating a user and tenant together via the RegisterTenantOwner action.",
+      "sections": []
+    },
+    "src/Filament/Pages/ResetPassword.php": {
+      "overview": "Password reset page that validates the reset token on mount before showing the form.",
+      "sections": []
+    },
+    "src/Filament/Tenant/Resources/Users/Schemas/UserForm.php": {
+      "overview": "Tenant panel user resource form schema with details, role access and status sections, restricting role changes and detecting multi-tenant membership.",
+      "sections": []
+    },
+    "src/Actions/Admin/ChangeAdminUserRole.php": {
+      "overview": "Action that changes an admin user's role, guarded by AdminAccountGuard to protect super admin accounts.",
+      "sections": []
+    },
+    "src/Actions/Admin/ChangeAdminUserStatus.php": {
+      "overview": "Action that sets an admin user's AdminStatus (activate or deactivate).",
+      "sections": []
+    },
+    "src/Actions/Admin/CreateAdminUser.php": {
+      "overview": "Action that creates an admin user with role and status, enforces account guard rules and dispatches AdminUserCreated.",
+      "sections": []
+    },
+    "src/Actions/Admin/InviteAdminUser.php": {
+      "overview": "Action that invites a pending admin user, only enabled while the admin is in a pending status.",
+      "sections": []
+    },
+    "src/Actions/Admin/UpdateAdminUser.php": {
+      "overview": "Action that updates an admin user's profile attributes.",
+      "sections": []
+    },
+    "src/Actions/Roles/SyncRolePermissions.php": {
+      "overview": "Action that syncs a role's permissions for the admin or tenant guard, rejecting immutable roles and unknown permissions, then fires RolePermissionsChanged.",
+      "sections": []
+    },
+    "src/Actions/Tenant/DeleteTenantPermissionData.php": {
+      "overview": "Action that removes a tenant's permission-related data (roles and model assignments) for the tenant guard when a tenant is deleted.",
+      "sections": []
+    },
+    "src/Console/CreateAdminCommand.php": {
+      "overview": "Interactive artisan command that prompts for name, email, password and role and creates an admin via CreateAdminUser, validating input.",
+      "sections": []
+    },
+    "src/Database/Factories/AdminFactory.php": {
+      "overview": "Eloquent factory for Admin models with states for unverified, inactive, pending and two-factor admins.",
+      "sections": []
+    },
+    "src/Enums/AdminStatus.php": {
+      "overview": "Backed enum for admin user lifecycle status (such as pending, active, inactive) used across actions, policies and tables.",
+      "sections": []
+    },
+    "src/Exceptions/InvalidRolePermissions.php": {
+      "overview": "Exception with named constructors for attempts to change immutable roles or assign unknown permissions.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/AdminUsers/Actions/ActivateAdminUserAction.php": {
+      "overview": "Filament action that activates an admin user through ChangeAdminUserStatus.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/AdminUsers/Actions/ChangeAdminUserRoleAction.php": {
+      "overview": "Filament action with a role form that changes an admin user's role via ChangeAdminUserRole.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/AdminUsers/Actions/DeactivateAdminUserAction.php": {
+      "overview": "Filament action that deactivates an admin user through ChangeAdminUserStatus.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/AdminUsers/Actions/ResendAdminInvitationAction.php": {
+      "overview": "Filament action that resends an invitation to a pending admin user via InviteAdminUser.",
+      "sections": []
+    },
+    "src/Actions/Auth/SendPasswordResetLink.php": {
+      "overview": "Action that sends a password reset link to a user through the broker of a given Filament panel.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Tenants/Tables/TenantUsersTable.php": {
+      "overview": "Table configuration listing a tenant's users in the admin panel, with role badges, verification filters, invite action, and per-row owner, role, impersonation, password reset and removal actions.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Users/Actions/MarkUserEmailVerifiedAction.php": {
+      "overview": "Filament action factory that manually marks a user's email address as verified.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Users/Actions/SendUserPasswordResetLinkAction.php": {
+      "overview": "Filament action factory that triggers sending a password reset link to a user from the admin panel.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Users/Pages/EditUser.php": {
+      "overview": "Edit page for admin-panel users, adding header actions for impersonation, email verification and password reset.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Users/Pages/ListUsers.php": {
+      "overview": "List page for the admin-panel user resource.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Users/Pages/ViewUser.php": {
+      "overview": "View page for admin-panel users with header actions for impersonation, email verification and password reset.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Users/Tables/UsersTable.php": {
+      "overview": "Admin-panel users table extending the shared users table with tenant names, verification column and password reset and impersonate row actions.",
+      "sections": []
+    },
+    "src/Filament/Components/Resources/Users/UsersTable.php": {
+      "overview": "Shared base users table for Filament panels defining common columns, filters, bulk and record actions that panels extend.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Actions/ImpersonateUserAction.php": {
+      "overview": "Reusable impersonation table action that issues a handoff to a tenant host in domain mode or impersonates directly otherwise.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Columns/EmailColumn.php": {
+      "overview": "Factory for a standard email text column.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Columns/LastLoginColumns.php": {
+      "overview": "Factory for the last login table column(s).",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Columns/NameColumn.php": {
+      "overview": "Factory for a standard name text column.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Columns/VerifiedColumn.php": {
+      "overview": "Factory for an email-verified status column.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Filters/VerifiedFilter.php": {
+      "overview": "Factory for a table filter on email verification status.",
+      "sections": []
+    },
+    "src/Http/Middleware/LeaveImpersonationOnTenantHost.php": {
+      "overview": "Middleware for domain mode that, when leaving impersonation on a tenant host, drops the tenant session and redirects the admin back to the backoffice users resource.",
+      "sections": []
+    },
+    "src/Support/TenantUserRoles.php": {
+      "overview": "Support class that loads and caches role names per user for a tenant via the permission package's pivot tables, to avoid N+1 lookups.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/AdminUsers/Actions/SendAdminPasswordResetLinkAction.php": {
+      "overview": "Filament table/page action that sends a password reset link to an admin user via the SendPasswordResetLink action, with status and panel checks.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/AdminUsers/AdminUserResource.php": {
+      "overview": "Filament resource for managing admin users in the admin panel; wires model, labels, navigation group, record title and the form, infolist, table and pages.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/AdminUsers/Pages/CreateAdminUser.php": {
+      "overview": "Filament create page that delegates admin creation to the CreateAdminUser action and redirects after creation.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/AdminUsers/Pages/EditAdminUser.php": {
+      "overview": "Filament edit page exposing header actions for activation, role change, invitation and password reset, and updating through UpdateAdminUser.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/AdminUsers/Pages/ListAdminUsers.php": {
+      "overview": "Filament list page for admin users with a create header action.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/AdminUsers/Pages/ViewAdminUser.php": {
+      "overview": "Filament view page for an admin user with header actions for status, role, invitation and password reset.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/AdminUsers/Schemas/AdminUserForm.php": {
+      "overview": "Builds the admin user form schema with name, email, role selection limited to assignable roles and unique email messaging.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/AdminUsers/Schemas/AdminUserInfolist.php": {
+      "overview": "Builds the admin user infolist with detail and status sections including role, status and timestamps.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/AdminUsers/Tables/AdminUsersTable.php": {
+      "overview": "Configures the admin users table: columns, filters (role, verified), and record actions guarded by AdminAccountGuard.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Filters/RoleFilter.php": {
+      "overview": "Reusable Filament table filter that filters records by role for a given guard, using tenant or admin role options.",
+      "sections": []
+    },
+    "src/Filament/Widgets/AccountWidget.php": {
+      "overview": "Custom Filament account widget showing the signed-in user with role badges and a logout action.",
+      "sections": []
+    },
+    "src/Listeners/Contact/NotifyAdminsOfContactRequest.php": {
+      "overview": "Event listener that notifies eligible admins (by role/permission) when a contact request is received.",
+      "sections": []
+    },
+    "src/Models/Concerns/Admin/CanImpersonate.php": {
+      "overview": "Trait granting impersonation ability based on the IMPERSONATE_USER admin permission.",
+      "sections": []
+    },
+    "src/Models/Concerns/Admin/IsAdminUser.php": {
+      "overview": "Trait implementing Filament canAccessPanel for admins: admin guard, active or pending status, not trashed.",
+      "sections": []
+    },
+    "src/Models/Scopes/HideSuperAdmins.php": {
+      "overview": "Global Eloquent scope hiding super admins from non-super-admin signed-in admins, config-controlled.",
+      "sections": []
+    },
+    "src/Notifications/Admin/AdminInvited.php": {
+      "overview": "Queued notification inviting an admin to sign in or set a password, building the mail by panel and guard.",
+      "sections": []
+    },
+    "src/Support/AdminAccountGuard.php": {
+      "overview": "Static helper protecting admin accounts: denies self and last-super-admin destructive actions and identifies super admins.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/ContactRequests/Widgets/ContactRequestStats.php": {
+      "overview": "Stats overview widget for the admin contact request list, showing counts per ContactStatus.",
+      "sections": []
+    },
+    "src/Filament/Tenant/Pages/ContactUs.php": {
+      "overview": "Tenant-panel Filament page with a contact form that submits through CreateContactRequest with the tenant panel as source.",
+      "sections": []
+    },
+    "src/Livewire/PublicContactForm.php": {
+      "overview": "Livewire component rendering the public contact form with optional captcha, creating requests via CreateContactRequest.",
+      "sections": []
+    },
+    "src/Models/Concerns/HasUlidKey.php": {
+      "overview": "Trait giving Eloquent models ULID primary keys.",
+      "sections": []
+    },
+    "src/Models/Concerns/Tenancy/BelongsToTenant.php": {
+      "overview": "Trait marking a model as owned by a tenant, providing tenant scoping and relation.",
+      "sections": []
+    },
+    "src/Models/Concerns/Tenancy/IsTenantUser.php": {
+      "overview": "Trait for user models that belong to tenants, adding tenant membership behavior.",
+      "sections": []
+    },
+    "src/Models/ContactRequest.php": {
+      "overview": "Eloquent model for a contact request with status/source enum casts, prunable cleanup and respond/dismiss state helpers.",
+      "sections": []
+    },
+    "src/Models/DomainRule.php": {
+      "overview": "Tenant-scoped model for allow/block domain rules, cast to DomainRuleType.",
+      "sections": []
+    },
+    "src/Models/Invitation.php": {
+      "overview": "Tenant-scoped invitation model with creator and role relations, token refresh, prunable cleanup and pending/expired scopes.",
+      "sections": []
+    },
+    "src/Models/Role.php": {
+      "overview": "Role model extension adding an invitations relation.",
+      "sections": []
+    },
+    "src/Models/RolePermissionChange.php": {
+      "overview": "Audit model recording role permission changes with an actor relation.",
+      "sections": []
+    },
+    "src/Notifications/Contact/ContactRequestResponded.php": {
+      "overview": "Mail notification telling a requester that their contact request has been answered.",
+      "sections": []
+    },
+    "src/Notifications/Contact/NewContactRequest.php": {
+      "overview": "Database notification alerting admins to a new contact request, linking to the admin resource.",
+      "sections": []
+    },
+    "src/Notifications/Tenant/AccountCancelled.php": {
+      "overview": "Mail notification confirming a tenant account cancellation.",
+      "sections": []
+    },
+    "src/Notifications/Tenant/MemberRemoved.php": {
+      "overview": "Mail notification informing a user they were removed from a tenant.",
+      "sections": []
+    },
+    "src/Notifications/Tenant/WelcomeToTenant.php": {
+      "overview": "Welcome mail notification for a new tenant member, building the tenant URL via TenancyResolution.",
+      "sections": []
+    },
+    "src/Http/Middleware/EnsureTenantIsNotCancelled.php": {
+      "overview": "Filament middleware that redirects away from a cancelled tenant to the user's default tenant, or aborts with 403 if none exists.",
+      "sections": []
+    },
+    "src/Http/Middleware/EnsureUserHasTenant.php": {
+      "overview": "Middleware ensuring the authenticated user belongs to a tenant, signing them out when they do not.",
+      "sections": []
+    },
+    "src/Http/Middleware/RedirectDeletedUserHome.php": {
+      "overview": "Middleware that clears the session and redirects home when a user with a session was deleted.",
+      "sections": []
+    },
+    "src/Http/Middleware/SyncTenantPermissionsContext.php": {
+      "overview": "Middleware that sets the Spatie permissions team id to the current Filament tenant and resets cached role/permission relations on tenant switch.",
+      "sections": []
+    },
+    "src/Http/Responses/LogoutResponse.php": {
+      "overview": "Filament logout response redirecting to the panel login or a configured logout route depending on tenant resolution mode.",
+      "sections": []
+    },
+    "src/Http/Responses/RegistrationResponse.php": {
+      "overview": "Filament registration response that redirects newly registered users according to the tenant resolution mode.",
+      "sections": []
+    },
+    "src/Livewire/AdminTenantSwitcher.php": {
+      "overview": "Livewire component letting admins pick a tenant to filter admin panel data, persisted through AdminTenantFilter.",
+      "sections": []
+    },
+    "src/Notifications/Invitation/InvitationCreated.php": {
+      "overview": "Mail notification sent to an invitee with a link to accept the invitation page.",
+      "sections": []
+    },
+    "src/Notifications/Tenant/AccountReactivated.php": {
+      "overview": "Mail notification informing tenant users that their account has been reactivated.",
+      "sections": []
+    },
+    "src/Support/AdminTenantFilter.php": {
+      "overview": "Session-backed helper holding the admin panel's optional tenant filter, with options list and current tenant lookup.",
+      "sections": []
+    },
+    "src/Support/PolicyResolver.php": {
+      "overview": "Resolves a model's policy class per panel, preferring the application's policy over the package default.",
+      "sections": []
+    },
+    "src/Support/SelfDeletionGuard.php": {
+      "overview": "Authorization guard denying users from deleting or force deleting their own account.",
+      "sections": []
+    },
+    "src/Support/TenantForceDeleteGuard.php": {
+      "overview": "Authorization guard preventing permanent deletion of users from the tenant panel.",
+      "sections": []
+    },
+    "src/Actions/Invitation/ResendInvitation.php": {
+      "overview": "Action that re-issues an existing invitation by dispatching InvitationIssued again, guarded by InvalidInvitation checks.",
+      "sections": []
+    },
+    "src/Events/Invitation/InvitationAccepted.php": {
+      "overview": "Event dispatched when an invitation has been accepted.",
+      "sections": []
+    },
+    "src/Events/Invitation/InvitationIssued.php": {
+      "overview": "Event dispatched when an invitation is created or resent, triggering the notification listener.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Actions/InviteUserAction.php": {
+      "overview": "Reusable Filament table header action that opens the invitation form and runs CreateInvitation, with an authorization check.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Columns/TimestampColumns.php": {
+      "overview": "Factory producing standard timestamp columns for Filament tables.",
+      "sections": []
+    },
+    "src/Filament/Tenant/Resources/Invitations/InvitationResource.php": {
+      "overview": "Filament tenant-panel resource for invitations, wiring model, labels, navigation group, table and list page.",
+      "sections": []
+    },
+    "src/Filament/Tenant/Resources/Invitations/Pages/ListInvitations.php": {
+      "overview": "List page for invitations that adds the invite-user header action.",
+      "sections": []
+    },
+    "src/Filament/Tenant/Resources/Invitations/Schemas/InvitationForm.php": {
+      "overview": "Filament form schema for inviting a user, with email and role select limited to allowed tenant roles.",
+      "sections": []
+    },
+    "src/Filament/Tenant/Resources/Invitations/Tables/InvitationsTable.php": {
+      "overview": "Filament table definition for invitations with columns and row actions such as resend and delete, gated by invitation permissions.",
+      "sections": []
+    },
+    "src/Listeners/Invitation/SendInvitationNotification.php": {
+      "overview": "Listener that sends the invitation notification when InvitationIssued fires.",
+      "sections": []
+    },
+    "src/Enums/TenantStatus.php": {
+      "overview": "Backed string enum for tenant lifecycle status (active, cancelled) providing Filament label, color and icon.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Tenants/Actions/CancelTenantAction.php": {
+      "overview": "Factory for the Filament action that cancels a tenant after confirmation, delegating to the CancelTenant action and notifying the admin.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Tenants/Actions/ReactivateTenantAction.php": {
+      "overview": "Factory for the Filament action that reactivates a cancelled tenant, delegating to the ReactivateTenant action.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Tenants/Pages/EditTenant.php": {
+      "overview": "Filament edit page for tenants with header actions for cancel, reactivate and linking to the tenant panel.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Tenants/Pages/ViewTenant.php": {
+      "overview": "Filament view page for tenants with cancel and reactivate header actions and tenant panel link.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Tenants/Pages/ListTenants.php": {
+      "overview": "Filament list page for the tenant resource in the admin panel.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Tenants/RelationManagers/UsersRelationManager.php": {
+      "overview": "Read-only relation manager listing a tenant's users in the admin panel using the shared TenantUsersTable configuration.",
+      "sections": []
+    },
+    "src/Filament/Admin/Resources/Tenants/Tables/TenantsTable.php": {
+      "overview": "Configures the admin tenants table with columns, filters (status, resolution) and record actions including cancel and reactivate.",
+      "sections": []
+    },
+    "CHANGELOG.md": {
+      "overview": "Unreleased changelog detailing new config keys, tenant resolution by domain, impersonation handoff, role permission page, feature flags and breaking changes for the package.",
+      "sections": []
+    },
+    "CLAUDE.md": {
+      "overview": "AI assistant project rules for the repository, including the Sloppy code rules checklist and the 32 rules in force before a task is called finished.",
+      "sections": []
+    },
+    "phpunit.domain.xml": {
+      "overview": "PHPUnit configuration that runs the Feature suite with TENANCY_RESOLUTION forced to domain and excludes the subdomain group.",
+      "sections": []
+    },
+    "phpunit.xml": {
+      "overview": "Default PHPUnit configuration defining the Feature and DomainMode test suites bootstrapped from the Composer autoloader.",
+      "sections": []
+    },
+    "config/filament-defaults.php": {
+      "overview": "Config for the Filament defaults provider, with a master switch, per-block toggles and sub-item toggles, and display format settings.",
+      "sections": []
+    },
+    "database/migrations/0001_02_01_000004_create_contact_requests_table.php": {
+      "overview": "Creates the contact_requests table storing public contact form submissions with status, response and closing metadata.",
+      "sections": []
+    },
+    "database/migrations/0001_02_01_000005_create_notifications_table.php": {
+      "overview": "Creates the standard Laravel database notifications table unless it already exists.",
+      "sections": []
+    },
+    "database/migrations/0001_02_01_000006_create_admin_password_reset_tokens_table.php": {
+      "overview": "Creates the password reset token table used by the admin panel.",
+      "sections": []
+    },
+    "database/migrations/0001_02_01_000008_create_role_permission_changes_table.php": {
+      "overview": "Creates an audit table recording permissions added and removed on roles, with a polymorphic actor.",
+      "sections": []
+    },
+    "lang/de.json": {
+      "overview": "German translation strings keyed by English sentences, kept in sync with en.json.",
+      "sections": []
+    },
+    "lang/en.json": {
+      "overview": "English translation strings keyed by full sentences, serving as the key set for the package UI.",
+      "sections": []
+    },
+    "resources/views/contact.blade.php": {
+      "overview": "Blade view wrapping the public contact form Livewire component in the Filament simple layout.",
+      "sections": []
+    },
+    "resources/views/livewire/admin-tenant-switcher.blade.php": {
+      "overview": "Livewire view rendering a tenant filter dropdown for the admin panel.",
+      "sections": []
+    },
+    "resources/views/livewire/public-contact-form.blade.php": {
+      "overview": "Livewire view for the public contact form page, rendering the Filament form content and action modals.",
+      "sections": []
+    },
+    "sloppy.php": {
+      "overview": "Configuration for the Sloppy static analysis tool, scoping to src and migrations and disabling the no-down-migration rule.",
+      "sections": []
+    },
+    "src/Actions/Tenant/DeleteTenantMembers.php": {
+      "overview": "Action that deletes users belonging only to a given tenant and detaches all members, inside a transaction.",
+      "sections": []
+    },
+    "src/Filament/Components/Tables/Columns/WrappedBadgeColumn.php": {
+      "overview": "Factory for a wrapped badge TextColumn used in tables.",
+      "sections": []
+    },
+    "src/FilamentDefaultsServiceProvider.php": {
+      "overview": "Service provider that applies configurable global Filament defaults (labels, actions, selects, dates, uploads, repeaters, forms, pages, tables, panels, formats) via configureUsing.",
+      "sections": []
+    },
+    "src/Helpers/domain.php": {
+      "overview": "Global helpers exposing the app URL, scheme and host, memoized via once().",
+      "sections": []
+    },
+    "src/Helpers/formatters.php": {
+      "overview": "Global formatting helpers for title-casing words and displaying dates using configured formats.",
+      "sections": []
+    },
+    "src/Helpers/helpers.php": {
+      "overview": "Aggregator that loads the domain and formatter helper files.",
+      "sections": []
+    },
+    "src/Models/Concerns/Tenancy/OwnsTenants.php": {
+      "overview": "Trait adding tenant ownership queries to users: owned tenants, owner checks, sole-owner scope and sole-owned tenants.",
+      "sections": []
+    },
+    "stubs/app/CreatedTenantUser.stub": {
+      "overview": "Publishable listener stub that runs configured action classes after a user is created in a tenant.",
+      "sections": []
+    },
+    "stubs/app/DeletedTenant.stub": {
+      "overview": "Publishable listener stub that runs configured action classes after a tenant is deleted, to remove app-owned data.",
+      "sections": []
+    },
+    "stubs/app/ReactivatedTenant.stub": {
+      "overview": "Publishable listener stub that runs configured action classes after a cancelled tenant is reactivated.",
+      "sections": []
+    },
+    "stubs/app/RegisteredTenant.stub": {
+      "overview": "Publishable listener stub that runs configured action classes after a tenant registers.",
+      "sections": []
+    },
+    "stubs/testing/0001_01_01_000000_create_users_table.php": {
+      "overview": "Testing stub migration creating the users, password_reset_tokens and sessions tables, mirroring Laravel's default base migration.",
+      "sections": []
+    },
+    "stubs/testing/2026_01_01_000000_create_permission_tables.php": {
+      "overview": "Testing stub migration creating Spatie permission tables (permissions, roles, model_has_permissions, model_has_roles, role_has_permissions) driven by config/permission.php, with team support and a sqlite testing fallback.",
+      "sections": []
+    }
+  }
+}
