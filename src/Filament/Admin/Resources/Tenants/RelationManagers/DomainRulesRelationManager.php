@@ -35,7 +35,7 @@ class DomainRulesRelationManager extends RelationManager
 
     public function form(Schema $schema): Schema
     {
-        return $schema->components([
+        return $schema->columns(1)->components([
             TextInput::make('value')
                 ->label(__('Domain or email address'))
                 ->helperText(__('A domain like example.com, or a full email address. A rule for an address wins over the rule for its domain.'))
