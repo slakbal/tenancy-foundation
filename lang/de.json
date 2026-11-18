@@ -330,6 +330,7 @@
     "Horizon": "Horizon",
     "System": "System",
     "Log Viewer": "Log-Viewer",
-    "Filter by tenant": "Nach Mandant filtern",
-    "All tenants": "Alle Mandanten"
+    "Sign in as (local only)": "Anmelden als (nur lokal)",
+    "Developer sign in": "Entwickler-Anmeldung",
+    "Choose an account to sign in as.": "Wählen Sie ein Konto zum Anmelden."
 }

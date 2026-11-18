@@ -330,6 +330,7 @@
     "Horizon": "Horizon",
     "System": "System",
     "Log Viewer": "Log Viewer",
-    "Filter by tenant": "Filter by tenant",
-    "All tenants": "All tenants"
+    "Sign in as (local only)": "Sign in as (local only)",
+    "Developer sign in": "Developer sign in",
+    "Choose an account to sign in as.": "Choose an account to sign in as."
 }

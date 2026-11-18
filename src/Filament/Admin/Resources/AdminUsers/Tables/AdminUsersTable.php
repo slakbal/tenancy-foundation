@@ -30,10 +30,10 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\Deacti
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ResendAdminInvitationAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\SendAdminPasswordResetLinkAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\NameColumn;
-use Slakbal\TenancyFoundation\Support\AdminAccountGuard;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\RoleBadgeColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Columns\VerifiedColumn;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Filters\VerifiedFilter;
+use Slakbal\TenancyFoundation\Support\AdminAccountGuard;
 
 class AdminUsersTable
 {

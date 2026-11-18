@@ -22,6 +22,7 @@ This README is the setup and usage guide. Release notes are in [CHANGELOG.md](CH
 - [Contact requests](#contact-requests)
 - [Admin users](#admin-users)
 - [Impersonation](#impersonation)
+- [Developer sign in](#developer-sign-in)
 - [Scheduled jobs](#scheduled-jobs)
 - [Commands](#commands)
 - [Testing](#testing)
@@ -269,7 +270,6 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 | `admin.domain` | `env('ADMIN_DOMAIN')` | Host of the admin panel. `null`: any host in `subdomain` mode, `domain` (`APP_DOMAIN`) in `domain` mode. Reserved for tenants |
 | `admin.path` | `env('ADMIN_PATH', 'admin')` | Path prefix of the admin panel; `''` or `'/'` (no prefix) on its own host. Slashes are trimmed |
 | `admin.hide_super_admins` | `env('ADMIN_HIDE_SUPER_ADMINS', false)` | `true` hides admins with the `super_admin` role from every admin who is not a super admin (global scope on `Admin` while an admin is signed in). Super admins see each other; sign in, commands, jobs and guests are not filtered |
-| `admin.tenant_filter` | `env('ADMIN_TENANT_FILTER', false)` | `true` adds an "All tenants / one tenant" select to the admin panel top bar (kept in the session) that limits resources using the `ScopesToAdminTenant` trait: the tenant users list, and the application's own tenant-owned resources (a `tenant_id` column, or override `scopeToAdminTenant()`) |
 | `models.tenant` | `Models\Tenant` | Tenant model |
 | `models.user` | `Models\User` | Tenant panel user, also used by the `users` provider |
 | `models.admin` | `Models\Admin` | Admin panel user, also used by the `admins` provider |
@@ -289,6 +289,7 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 | `features.tenant_registration` | `env('TENANCY_TENANT_REGISTRATION')` (`null`) | "Register a tenant" page. `null` follows the resolution (on for `subdomain`, off for `domain`); `true` or `false` always forces it |
 | `features.csp` | `env('TENANCY_CSP', false)` | Nonce based Content-Security-Policy on both panels through `asignua/filament-csp-nonce` (a dependency of this package; `AdminPlugin` and `TenantPlugin` register its plugin). Tune it in the app's `config/csp-nonce.php` (`php artisan vendor:publish --tag=csp-nonce-config`): `report_only` (env `CSP_REPORT_ONLY`; the dependency default enforces, start with `true`), `directives` for extra sources, the report endpoint `POST /csp/report` and its storage. Pages outside the panels add the `csp.nonce` middleware themselves. Run `php artisan view:clear` once after turning it on |
 | `features.security_headers` | `env('TENANCY_SECURITY_HEADERS', false)` | Global middleware adding `X-Content-Type-Options`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy`, `Permissions-Policy` to every response, plus `Strict-Transport-Security` in production over HTTPS |
+| `features.dev_sign_in` | `env('TENANCY_DEV_SIGN_IN', false)` | Lets a login page that uses `HasDeveloperSignIn` show a local-only account picker and "Developer sign in" button. Only works when `APP_ENV` is `local` (404 elsewhere, whatever this says). See [Developer sign in](#developer-sign-in) |
 | `response_headers` | `[]` | Extra response headers (`name => value`) added with `features.security_headers`. Merged over the defaults: the same name replaces one, `null` or `''` removes it |
 | `invitations.expiry_days` | `env('INVITATION_EXPIRY_DAYS', 7)` | Days an invitation link stays valid |
 | `invitations.retention_days` | `env('INVITATION_RETENTION_DAYS', 30)` | Pruning window for invitations |
@@ -350,6 +351,7 @@ A block switch gates all of its sub-items.
 | `TENANT_CANCELLATION_GRACE_DAYS` | `cancellation.grace_days` |
 | `INVITATION_EXPIRY_DAYS`, `INVITATION_RETENTION_DAYS` | `invitations.*` |
 | `CONTACT_REQUEST_PRUNE_AFTER_DAYS` | `contact_requests.prune_after_days` |
+| `TENANCY_DEV_SIGN_IN` | `features.dev_sign_in`: `false` (default) or `true` (local only) |
 | `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Captcha on the public contact form (only with `l3aro/filament-turnstile` installed) |
 
 ## Domains, hosts and sessions
@@ -831,6 +833,34 @@ protected function actions(): array
   - `Http\Controllers\RedeemImpersonationHandoff` accepts it once (cache lock plus pull), only on the tenant's own host, only while the admin can still access the admin panel and the user can still access the tenant. It replaces the tenant host session (new session id, earlier data dropped), signs the user in on the `web` guard without a `Login` event (so no last login update) and stores the impersonation the way `filament-impersonate` does, so its banner shows. Reused, expired, tampered or foreign-host links get 403 (404 on hosts that are not a tenant).
   - "Leave" (`filament-impersonate/leave`) runs `Http\Middleware\LeaveImpersonationOnTenantHost` first (added to `filament-impersonate.leave_middleware` in `domain` mode): it drops the tenant host session and returns to the admin page the action started from. That URL is accepted only on the admin host (http or https); anything else falls back to the admin users list.
   - Needs a cache store with atomic locks shared by all app servers (`redis`, `database`, `memcached`, `dynamodb`; `file` and `array` only on a single server). `EnterImpersonation` and `LeaveImpersonation` fire as in `subdomain` mode.
+
+## Developer sign in
+
+`Filament\Pages\Concerns\HasDeveloperSignIn` adds a local-only shortcut to a login page: an account picker and a "Developer sign in" button that sign in without a password or identity provider (useful with SSO, where there is no password form). The picker lists admins on the admin panel and the members of the host's tenant on the tenant panel (`models.admin`, `models.user`, `TenantResolution`), and the sign in still requires `canAccessPanel()`.
+
+- Opt in per project with `features.dev_sign_in` (env `TENANCY_DEV_SIGN_IN`, default `false`). It also only works when `APP_ENV` is `local` and never in production (the production check is a second guard, in case the flag is left on by mistake): with another environment the components are not rendered and `signInAsDevAccount()` answers 404, whatever the setting.
+- The package ships no login page for it. Add the trait to your own login page and spread the components into its schema:
+
+```php
+use Filament\Auth\Pages\Login as BaseLogin;
+use Slakbal\TenancyFoundation\Filament\Pages\Concerns\HasDeveloperSignIn;
+
+class Login extends BaseLogin
+{
+    use HasDeveloperSignIn;
+
+    public function content(Schema $schema): Schema
+    {
+        return $schema->components([
+            // ... your sign in button or form
+            ...$this->devSignInComponents(),
+        ]);
+    }
+}
+```
+
+- It signs in through the panel guard and regenerates the session. It does not touch `sso_id`.
+- Override `devAccountQuery()` to change which accounts are listed.
 
 ## Scheduled jobs
 

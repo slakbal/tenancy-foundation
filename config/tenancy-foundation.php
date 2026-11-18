@@ -264,6 +264,20 @@ return [
     |                     every response, and Strict-Transport-Security (one
     |                     year) in production over HTTPS. Registered as global
     |                     middleware. Env: TENANCY_SECURITY_HEADERS.
+    | dev_sign_in         (default false) Lets a login page that uses the
+    |                     HasDeveloperSignIn trait show an account picker and a
+    |                     "Developer sign in" button (admins on the admin panel,
+    |                     members of the host's tenant on the tenant panel) that
+    |                     signs in without a password or identity provider. It
+    |                     only works when the application environment is "local"
+    |                     (APP_ENV) and is never available in production, whatever
+    |                     this setting is (checked twice, in case the flag is
+    |                     left on by mistake); the action answers 404 elsewhere.
+    |                     The package ships no login page for it:
+    |                     the application adds the trait to its own login page
+    |                     and spreads devSignInComponents() into the page schema.
+    |                     It logs in through the panel guard and does not touch
+    |                     sso_id. Env: TENANCY_DEV_SIGN_IN.
     |
     */
 
@@ -276,6 +290,7 @@ return [
         'tenant_registration' => env('TENANCY_TENANT_REGISTRATION', true),
         'csp' => env('TENANCY_CSP', false),
         'security_headers' => env('TENANCY_SECURITY_HEADERS', false),
+        'dev_sign_in' => env('TENANCY_DEV_SIGN_IN', false),
     ],
 
     /*
