@@ -11,6 +11,7 @@ use Slakbal\TenancyFoundation\Actions\Admin\CreateAdminUser;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Models\Admin;
+use Slakbal\TenancyFoundation\Rules\NotDisposableEmail;
 use Spatie\Permission\PermissionRegistrar;
 
 use function Laravel\Prompts\select;
@@ -132,7 +133,7 @@ class CreateAdminCommand extends Command implements PromptsForMissingInput
     {
         $adminModel = config('tenancy-foundation.models.admin');
 
-        return ['required', 'email', 'max:255', function (string $attribute, mixed $value, Closure $fail) use ($adminModel): void {
+        return ['required', 'email', 'max:255', new NotDisposableEmail, function (string $attribute, mixed $value, Closure $fail) use ($adminModel): void {
             if ($adminModel::withTrashed()->where('email', $value)->exists()) {
                 $fail('An admin with this email already exists (it may be deleted).');
             }

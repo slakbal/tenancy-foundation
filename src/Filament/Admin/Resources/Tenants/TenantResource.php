@@ -10,6 +10,7 @@ use Filament\Tables\Table;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\EditTenant;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ListTenants;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Pages\ViewTenant;
+use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\RelationManagers\DomainRulesRelationManager;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\RelationManagers\UsersRelationManager;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Schemas\TenantForm;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Schemas\TenantInfolist;
@@ -65,6 +66,7 @@ class TenantResource extends Resource
     {
         return [
             UsersRelationManager::class,
+            DomainRulesRelationManager::class,
         ];
     }
 

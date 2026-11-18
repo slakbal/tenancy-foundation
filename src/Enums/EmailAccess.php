@@ -8,6 +8,7 @@ enum EmailAccess: string
     case ALLOWED_BY_POLICY = 'allowed_by_policy';
     case BLOCKED_BY_RULE = 'blocked_by_rule';
     case BLOCKED_BY_POLICY = 'blocked_by_policy';
+    case BLOCKED_DISPOSABLE = 'blocked_disposable';
 
     public function isAllowed(): bool
     {

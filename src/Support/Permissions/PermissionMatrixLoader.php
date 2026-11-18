@@ -5,7 +5,6 @@ namespace Slakbal\TenancyFoundation\Support\Permissions;
 use BackedEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Enums\FilamentPanel;
@@ -38,7 +37,7 @@ class PermissionMatrixLoader
     protected function permissionEnums(FilamentPanel $panel): array
     {
         return match ($panel) {
-            FilamentPanel::ADMIN => [AdminPermissions::class],
+            FilamentPanel::ADMIN => app(AdminPermissionEnums::class)->classes(),
             FilamentPanel::TENANT => app(TenantPermissionEnums::class)->classes(),
         };
     }

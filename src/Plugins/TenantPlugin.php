@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Routing\Route as RoutingRoute;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\HtmlString;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\TenantResolution;
@@ -171,7 +172,7 @@ class TenantPlugin implements Plugin
 
     protected function currentTenantLabelStyle(): HtmlString
     {
-        return new HtmlString('<style>.fi-tenant-menu-trigger-current-tenant-label{color:var(--danger-600)}.dark .fi-tenant-menu-trigger-current-tenant-label{color:var(--danger-400)}</style>');
+        return new HtmlString('<style nonce="'.e(Vite::cspNonce()).'">.fi-tenant-menu-trigger-current-tenant-label{color:var(--danger-600)}.dark .fi-tenant-menu-trigger-current-tenant-label{color:var(--danger-400)}</style>');
     }
 
     public function boot(Panel $panel): void

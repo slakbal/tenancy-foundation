@@ -15,6 +15,7 @@ use Slakbal\TenancyFoundation\Actions\Tenant\CreateTenantUser;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Filament\Components\Resources\Users\UserForm as BaseUserForm;
 use Slakbal\TenancyFoundation\Filament\Components\Schemas\UserNameSchema;
+use Slakbal\TenancyFoundation\Rules\NotDisposableEmail;
 
 class UserForm extends BaseUserForm
 {
@@ -77,6 +78,7 @@ class UserForm extends BaseUserForm
                 ->required(fn (string $operation): bool => $operation === 'create')
                 ->maxLength(255)
                 ->unique(config('tenancy-foundation.models.user'), 'email', ignoreRecord: true)
+                ->rule(new NotDisposableEmail)
                 ->validationMessages(['unique' => fn (): string => CreateTenantUser::emailTakenMessage()])
                 ->disabled(fn (string $operation): bool => $operation !== 'create')
                 ->dehydrated(fn (string $operation): bool => $operation === 'create')

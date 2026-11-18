@@ -4,8 +4,8 @@ namespace Slakbal\TenancyFoundation\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
-use Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder;
 use Slakbal\TenancyFoundation\Enums\FilamentPanel;
+use Slakbal\TenancyFoundation\Support\Permissions\AdminPermissionEnums;
 use Slakbal\TenancyFoundation\Support\Permissions\TenantPermissionEnums;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -20,7 +20,7 @@ class SyncPermissionsCommand extends Command
     public function handle(PermissionRegistrar $registrar): int
     {
         $guards = [
-            FilamentPanel::ADMIN->getAuthGuard() => app(AdminRolePermissionsSeeder::class)->permissionNames(),
+            FilamentPanel::ADMIN->getAuthGuard() => app(AdminPermissionEnums::class)->names(),
             FilamentPanel::TENANT->getAuthGuard() => app(TenantPermissionEnums::class)->names(),
         ];
 

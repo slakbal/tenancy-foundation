@@ -28,6 +28,8 @@ This README is the setup and usage guide. Release notes are in [CHANGELOG.md](CH
 - [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
 - [Upgrading](#upgrading)
+- [Tenant access policy](#tenant-access-policy)
+- [Disposable email addresses](#disposable-email-addresses)
 
 ## What it provides
 
@@ -173,7 +175,7 @@ The package migrations load automatically (no publishing) and run after Laravel'
 | `create_notifications_table` | Laravel `notifications` table, skipped if it already exists (admin bell) |
 | `create_admin_password_reset_tokens_table` | Separate reset tokens for admins, so tokens never cross between an admin and a tenant user who share an email |
 | `create_invitations_table` | `invitations`. Always runs, even with `features.invitations` off |
-| `create_domain_rules_table` | `domain_rules`: per tenant allow/block rule for an email domain. Always runs |
+| `create_domain_rules_table` | `domain_rules` (`tenant_id`, `value`, `type`): per tenant allow/block rule for an email domain or a full email address, unique per tenant. Also the central `disposable_domains` table (`domain`, unique) for `features.disposable_emails`. Always runs |
 | `create_role_permission_changes_table` | Audit log of role permission changes |
 
 ### 7. Register the panel plugins
@@ -231,7 +233,7 @@ use Slakbal\TenancyFoundation\Database\Seeders\TenantRolePermissionsSeeder;
 $this->call([AdminRolePermissionsSeeder::class, TenantRolePermissionsSeeder::class]);
 ```
 
-If you registered your own tenant seeder subclass (see [App permissions](#app-permissions)), call that subclass instead.
+If you registered your own admin or tenant seeder subclass (see [App permissions](#app-permissions)), call that subclass instead.
 
 Invite the first super admin (it asks for the email, the name attributes and the role, creates a `pending` admin and mails `AdminInvited`):
 
@@ -276,8 +278,9 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 | `models.role` | `Models\Role` | Spatie role model (the `RoleObserver` is attached to it) |
 | `models.contact_request` | `Models\ContactRequest` | Contact form submissions |
 | `models.invitation` | `Models\Invitation` | Tenant invitations |
-| `models.domain_rule` | `Models\DomainRule` | Email domain allow/block rules per tenant |
+| `models.domain_rule` | `Models\DomainRule` | Allow/block rules per tenant for an email domain or a full email address |
 | `models.role_permission_change` | `Models\RolePermissionChange` | Audit rows written when role permissions change |
+| `seeders.admin_role_permissions` | `AdminRolePermissionsSeeder` | The seeder that defines the admin permission enums. Must be the package seeder or a subclass |
 | `seeders.tenant_role_permissions` | `TenantRolePermissionsSeeder` | The seeder that defines the tenant permission enums. Must be the package seeder or a subclass |
 | `user_name_attributes` | `['name']` | Name column(s), for example `['first_name', 'last_name']` |
 | `email_change_verification` | `true` | Email changes on the profile page take effect after the new address confirms (both panels) |
@@ -290,6 +293,8 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 | `features.csp` | `env('TENANCY_CSP', false)` | Nonce based Content-Security-Policy on both panels through `asignua/filament-csp-nonce` (a dependency of this package; `AdminPlugin` and `TenantPlugin` register its plugin). Tune it in the app's `config/csp-nonce.php` (`php artisan vendor:publish --tag=csp-nonce-config`): `report_only` (env `CSP_REPORT_ONLY`; the dependency default enforces, start with `true`), `directives` for extra sources, the report endpoint `POST /csp/report` and its storage. Pages outside the panels add the `csp.nonce` middleware themselves. Run `php artisan view:clear` once after turning it on |
 | `features.security_headers` | `env('TENANCY_SECURITY_HEADERS', false)` | Global middleware adding `X-Content-Type-Options`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy`, `Permissions-Policy` to every response, plus `Strict-Transport-Security` in production over HTTPS |
 | `features.dev_sign_in` | `env('TENANCY_DEV_SIGN_IN', false)` | Lets a login page that uses `HasDeveloperSignIn` show a local-only account picker and "Developer sign in" button. Only works when `APP_ENV` is `local` (404 elsewhere, whatever this says). See [Developer sign in](#developer-sign-in) |
+| `features.disposable_emails` | `false` | Refuse disposable email addresses: `EvaluateEmailAccess` answers `blocked_disposable` (after the tenant rules, before the policy) and the `NotDisposableEmail` rule guards the package email fields. Needs the `disposable_domains` list: run `tenancy-foundation:refresh-disposable-domains` once after turning it on; the package then schedules it weekly. See [Disposable email addresses](#disposable-email-addresses) |
+| `disposable_emails.source` | jsDelivr `disposable/disposable-email-domains` `domains.json` | URL of a JSON array of disposable email domains read by the refresh command |
 | `response_headers` | `[]` | Extra response headers (`name => value`) added with `features.security_headers`. Merged over the defaults: the same name replaces one, `null` or `''` removes it |
 | `invitations.expiry_days` | `env('INVITATION_EXPIRY_DAYS', 7)` | Days an invitation link stays valid |
 | `invitations.retention_days` | `env('INVITATION_RETENTION_DAYS', 30)` | Pruning window for invitations |
@@ -410,7 +415,7 @@ A block switch gates all of its sub-items.
 ### What `AdminPlugin` registers
 
 - Database notifications, password reset (`ResetPassword`), profile (`EditProfile`), email change verification, the `admins` broker.
-- Resources: `Users\UserResource` (tenant users), `AdminUsers\AdminUserResource` (slug `admins`), `Tenants\TenantResource`, `ContactRequests\ContactRequestResource`.
+- Resources: `Users\UserResource` (tenant users), `AdminUsers\AdminUserResource` (slug `admins`), `Tenants\TenantResource` (relation managers `UsersRelationManager` and `DomainRulesRelationManager`), `ContactRequests\ContactRequestResource`.
 - Page: `ManageRolePermissions` (Security > Role permissions).
 - Navigation group **System** with **Horizon** and **Log Viewer** items that open in a new tab, visible to super admins only (see [Horizon and Log Viewer](#horizon-and-log-viewer)).
 - On boot: `setPermissionsTeamId(Admin::PERMISSIONS_TEAM_ID)`, a `Gate::before` (`SoleOwnerGuard`, then `AdminAccountGuard`, then `super_admin` → allow), and policy resolution for the `Admin` namespace.
@@ -536,7 +541,7 @@ Permission enums: `AdminPermissions` (impersonate, permissions, admin users, ten
 | Role | Seeded defaults |
 |---|---|
 | admin `super_admin` | none (bypass) |
-| admin `admin` | every admin permission except `permissions.manage` |
+| admin `admin` | every admin permission (including app admin enums) except `permissions.manage` |
 | admin `support` | view admins, tenants and users, send password reset, impersonate, view, update and respond to contact requests |
 | tenant `owner` | none (always cleared, bypass) |
 | tenant `admin` | every tenant permission (including invitation ones when enabled) |
@@ -547,10 +552,10 @@ The enums are the permission registry. After an upgrade, or after you add permis
 
 ### App permissions
 
-An app adds its own tenant permissions by registering an enum with the tenant seeder:
+An app adds its own permissions by registering an enum with the admin or the tenant seeder. The steps are the same for both guards:
 
-1. Create a backed string enum whose values are `resource.action` names (for example `invoice.approve`). Labels fall back to a headline of the group and the action (`Invoice`, `Approve`).
-2. Subclass the package seeder. Keep `parent::permissionEnums()`, because it carries the package enums and the invitations feature flag. You can also override `viewOnlyPermissions()` to change the view-only defaults.
+1. Create a backed string enum whose values are `resource.action` names (for example `invoice.approve`). Labels fall back to a headline of the group and the action (`Invoice`, `Approve`), passed through `__()`, so add those headlines as keys to your `lang/*.json` files to translate them.
+2. Subclass the package seeder (`AdminRolePermissionsSeeder` or `TenantRolePermissionsSeeder`). Keep `parent::permissionEnums()`, because it carries the package enums (and, for the tenant seeder, the invitations feature flag). On the tenant seeder you can also override `viewOnlyPermissions()` to change the view-only defaults; on the admin seeder, `supportPermissions()` changes the support role defaults.
 
 ```php
 use Slakbal\TenancyFoundation\Database\Seeders\TenantRolePermissionsSeeder;
@@ -572,9 +577,11 @@ class AppTenantRolePermissionsSeeder extends TenantRolePermissionsSeeder
 ],
 ```
 
+For the admin guard, the key is `admin_role_permissions`. A first seed grants app admin permissions to the `admin` role, like the package ones.
+
 4. Run `php artisan tenancy-foundation:sync-permissions`, then grant the new permissions on the Role permissions page.
 
-The Role permissions page and the sync command read the tenant enums through `Support\Permissions\TenantPermissionEnums`, which resolves this config key. A class that isn't the package seeder or a subclass of it throws `Exceptions\InvalidPermissionSeeder`. Admin-side app permissions aren't supported, because `AdminPermissions` has no hook.
+The Role permissions page, the sync command and the install command read the enums through `Support\Permissions\AdminPermissionEnums` and `Support\Permissions\TenantPermissionEnums`, which resolve these config keys. A class that isn't the package seeder or a subclass of it throws `Exceptions\InvalidPermissionSeeder`.
 
 ### Changing role permissions in code
 
@@ -794,10 +801,12 @@ protected function actions(): array
 | `getTenantFormComponents()`, `getUserFormComponents()` | `RegisterUser`, `RegisterTenant` | Registration fields |
 | `fields()` | `PublicContactForm` | Public contact form fields (swap via `contact_requests.public_form`) |
 | `redirectUrlAfterSubmit()` | `PublicContactForm` | Where to go after a submission (default `null`: stay and reset the form); the success notification shows on the next page |
+| `permissionEnums()`, `supportPermissions()` | `AdminRolePermissionsSeeder` | App admin permissions, support role defaults |
 | `permissionEnums()`, `viewOnlyPermissions()` | `TenantRolePermissionsSeeder` | App permissions, view-only defaults |
 | `panels()`, `matrixLoader()`, `matrixSchema()` | `ManageRolePermissions` | Role permissions page |
 | `mainComponents()`, `sideComponents()`, `detailsFields()`, `statusEntries()` | user forms and infolists (both panels), `TenantForm`, `TenantInfolist` | Add fields and sections |
 | `rowActions()`, `bulkActions()`, `filters()`, `columns()` | shared `Components\Resources\Users\UsersTable` | Table customisation |
+| `modifyQuery()`, `columns()`, `filters()`, `headerActions()`, `rowActions()` | admin `Tenants\Tables\TenantUsersTable` (tenant Users tab) | Table customisation |
 | Action classes | `src/Actions/*` | Bind a subclass in the container |
 | Plugin `using*()` methods | `AdminPlugin`, `TenantPlugin` | Swap resources and pages |
 | `notifications.*` | config | Swap or disable a notification |
@@ -871,14 +880,16 @@ These are registered through the scheduler (`callAfterResolving(Schedule::class)
 | daily at `cancellation.deletion_time` | `Jobs\DeleteDueTenants` (queued) | `cancellation.schedule_deletion` |
 | daily | `model:prune` (the app's prunable models) | `schedule_pruning` |
 | daily | `model:prune --model=…` (`ContactRequest`, and `Invitation` when invitations are on) | `schedule_pruning` |
+| weekly | `tenancy-foundation:refresh-disposable-domains` | `features.disposable_emails` |
 
 ## Commands
 
 | Command | Does |
 |---|---|
-| `tenancy-foundation:install` | Publishes the config (asks before overwriting an existing one), warns if spatie teams are off, prints the setup steps. Interactive with teams on: offers to migrate, seed `AdminRolePermissionsSeeder` and the `seeders.tenant_role_permissions` seeder, and run `create-admin` (each defaults to no). Without interaction it never overwrites and lists those steps instead |
+| `tenancy-foundation:install` | Publishes the config (asks before overwriting an existing one), warns if spatie teams are off, prints the setup steps. Interactive with teams on: offers to migrate, seed the `seeders.admin_role_permissions` and `seeders.tenant_role_permissions` seeders, and run `create-admin` (each defaults to no). Without interaction it never overwrites and lists those steps instead |
 | `tenancy-foundation:create-admin {email} {--role=}` | Interactive. Asks for the email (when not given) and each `user_name_attributes` field, validating as you type, then offers the admin guard roles from the database as a choice (default `super_admin`; app roles included). Creates a `pending` admin through `CreateAdminUser` (no actor, so it may create a super admin) and mails `AdminInvited`. Without interaction the role defaults to `super_admin`. Fails when no admin roles are seeded, on an email of an existing or deleted admin, or on an unknown `--role` (lists the available ones). Meant for the first super admin on a new install |
-| `tenancy-foundation:sync-permissions` | Creates the missing permission rows for both guards: admin from `AdminPermissions`, tenant from the configured `seeders.tenant_role_permissions`. Reports orphaned rows (no enum case) and, when run interactively, asks per guard whether to delete them (default no; deleting also removes them from every role). Clears the permission cache. Idempotent. Never assigns permissions to roles |
+| `tenancy-foundation:refresh-disposable-domains` | Downloads `disposable_emails.source` with the HTTP client, needs a non-empty JSON array of strings, stores the domains lower case, trimmed and unique, and replaces the `disposable_domains` table in one transaction. A failed, invalid or empty download is reported, keeps the stored list and exits with a failure. Works with the feature off too, so the list can be filled before turning it on |
+| `tenancy-foundation:sync-permissions` | Creates the missing permission rows for both guards: admin from the configured `seeders.admin_role_permissions`, tenant from the configured `seeders.tenant_role_permissions`. Reports orphaned rows (no enum case) and, when run interactively, asks per guard whether to delete them (default no; deleting also removes them from every role). Clears the permission cache. Idempotent. Never assigns permissions to roles |
 
 ## Testing
 
@@ -950,10 +961,34 @@ Then grant any new permissions on the Role permissions page.
 
 ## Tenant access policy
 
-Decide whether an email address may sign in to a tenant, for products with SSO or any other login that does not use invitations. The package only provides the data and the decision; the sign-in flow calls it.
+Decide whether an email address may sign in to a tenant, for products with SSO or any other login that does not use invitations. The package provides the data, the decision and the backoffice UI; the sign-in flow calls the decision.
 
-- `tenants.access_policy` (`AccessPolicy` enum, default `open_except_blocked`): `open_except_blocked` lets every domain in except those with a `block` rule; `allow_list_only` lets in only domains with an `allow` rule. Allow rules are ignored under the first policy and block rules under the second.
-- `domain_rules` (`models.domain_rule`, `Tenant::domainRules()`): `tenant_id`, `domain` (stored lower case, unique per tenant, exact match) and `type` (`DomainRuleType`: `allow` | `block`).
-- `Actions\Auth\EvaluateEmailAccess::handle($tenant, $email)` returns an `EmailAccess` case (`ALLOWED_BY_RULE`, `ALLOWED_BY_POLICY`, `BLOCKED_BY_RULE`, `BLOCKED_BY_POLICY`; `isAllowed()`). Call it on every sign in, not only the first, so a changed rule applies at the next login.
+- `tenants.access_policy` (`AccessPolicy` enum, default `open_except_blocked`): `open_except_blocked` lets every email in unless a rule blocks it; `allow_list_only` lets in only emails a rule allows.
+- `domain_rules` (`models.domain_rule`, `Tenant::domainRules()`): `tenant_id`, `value` and `type` (`DomainRuleType`: `allow` | `block`). The value is a domain (`example.com`) or a full email address (`jane@example.com`), stored lower case and trimmed, unique per tenant, matched exactly (no subdomains).
+- `Actions\Auth\EvaluateEmailAccess::handle($tenant, $email)` lower cases and trims the email and returns an `EmailAccess` case (`isAllowed()`). Precedence:
+  1. A rule for the exact address decides (`ALLOWED_BY_RULE` or `BLOCKED_BY_RULE`), under both policies.
+  2. Otherwise a rule for its domain decides the same way.
+  3. Otherwise, with `features.disposable_emails` on, a listed disposable domain is `BLOCKED_DISPOSABLE`.
+  4. Otherwise the policy decides: `ALLOWED_BY_POLICY` (open) or `BLOCKED_BY_POLICY` (allow-list).
 
-Existing projects are unchanged: with the default policy and no rules every email is allowed. Needs the new `tenants.access_policy` column and `domain_rules` table (`migrate:fresh` in a project that already ran the old create migrations).
+  So an address allow rule lets one person in while their domain is blocked, an address block rule keeps one person out of an allowed domain, and an allow rule lets a wrongly listed disposable domain in. Call it on every sign in, not only the first, so a changed rule applies at the next login.
+
+**Backoffice UI.** The tenant edit form has an **Access** section (`TenantForm::accessSection()`) with the `access_policy` select; it is part of `TenantForm::mainComponents()`, so an app that overrides that method adds `static::accessSection()` itself. The **Access rules** tab (`DomainRulesRelationManager`, after the users tab) creates, edits and deletes rules (value, type; unique per tenant, compared lower case), with search, sorting and a type filter. Viewing the tab needs `tenant.view`, changing rules needs `tenant.update` (`Policies\Admin\DomainRulePolicy`); there are no separate rule permissions.
+
+Existing projects are unchanged: with the default policy and no rules every email is allowed. The column is `value` (it was `domain`): projects that ran the old create migration need `migrate:fresh` (or rename the column themselves).
+
+## Disposable email addresses
+
+Off by default (`features.disposable_emails`). When on, throwaway addresses (mailinator.com and the like) are refused everywhere the package takes an email:
+
+- `EvaluateEmailAccess` answers `BLOCKED_DISPOSABLE` after the tenant rules and before the policy (see above).
+- The `Rules\NotDisposableEmail` validation rule (`Disposable email addresses are not allowed.`) is on user registration, the profile email (only when it changes), the invitation form, the tenant user create form, the backoffice user and admin forms (only when the email changes) and `tenancy-foundation:create-admin`. The package ships no login page: add the rule to your own login or SSO flow if you want it there. Use it on your own fields too: `->rule(new NotDisposableEmail)`.
+- `Actions\Auth\IsDisposableEmail::handle($email)` is the check behind both: `false` while the feature is off, otherwise an exact, lower case match of the email's domain against the `disposable_domains` table (no MX lookup, no subdomains).
+
+The list lives in the central `disposable_domains` table (`Models\DisposableDomain`), shared by every server and queue worker. Fill it after turning the feature on:
+
+```bash
+php artisan tenancy-foundation:refresh-disposable-domains
+```
+
+The package then schedules the command weekly (the scheduler must run). It reads `disposable_emails.source` (default: the `domains.json` of [disposable/disposable-email-domains](https://github.com/disposable/disposable-email-domains) on jsDelivr), and a failed, invalid or empty download keeps the stored list. While the table is empty every address passes and `Disposable Emails - List Empty` is logged as a warning (at most once per request).

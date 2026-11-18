@@ -16,6 +16,7 @@ use SensitiveParameter;
 use Slakbal\TenancyFoundation\Actions\Tenant\RegisterTenantOwner;
 use Slakbal\TenancyFoundation\Filament\Components\Schemas\TenantDetailsSchema;
 use Slakbal\TenancyFoundation\Filament\Components\Schemas\UserNameSchema;
+use Slakbal\TenancyFoundation\Rules\NotDisposableEmail;
 
 class RegisterUser extends Register
 {
@@ -65,6 +66,11 @@ class RegisterUser extends Register
             $this->getPasswordFormComponent(),
             $this->getPasswordConfirmationFormComponent(),
         ];
+    }
+
+    protected function getEmailFormComponent(): Component
+    {
+        return parent::getEmailFormComponent()->rule(new NotDisposableEmail);
     }
 
     /**

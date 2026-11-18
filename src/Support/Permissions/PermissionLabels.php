@@ -9,7 +9,7 @@ use Slakbal\TenancyFoundation\Enums\Authorisation\PermissionGroup;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 
 /**
- * Turns a `resource.action` permission name into readable copy, falling back to a headline for names the enums do not know.
+ * Turns a `resource.action` permission name into readable copy, falling back to a translated headline for names the enums do not know.
  */
 class PermissionLabels
 {
@@ -17,7 +17,7 @@ class PermissionLabels
     {
         $group = Str::before($name, '.');
 
-        return PermissionGroup::tryFrom($group)?->getLabel() ?? Str::headline($group);
+        return PermissionGroup::tryFrom($group)?->getLabel() ?? __(Str::headline($group));
     }
 
     public static function role(string $name): string
@@ -34,7 +34,7 @@ class PermissionLabels
     {
         $action = Str::after($name, '.');
 
-        return PermissionAction::tryFrom($action)?->getLabel() ?? Str::headline($action);
+        return PermissionAction::tryFrom($action)?->getLabel() ?? __(Str::headline($action));
     }
 
     public static function full(string $name): string

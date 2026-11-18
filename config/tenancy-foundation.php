@@ -1,5 +1,6 @@
 <?php
 
+use Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder;
 use Slakbal\TenancyFoundation\Database\Seeders\TenantRolePermissionsSeeder;
 use Slakbal\TenancyFoundation\Livewire\PublicContactForm;
 use Slakbal\TenancyFoundation\Models\Admin;
@@ -144,7 +145,7 @@ return [
     | role             The Spatie role model.
     | contact_request  Public and tenant contact form submissions.
     | invitation       Invitations to join a tenant (only with features.invitations).
-    | domain_rule      Per tenant allow/block rules for email domains (see the tenant access_policy).
+    | domain_rule      Per tenant allow/block rules for an email domain or a full email address (see the tenant access_policy).
     |
     */
 
@@ -164,17 +165,29 @@ return [
     | Seeders
     |--------------------------------------------------------------------------
     |
-    | tenant_role_permissions  The seeder that defines the tenant permissions.
-    |                          It must be (a subclass of) the package
-    |                          TenantRolePermissionsSeeder. Point it at your
+    | admin_role_permissions   The seeder that defines the admin (backoffice)
+    |                          permissions. Default: the package
+    |                          AdminRolePermissionsSeeder. It must be (a
+    |                          subclass of) that seeder. Point it at your
     |                          subclass that overrides permissionEnums() to add
     |                          app permission enums: the Role permissions page
     |                          and tenancy-foundation:sync-permissions then
-    |                          treat them as normal, editable permissions.
+    |                          treat them as normal, editable permissions, and
+    |                          a first seed grants them to the admin role.
+    |
+    | tenant_role_permissions  The seeder that defines the tenant permissions.
+    |                          Default: the package TenantRolePermissionsSeeder.
+    |                          It must be (a subclass of) that seeder. Point it
+    |                          at your subclass that overrides permissionEnums()
+    |                          to add app permission enums, as above.
+    |
+    | Any other class throws InvalidPermissionSeeder. tenancy-foundation:install
+    | seeds the configured classes.
     |
     */
 
     'seeders' => [
+        'admin_role_permissions' => AdminRolePermissionsSeeder::class,
         'tenant_role_permissions' => TenantRolePermissionsSeeder::class,
     ],
 
@@ -278,6 +291,22 @@ return [
     |                     and spreads devSignInComponents() into the page schema.
     |                     It logs in through the panel guard and does not touch
     |                     sso_id. Env: TENANCY_DEV_SIGN_IN.
+    | disposable_emails   (default false) Refuse disposable (throwaway) email
+    |                     addresses. true: EvaluateEmailAccess answers
+    |                     blocked_disposable for an address whose domain is on
+    |                     the list (after the tenant's address and domain rules,
+    |                     so an allow rule still lets it in; before the access
+    |                     policy), and the NotDisposableEmail rule refuses it on
+    |                     the package forms (registration, profile email,
+    |                     invitations, tenant user and admin forms,
+    |                     tenancy-foundation:create-admin). The list lives in the
+    |                     central disposable_domains table (create_domain_rules_table
+    |                     migration); fill it by running
+    |                     tenancy-foundation:refresh-disposable-domains once after
+    |                     turning this on. The package then schedules that command
+    |                     weekly (needs the scheduler). While the table is empty
+    |                     every address passes and a warning is logged. See
+    |                     disposable_emails.source below.
     |
     */
 
@@ -291,6 +320,27 @@ return [
         'csp' => env('TENANCY_CSP', false),
         'security_headers' => env('TENANCY_SECURITY_HEADERS', false),
         'dev_sign_in' => env('TENANCY_DEV_SIGN_IN', false),
+        'disposable_emails' => false,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Disposable emails
+    |--------------------------------------------------------------------------
+    |
+    | Only used with features.disposable_emails.
+    |
+    | source  URL of a JSON array of disposable email domains (strings), read by
+    |         tenancy-foundation:refresh-disposable-domains. Default: the
+    |         domains.json of github.com/disposable/disposable-email-domains on
+    |         jsDelivr. The domains are stored lower case and matched exactly
+    |         (no subdomains, no MX lookup). A download that fails, is not a JSON
+    |         array of strings or is empty is refused and the stored list stays.
+    |
+    */
+
+    'disposable_emails' => [
+        'source' => 'https://cdn.jsdelivr.net/gh/disposable/disposable-email-domains@master/domains.json',
     ],
 
     /*

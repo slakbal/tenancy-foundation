@@ -122,21 +122,27 @@ class TenantUsersTable
      */
     protected static function recordActions(Model $tenant): array
     {
+        return [ActionGroup::make(static::rowActions($tenant))];
+    }
+
+    /**
+     * @return array<int, Action>
+     */
+    protected static function rowActions(Model $tenant): array
+    {
         return [
-            ActionGroup::make([
-                Action::make('editUser')
-                    ->label(__('Edit user'))
-                    ->icon(Heroicon::OutlinedPencilSquare)
-                    ->authorize('update')
-                    ->color('primary')
-                    ->url(fn (Model $record): string => UserResource::getUrl('edit', ['record' => $record])),
-                MakeUserTenantOwnerAction::make(tenant: $tenant),
-                RemoveUserTenantOwnerAction::make(tenant: $tenant),
-                ManageTenantRolesAction::make(tenant: $tenant),
-                SendUserPasswordResetLinkAction::make(),
-                RemoveUserFromTenantAction::make(tenant: $tenant),
-                ImpersonateUserAction::make(),
-            ]),
+            Action::make('editUser')
+                ->label(__('Edit user'))
+                ->icon(Heroicon::OutlinedPencilSquare)
+                ->authorize('update')
+                ->color('primary')
+                ->url(fn (Model $record): string => UserResource::getUrl('edit', ['record' => $record])),
+            MakeUserTenantOwnerAction::make(tenant: $tenant),
+            RemoveUserTenantOwnerAction::make(tenant: $tenant),
+            ManageTenantRolesAction::make(tenant: $tenant),
+            SendUserPasswordResetLinkAction::make(),
+            RemoveUserFromTenantAction::make(tenant: $tenant),
+            ImpersonateUserAction::make(),
         ];
     }
 }

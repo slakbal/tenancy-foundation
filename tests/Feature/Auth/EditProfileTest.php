@@ -8,6 +8,7 @@ use Livewire\Livewire;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Filament\Pages\EditProfile;
 use Slakbal\TenancyFoundation\Models\Admin;
+use Slakbal\TenancyFoundation\Models\DisposableDomain;
 use Slakbal\TenancyFoundation\Models\User;
 
 it('registers the profile page on each panel', function (string $panelId) {
@@ -61,3 +62,24 @@ it('keeps the old email until the link sent to the new address is used', functio
     'admin' => ['admin', Admin::class, AuthGuard::ADMIN],
     'tenant user' => ['app', User::class, AuthGuard::TENANT],
 ]);
+
+test('a new disposable email is refused, while a user who already has a listed address can still save', function () {
+    config(['tenancy-foundation.features.disposable_emails' => true]);
+    DisposableDomain::query()->create(['domain' => 'mailinator.com']);
+    Filament::setCurrentPanel(Filament::getPanel('app'));
+    $user = User::factory()->create(['email' => 'old@mailinator.com', 'password' => 'password']);
+    $this->actingAs($user, AuthGuard::TENANT->value);
+
+    Livewire::test(EditProfile::class)
+        ->fillForm(['name' => 'New Name', 'email' => 'old@mailinator.com'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    Livewire::test(EditProfile::class)
+        ->fillForm(['email' => 'new@mailinator.com', 'currentPassword' => 'password'])
+        ->call('save')
+        ->assertHasFormErrors(['email'])
+        ->assertSee(__('Disposable email addresses are not allowed.'));
+
+    expect($user->refresh()->only(['name', 'email']))->toBe(['name' => 'New Name', 'email' => 'old@mailinator.com']);
+});

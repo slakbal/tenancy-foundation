@@ -10,8 +10,10 @@ use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminRoles;
 use Slakbal\TenancyFoundation\Filament\Components\Schemas\UserNameSchema;
+use Slakbal\TenancyFoundation\Rules\NotDisposableEmail;
 use Slakbal\TenancyFoundation\Support\AdminAccountGuard;
 
 class AdminUserForm
@@ -69,6 +71,7 @@ class AdminUserForm
                 ->required()
                 ->maxLength(255)
                 ->unique(ignoreRecord: true)
+                ->rule(new NotDisposableEmail, fn (mixed $state, ?Model $record): bool => $state !== $record?->getAttribute('email'))
                 ->validationMessages(['unique' => fn (mixed $state): string => static::emailTakenMessage($state)])
                 ->columnSpanFull(),
         ];

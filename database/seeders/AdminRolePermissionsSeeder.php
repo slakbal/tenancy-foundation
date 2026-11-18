@@ -2,6 +2,7 @@
 
 namespace Slakbal\TenancyFoundation\Database\Seeders;
 
+use BackedEnum;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 use Slakbal\TenancyFoundation\Enums\Authorisation\AdminPermissions;
@@ -14,13 +15,57 @@ use Spatie\Permission\PermissionRegistrar;
 class AdminRolePermissionsSeeder extends Seeder
 {
     /**
-     * Every permission the admin guard knows about, straight from the enum registry.
+     * @return array<int, class-string<BackedEnum>>
+     */
+    protected function permissionEnums(): array
+    {
+        return [AdminPermissions::class];
+    }
+
+    /**
+     * The permission enums of the admin guard. Apps add theirs by overriding permissionEnums().
+     *
+     * @return array<int, class-string<BackedEnum>>
+     */
+    public function permissionEnumClasses(): array
+    {
+        return array_values($this->permissionEnums());
+    }
+
+    /**
+     * Every permission the admin guard knows about, including the app hooks.
      *
      * @return array<int, string>
      */
     public function permissionNames(): array
     {
-        return array_map(fn (AdminPermissions $permission): string => $permission->value, AdminPermissions::cases());
+        return collect($this->permissionEnumClasses())
+            ->flatMap(fn (string $enum): array => $enum::cases())
+            ->map(fn (BackedEnum $permission): string => $permission->value)
+            ->all();
+    }
+
+    /**
+     * The default permissions of the support role. Apps change them by overriding this method.
+     *
+     * @return array<int, BackedEnum>
+     */
+    protected function supportPermissions(): array
+    {
+        return [
+            AdminPermissions::ADMIN_USER_VIEW_ANY,
+            AdminPermissions::ADMIN_USER_VIEW,
+            AdminPermissions::TENANT_VIEW_ANY,
+            AdminPermissions::TENANT_VIEW,
+            AdminPermissions::USER_VIEW_ANY,
+            AdminPermissions::USER_VIEW,
+            AdminPermissions::USER_SEND_PASSWORD_RESET,
+            AdminPermissions::IMPERSONATE_USER,
+            AdminPermissions::CONTACT_REQUEST_VIEW_ANY,
+            AdminPermissions::CONTACT_REQUEST_VIEW,
+            AdminPermissions::CONTACT_REQUEST_UPDATE,
+            AdminPermissions::CONTACT_REQUEST_RESPOND,
+        ];
     }
 
     /**
@@ -68,23 +113,8 @@ class AdminRolePermissionsSeeder extends Seeder
             name: AdminRoles::SUPPORT,
             guardName: $guard,
         );
-        $this->applyDefaults(
-            $supportRole,
-            $permissions->whereIn('name', [
-                AdminPermissions::ADMIN_USER_VIEW_ANY->value,
-                AdminPermissions::ADMIN_USER_VIEW->value,
-                AdminPermissions::TENANT_VIEW_ANY->value,
-                AdminPermissions::TENANT_VIEW->value,
-                AdminPermissions::USER_VIEW_ANY->value,
-                AdminPermissions::USER_VIEW->value,
-                AdminPermissions::USER_SEND_PASSWORD_RESET->value,
-                AdminPermissions::IMPERSONATE_USER->value,
-                AdminPermissions::CONTACT_REQUEST_VIEW_ANY->value,
-                AdminPermissions::CONTACT_REQUEST_VIEW->value,
-                AdminPermissions::CONTACT_REQUEST_UPDATE->value,
-                AdminPermissions::CONTACT_REQUEST_RESPOND->value,
-            ]),
-        );
+        $support = array_map(fn (BackedEnum $permission): string => $permission->value, $this->supportPermissions());
+        $this->applyDefaults($supportRole, $permissions->whereIn('name', $support));
 
         $registrar->forgetCachedPermissions();
     }

@@ -4,7 +4,8 @@ namespace Slakbal\TenancyFoundation\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
-use Slakbal\TenancyFoundation\Database\Seeders\AdminRolePermissionsSeeder;
+use Slakbal\TenancyFoundation\Support\Permissions\AdminPermissionEnums;
+use Slakbal\TenancyFoundation\Support\Permissions\TenantPermissionEnums;
 
 use function Laravel\Prompts\confirm;
 
@@ -40,7 +41,7 @@ class InstallCommand extends Command
 
         $this->components->bulletList([
             'Run php artisan migrate.',
-            'Seed roles with the package AdminRolePermissionsSeeder and your tenant_role_permissions seeder. Seeding applies role defaults on first install only; re-running it never resets a role that already has permissions.',
+            'Seed roles with your admin_role_permissions and tenant_role_permissions seeders. Seeding applies role defaults on first install only; re-running it never resets a role that already has permissions.',
             'Invite the first super admin with php artisan tenancy-foundation:create-admin.',
         ]);
 
@@ -72,8 +73,8 @@ class InstallCommand extends Command
         }
 
         if (confirm('Seed the admin and tenant roles now?', default: false)) {
-            $this->call('db:seed', ['--class' => AdminRolePermissionsSeeder::class, '--force' => true]);
-            $this->call('db:seed', ['--class' => config('tenancy-foundation.seeders.tenant_role_permissions'), '--force' => true]);
+            $this->call('db:seed', ['--class' => app(AdminPermissionEnums::class)->seeder()::class, '--force' => true]);
+            $this->call('db:seed', ['--class' => app(TenantPermissionEnums::class)->seeder()::class, '--force' => true]);
         }
 
         if (confirm('Invite the first admin now?', default: false)) {

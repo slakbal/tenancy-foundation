@@ -10,15 +10,26 @@ use Slakbal\TenancyFoundation\Enums\EmailAccess;
 
 readonly class EvaluateEmailAccess
 {
+    public function __construct(private IsDisposableEmail $isDisposableEmail) {}
+
     public function handle(Model $tenant, string $email): EmailAccess
     {
-        $domain = Str::lower(Str::afterLast($email, '@'));
+        $email = Str::lower(trim($email));
+        $domain = Str::afterLast($email, '@');
 
-        $ruleType = $tenant->domainRules()->where('domain', $domain)->value('type');
+        $rules = $tenant->domainRules()->whereIn('value', array_unique([$email, $domain]))->pluck('type', 'value');
 
-        return match ($tenant->access_policy) {
-            AccessPolicy::ALLOW_LIST_ONLY => $ruleType === DomainRuleType::ALLOW ? EmailAccess::ALLOWED_BY_RULE : EmailAccess::BLOCKED_BY_POLICY,
-            default => $ruleType === DomainRuleType::BLOCK ? EmailAccess::BLOCKED_BY_RULE : EmailAccess::ALLOWED_BY_POLICY,
-        };
+        // An address rule is more specific than a rule for its domain, so it wins.
+        $ruleType = $rules->get($email) ?? $rules->get($domain);
+
+        if ($ruleType !== null) {
+            return $ruleType === DomainRuleType::ALLOW ? EmailAccess::ALLOWED_BY_RULE : EmailAccess::BLOCKED_BY_RULE;
+        }
+
+        if ($this->isDisposableEmail->handle($email)) {
+            return EmailAccess::BLOCKED_DISPOSABLE;
+        }
+
+        return $tenant->access_policy === AccessPolicy::ALLOW_LIST_ONLY ? EmailAccess::BLOCKED_BY_POLICY : EmailAccess::ALLOWED_BY_POLICY;
     }
 }

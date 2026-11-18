@@ -2,12 +2,14 @@
 
 namespace Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Schemas;
 
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Slakbal\TenancyFoundation\Enums\AccessPolicy;
 use Slakbal\TenancyFoundation\Filament\Components\Schemas\TenantDetailsSchema;
 
 class TenantForm
@@ -29,6 +31,7 @@ class TenantForm
     {
         return [
             static::detailsSection(),
+            static::accessSection(),
             static::billingSection(),
         ];
     }
@@ -87,6 +90,28 @@ class TenantForm
                 ->email()
                 ->maxLength(255)
                 ->columnSpanFull(),
+        ];
+    }
+
+    public static function accessSection(): Section
+    {
+        return Section::make(__('Access'))
+            ->description(__('Who may sign in to the tenant. The access rules below allow or block single domains and email addresses.'))
+            ->icon(Heroicon::OutlinedShieldCheck)
+            ->schema(static::accessFields());
+    }
+
+    /**
+     * @return array<int, Component>
+     */
+    protected static function accessFields(): array
+    {
+        return [
+            Select::make('access_policy')
+                ->label(__('Access policy'))
+                ->options(AccessPolicy::class)
+                ->required()
+                ->helperText(__('Open: every email address may sign in, except blocked domains and addresses. Allowed domains only: only allowed domains and addresses may sign in. A rule for an email address wins over the rule for its domain.')),
         ];
     }
 }

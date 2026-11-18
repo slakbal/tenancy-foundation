@@ -7,6 +7,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Component;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
+use Slakbal\TenancyFoundation\Rules\NotDisposableEmail;
 
 class InvitationForm
 {
@@ -20,7 +21,8 @@ class InvitationForm
                 ->label(__('Email'))
                 ->email()
                 ->required()
-                ->maxLength(255),
+                ->maxLength(255)
+                ->rule(new NotDisposableEmail),
             Select::make('role_id')
                 ->label(__('Role'))
                 ->options(fn (): array => once(fn (): array => static::roleOptions()))

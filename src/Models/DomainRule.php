@@ -12,7 +12,7 @@ use Slakbal\TenancyFoundation\Enums\DomainRuleType;
 use Slakbal\TenancyFoundation\Models\Concerns\HasUlidKey;
 use Slakbal\TenancyFoundation\Models\Concerns\Tenancy\BelongsToTenant;
 
-#[Fillable(['tenant_id', 'domain', 'type'])]
+#[Fillable(['tenant_id', 'value', 'type'])]
 class DomainRule extends Model
 {
     /** @use HasFactory<DomainRuleFactory> */
@@ -30,7 +30,7 @@ class DomainRule extends Model
         ];
     }
 
-    protected function domain(): Attribute
+    protected function value(): Attribute
     {
         return Attribute::set(fn (?string $value): ?string => filled($value) ? Str::lower(trim($value)) : null);
     }

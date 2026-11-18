@@ -20,6 +20,7 @@ use Livewire\Livewire;
 use Opcodes\LogViewer\Facades\LogViewer;
 use Slakbal\TenancyFoundation\Console\CreateAdminCommand;
 use Slakbal\TenancyFoundation\Console\InstallCommand;
+use Slakbal\TenancyFoundation\Console\RefreshDisposableDomainsCommand;
 use Slakbal\TenancyFoundation\Console\SyncPermissionsCommand;
 use Slakbal\TenancyFoundation\Enums\AuthGuard;
 use Slakbal\TenancyFoundation\Enums\FilamentPanel;
@@ -66,7 +67,7 @@ class TenancyFoundationServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/tenancy-foundation.php', 'tenancy-foundation');
-        $this->mergeConfigSections(['models', 'notifications', 'redirects', 'cancellation', 'contact_requests', 'features', 'invitations']);
+        $this->mergeConfigSections(['models', 'notifications', 'redirects', 'cancellation', 'contact_requests', 'features', 'invitations', 'disposable_emails']);
         $this->mergeConfigFrom(__DIR__.'/../config/filament-defaults.php', 'filament-defaults');
 
         $this->app->register(FilamentDefaultsServiceProvider::class);
@@ -274,6 +275,13 @@ class TenancyFoundationServiceProvider extends ServiceProvider
                     ->withoutOverlapping();
             }
 
+            if (config('tenancy-foundation.features.disposable_emails')) {
+                $schedule->command(RefreshDisposableDomainsCommand::class)
+                    ->weekly()
+                    ->onOneServer()
+                    ->withoutOverlapping();
+            }
+
             if (config('tenancy-foundation.schedule_pruning')) {
                 $schedule->command('model:prune')
                     ->daily()
@@ -305,7 +313,7 @@ class TenancyFoundationServiceProvider extends ServiceProvider
             return;
         }
 
-        $this->commands([InstallCommand::class, SyncPermissionsCommand::class, CreateAdminCommand::class]);
+        $this->commands([InstallCommand::class, SyncPermissionsCommand::class, CreateAdminCommand::class, RefreshDisposableDomainsCommand::class]);
 
         $this->publishes([
             __DIR__.'/../config/tenancy-foundation.php' => config_path('tenancy-foundation.php'),

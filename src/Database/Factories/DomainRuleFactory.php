@@ -16,7 +16,7 @@ class DomainRuleFactory extends Factory
     {
         return [
             'tenant_id' => config('tenancy-foundation.models.tenant')::factory(),
-            'domain' => fake()->unique()->domainName(),
+            'value' => fake()->unique()->domainName(),
             'type' => DomainRuleType::BLOCK,
         ];
     }
