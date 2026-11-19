@@ -9,9 +9,12 @@ use Illuminate\Database\Eloquent\Model;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Actions\CancelTenantAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\Actions\ReactivateTenantAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Tenants\TenantResource;
+use Slakbal\TenancyFoundation\Filament\Pages\Concerns\RedirectsToPreviousUrl;
 
 class EditTenant extends EditRecord
 {
+    use RedirectsToPreviousUrl;
+
     protected static string $resource = TenantResource::class;
 
     /**

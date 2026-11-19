@@ -16,9 +16,12 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\Deacti
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\ResendAdminInvitationAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\Actions\SendAdminPasswordResetLinkAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\AdminUsers\AdminUserResource;
+use Slakbal\TenancyFoundation\Filament\Pages\Concerns\RedirectsToPreviousUrl;
 
 class EditAdminUser extends EditRecord
 {
+    use RedirectsToPreviousUrl;
+
     protected static string $resource = AdminUserResource::class;
 
     /**

@@ -523,10 +523,20 @@ return [
     |               and returns to the panel's login page on the same host,
     |               because each host is its own site.
     |
+    | edit_returns_to_previous
+    |               true: saving a record on the package edit pages (tenant, user,
+    |               admin user) sends you back to the page you opened it from
+    |               (Filament's previous URL), or to the resource list when there
+    |               is none. false: Filament's default, you stay on the edit page.
+    |               Apps can use Filament\Pages\Concerns\RedirectsToPreviousUrl on
+    |               their own edit pages, which follows this key. Default: false.
+    |               No migration, no route.
+    |
     */
 
     'redirects' => [
         'logout_route' => null,
+        'edit_returns_to_previous' => false,
     ],
 
     /*

@@ -11,9 +11,12 @@ use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\MarkUserEma
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\Actions\SendUserPasswordResetLinkAction;
 use Slakbal\TenancyFoundation\Filament\Admin\Resources\Users\UserResource;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ImpersonateUserAction;
+use Slakbal\TenancyFoundation\Filament\Pages\Concerns\RedirectsToPreviousUrl;
 
 class EditUser extends EditRecord
 {
+    use RedirectsToPreviousUrl;
+
     protected static string $resource = UserResource::class;
 
     protected function getHeaderActions(): array

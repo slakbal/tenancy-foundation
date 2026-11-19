@@ -11,10 +11,13 @@ use Slakbal\TenancyFoundation\Enums\Authorisation\TenantRoles;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\ChangeMemberStatusAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\RemoveFromTenantAction;
 use Slakbal\TenancyFoundation\Filament\Components\Tables\Actions\RestoreMemberAction;
+use Slakbal\TenancyFoundation\Filament\Pages\Concerns\RedirectsToPreviousUrl;
 use Slakbal\TenancyFoundation\Filament\Tenant\Resources\Users\UserResource;
 
 class EditUser extends EditRecord
 {
+    use RedirectsToPreviousUrl;
+
     protected static string $resource = UserResource::class;
 
     protected function getHeaderActions(): array

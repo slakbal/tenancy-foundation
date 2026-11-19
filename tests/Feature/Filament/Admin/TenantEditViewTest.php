@@ -258,3 +258,19 @@ test('leaving an impersonation goes back to the page the admin started from, or 
     'with a referer' => true,
     'without a referer' => false,
 ]);
+
+test('saving a tenant stays on the page by default and returns to the previous page when configured', function (bool $enabled, ?string $expected) {
+    tenantPageAdmin(AdminPermissions::TENANT_VIEW, AdminPermissions::TENANT_UPDATE);
+    config(['tenancy-foundation.redirects.edit_returns_to_previous' => $enabled]);
+    session()->setPreviousUrl('https://example.test/admin/tenants?search=acme');
+
+    $page = Livewire::test(EditTenant::class, ['record' => $this->tenant->getRouteKey()])
+        ->fillForm(['name' => 'Acme Renamed'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    $expected === null ? $page->assertNoRedirect() : $page->assertRedirect($expected);
+})->with([
+    'off' => [false, null],
+    'on' => [true, 'https://example.test/admin/tenants?search=acme'],
+]);

@@ -344,5 +344,6 @@
     "This tenant already has a rule for this domain or email address.": "Für diese Domain oder E-Mail-Adresse gibt es bei diesem Mandanten bereits eine Regel.",
     "Who may sign in to the tenant. The access rules below allow or block single domains and email addresses.": "Wer sich beim Mandanten anmelden darf. Die Zugriffsregeln unten erlauben oder sperren einzelne Domains und E-Mail-Adressen.",
     "Open: every email address may sign in, except blocked domains and addresses. Allowed domains only: only allowed domains and addresses may sign in. A rule for an email address wins over the rule for its domain.": "Offen: Jede E-Mail-Adresse darf sich anmelden, außer gesperrte Domains und Adressen. Nur erlaubte Domains: Nur erlaubte Domains und Adressen dürfen sich anmelden. Eine Regel für eine E-Mail-Adresse hat Vorrang vor der Regel für ihre Domain.",
-    "Image": "Bild"
+    "Image": "Bild",
+    "Free": "Kostenlos"
 }

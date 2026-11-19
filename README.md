@@ -30,6 +30,7 @@ This README is the setup and usage guide. Release notes are in [CHANGELOG.md](CH
 - [Upgrading](#upgrading)
 - [Tenant access policy](#tenant-access-policy)
 - [Media types](#media-types)
+- [Money](#money)
 - [Disposable email addresses](#disposable-email-addresses)
 
 ## What it provides
@@ -274,6 +275,7 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 | `admin.path` | `env('ADMIN_PATH', 'admin')` | Path prefix of the admin panel; `''` or `'/'` (no prefix) on its own host. Slashes are trimmed |
 | `admin.hide_super_admins` | `env('ADMIN_HIDE_SUPER_ADMINS', false)` | `true` hides admins with the `super_admin` role from every admin who is not a super admin (global scope on `Admin` while an admin is signed in). Super admins see each other; sign in, commands, jobs and guests are not filtered |
 | `media.type_enum` | `null` | Class of your backed enum that implements `Support\Media\MediaType`. Set: the package registers `MediaPathGenerator` for every `HasMedia` model (files go to `getDiskPath()` of their case, then the media id) and `RegistersMediaTypes` can register the cases. `null`: off. See [Media types](#media-types). Needs `spatie/laravel-medialibrary` |
+| `redirects.edit_returns_to_previous` | `false` | `true`: saving on the package edit pages (tenant, user, admin user) returns to the page the record was opened from, or to the resource list. Your own edit pages get the same with the trait `Filament\Pages\Concerns\RedirectsToPreviousUrl`. `false`: stay on the edit page (Filament default) |
 | `models.tenant` | `Models\Tenant` | Tenant model |
 | `models.user` | `Models\User` | Tenant panel user, also used by the `users` provider |
 | `models.admin` | `Models\Admin` | Admin panel user, also used by the `admins` provider |
@@ -988,6 +990,14 @@ Off by default (`media.type_enum`). It keeps every kind of file (collection, dis
 2. Set `media.type_enum` to the enum class. The service provider then registers `Support\Media\MediaPathGenerator` for every `HasMedia` model, so a file is stored as `{getDiskPath()}/{media id}/...`. Every collection of those models must be a case of the enum.
 3. On a model that implements `HasMedia` use `Models\Concerns\RegistersMediaTypes` and call `$this->registerMediaType(MediaTypes::TRAINER_PROFILE_IMAGE)` once per collection inside `registerMediaCollections()`.
 4. In Filament use `Filament\Components\Forms\MediaTypeUpload::make('image', MediaTypes::TRAINER_PROFILE_IMAGE)` for the upload (the type's collection and mime types, image editor, full width) and `Filament\Components\Tables\Columns\MediaTypeImageColumn::make('image', MediaTypes::TRAINER_PROFILE_IMAGE)` for the table thumbnail (40px, the first conversion of `getConversions()`, so list the smallest first). Both need `filament/spatie-laravel-media-library-plugin` and chain like any Filament component, for example `->label(...)`.
+
+## Money
+
+Prices are stored as integer minor units (cents) and shown with the currency and number locale of `config/filament-defaults.php` (`formats.currency`, `formats.number_locale`), so there is no new config key. Needs the PHP `intl` extension.
+
+- `Support\Money`: `currency()`, `locale()`, `digits()` (decimals of the currency, 2 for EUR and 0 for JPY), `symbol()`, `toMinor()`, `toAmount()` and `format()`. Every method takes an optional currency code that overrides the default.
+- `Filament\Components\Forms\MoneyInput::make('price_cents', 'EUR')`: a numeric field with the currency symbol as prefix. The user types the amount (149.90), the column stores 14990. Chain `->label()`, `->required()` and the rest as usual.
+- `Filament\Components\Tables\Columns\MoneyColumn::make('price_cents', 'EUR', freeBadge: true)`: a sortable column formatted in the locale; with `freeBadge` a zero amount shows a green "Free" badge.
 
 ## Disposable email addresses
 
