@@ -345,6 +345,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Media types
+    |--------------------------------------------------------------------------
+    |
+    | type_enum  Class of the application's backed enum that implements
+    |            Support\Media\MediaType (one case per kind of file, for example
+    |            TRAINER_PROFILE_IMAGE). Models register a case with the
+    |            Models\Concerns\RegistersMediaTypes trait, and the package
+    |            registers Support\Media\MediaPathGenerator for every HasMedia
+    |            model, which stores each file in the folder of its case
+    |            (getDiskPath()) in front of the media id. The collection name of
+    |            every case must be its value. Default: null (the feature is off
+    |            and the media library keeps its own path generator). Needs
+    |            spatie/laravel-medialibrary; it adds no migration and no route.
+    |
+    */
+
+    'media' => [
+        'type_enum' => null,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Response headers
     |--------------------------------------------------------------------------
     |

@@ -61,13 +61,16 @@ use Slakbal\TenancyFoundation\Livewire\PublicContactForm;
 use Slakbal\TenancyFoundation\Models\Admin;
 use Slakbal\TenancyFoundation\Observers\RoleObserver;
 use Slakbal\TenancyFoundation\Support\AdminAccountGuard;
+use Slakbal\TenancyFoundation\Support\Media\MediaPathGenerator;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\Support\PathGenerator\PathGeneratorFactory;
 
 class TenancyFoundationServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/tenancy-foundation.php', 'tenancy-foundation');
-        $this->mergeConfigSections(['models', 'notifications', 'redirects', 'cancellation', 'contact_requests', 'features', 'invitations', 'disposable_emails']);
+        $this->mergeConfigSections(['models', 'notifications', 'redirects', 'cancellation', 'contact_requests', 'features', 'invitations', 'disposable_emails', 'media']);
         $this->mergeConfigFrom(__DIR__.'/../config/filament-defaults.php', 'filament-defaults');
 
         $this->app->register(FilamentDefaultsServiceProvider::class);
@@ -178,6 +181,7 @@ class TenancyFoundationServiceProvider extends ServiceProvider
         $this->bootMiddlewarePriority();
         $this->bootSecurityHeaders();
         $this->bootSystemToolAccess();
+        $this->bootMedia();
         $this->bootEventListeners();
         $this->bootSchedule();
         $this->bootConsole();
@@ -187,6 +191,13 @@ class TenancyFoundationServiceProvider extends ServiceProvider
     {
         if (config('tenancy-foundation.features.security_headers')) {
             $this->app->make(HttpKernel::class)->pushMiddleware(SetSecurityHeaders::class);
+        }
+    }
+
+    protected function bootMedia(): void
+    {
+        if (config('tenancy-foundation.media.type_enum') !== null) {
+            PathGeneratorFactory::setCustomPathGenerators(HasMedia::class, MediaPathGenerator::class);
         }
     }
 

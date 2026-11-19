@@ -29,6 +29,7 @@ This README is the setup and usage guide. Release notes are in [CHANGELOG.md](CH
 - [Troubleshooting](#troubleshooting)
 - [Upgrading](#upgrading)
 - [Tenant access policy](#tenant-access-policy)
+- [Media types](#media-types)
 - [Disposable email addresses](#disposable-email-addresses)
 
 ## What it provides
@@ -272,6 +273,7 @@ Admin::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => 
 | `admin.domain` | `env('ADMIN_DOMAIN')` | Host of the admin panel. `null`: any host in `subdomain` mode, `domain` (`APP_DOMAIN`) in `domain` mode. Reserved for tenants |
 | `admin.path` | `env('ADMIN_PATH', 'admin')` | Path prefix of the admin panel; `''` or `'/'` (no prefix) on its own host. Slashes are trimmed |
 | `admin.hide_super_admins` | `env('ADMIN_HIDE_SUPER_ADMINS', false)` | `true` hides admins with the `super_admin` role from every admin who is not a super admin (global scope on `Admin` while an admin is signed in). Super admins see each other; sign in, commands, jobs and guests are not filtered |
+| `media.type_enum` | `null` | Class of your backed enum that implements `Support\Media\MediaType`. Set: the package registers `MediaPathGenerator` for every `HasMedia` model (files go to `getDiskPath()` of their case, then the media id) and `RegistersMediaTypes` can register the cases. `null`: off. See [Media types](#media-types). Needs `spatie/laravel-medialibrary` |
 | `models.tenant` | `Models\Tenant` | Tenant model |
 | `models.user` | `Models\User` | Tenant panel user, also used by the `users` provider |
 | `models.admin` | `Models\Admin` | Admin panel user, also used by the `admins` provider |
@@ -977,6 +979,15 @@ Decide whether an email address may sign in to a tenant, for products with SSO o
 **Backoffice UI.** The tenant edit form has an **Access** section (`TenantForm::accessSection()`) with the `access_policy` select; it is part of `TenantForm::mainComponents()`, so an app that overrides that method adds `static::accessSection()` itself. The **Access rules** tab (`DomainRulesRelationManager`, after the users tab) creates, edits and deletes rules (value, type; unique per tenant, compared lower case), with search, sorting and a type filter. Viewing the tab needs `tenant.view`, changing rules needs `tenant.update` (`Policies\Admin\DomainRulePolicy`); there are no separate rule permissions.
 
 Existing projects are unchanged: with the default policy and no rules every email is allowed. The column is `value` (it was `domain`): projects that ran the old create migration need `migrate:fresh` (or rename the column themselves).
+
+## Media types
+
+Off by default (`media.type_enum`). It keeps every kind of file (collection, disk, folder, mime types, image sizes) in one enum of your application, for example `TRAINER_PROFILE_IMAGE`, and lets models register them in one line. Needs `spatie/laravel-medialibrary`.
+
+1. Create a backed enum (string values) that implements `Slakbal\TenancyFoundation\Support\Media\MediaType`. The value of a case is its collection name. The interface asks for `getCollection()`, `getDisk()`, `getConversionsDisk()`, `getDiskPath()` (the folder), `getMimeTypes()`, `isSingleFile()`, `getConversionsFormat()` and `getConversions()`. `getConversions()` returns a list of `['name' => 'small', 'width' => 80, 'height' => 80, 'queued' => false]` (cropped); an empty list registers no conversions, as for a PDF.
+2. Set `media.type_enum` to the enum class. The service provider then registers `Support\Media\MediaPathGenerator` for every `HasMedia` model, so a file is stored as `{getDiskPath()}/{media id}/...`. Every collection of those models must be a case of the enum.
+3. On a model that implements `HasMedia` use `Models\Concerns\RegistersMediaTypes` and call `$this->registerMediaType(MediaTypes::TRAINER_PROFILE_IMAGE)` once per collection inside `registerMediaCollections()`.
+4. In Filament use `Filament\Components\Forms\MediaTypeUpload::make('image', MediaTypes::TRAINER_PROFILE_IMAGE)` for the upload (the type's collection and mime types, image editor, full width) and `Filament\Components\Tables\Columns\MediaTypeImageColumn::make('image', MediaTypes::TRAINER_PROFILE_IMAGE)` for the table thumbnail (40px, the first conversion of `getConversions()`, so list the smallest first). Both need `filament/spatie-laravel-media-library-plugin` and chain like any Filament component, for example `->label(...)`.
 
 ## Disposable email addresses
 
