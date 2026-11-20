@@ -1,7 +1,10 @@
 <?php
 
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Slakbal\TenancyFoundation\Enums\BadgeColor;
+use Slakbal\TenancyFoundation\Filament\Components\Forms\ColorInput;
 use Slakbal\TenancyFoundation\Models\Tag;
 use Slakbal\TenancyFoundation\Tests\Support\TaggedThing;
 
@@ -12,13 +15,13 @@ beforeEach(function () {
     });
 });
 
-test('a tag name is trimmed, the colour lower cased and a missing colour renders grey', function () {
+test('a tag name is trimmed, the colour lower cased and a missing colour renders the default colour', function () {
     $tag = Tag::factory()->create(['name' => ' KI ', 'color' => '#0EA5E9']);
 
     expect($tag->name)->toBe('KI')
         ->and($tag->color)->toBe('#0ea5e9')
         ->and($tag->badgeColor())->toBeArray()
-        ->and(Tag::factory()->create(['color' => null])->badgeColor())->toBe('gray');
+        ->and(Tag::factory()->create(['color' => null])->badgeColor())->toBe(BadgeColor::DEFAULT->value);
 });
 
 test('any model with the trait can be tagged and the tag finds its models, also through the registered relation', function () {
@@ -49,9 +52,17 @@ test('a tag name is unique and deleting a tag removes its pivot rows', function 
     $tag = Tag::factory()->create(['name' => 'MaKo']);
     TaggedThing::query()->create()->tags()->attach($tag);
 
-    expect(fn () => Tag::factory()->create(['name' => 'MaKo']))->toThrow(Illuminate\Database\QueryException::class);
+    expect(fn () => Tag::factory()->create(['name' => 'MaKo']))->toThrow(QueryException::class);
 
     $tag->delete();
 
     expect(DB::table('taggables')->count())->toBe(0);
+});
+
+test('the colour input pre-selects the default badge colour', function () {
+    $picker = ColorInput::make('color');
+
+    expect(BadgeColor::DEFAULT->value)->toBe('info')
+        ->and(BadgeColor::DEFAULT->getHex())->toBe('#3b82f6')
+        ->and($picker->getDefaultState())->toBe('#3b82f6');
 });

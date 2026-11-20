@@ -346,5 +346,7 @@
     "Open: every email address may sign in, except blocked domains and addresses. Allowed domains only: only allowed domains and addresses may sign in. A rule for an email address wins over the rule for its domain.": "Offen: Jede E-Mail-Adresse darf sich anmelden, außer gesperrte Domains und Adressen. Nur erlaubte Domains: Nur erlaubte Domains und Adressen dürfen sich anmelden. Eine Regel für eine E-Mail-Adresse hat Vorrang vor der Regel für ihre Domain.",
     "Image": "Bild",
     "File": "Datei",
-    "Free": "Kostenlos"
+    "Free": "Kostenlos",
+    "Colour": "Farbe",
+    "Reset to the default colour": "Auf die Standardfarbe zurücksetzen"
 }

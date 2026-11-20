@@ -340,6 +340,7 @@ Every `notifications.*` entry takes a class, or `null` to stop that notification
 | `form_defaults` + `form.*` | `toggle_buttons`, `text_input`, `textarea` |
 | `page_defaults` + `page.*` | `validation_notification`, `sticky_form_actions` |
 | `table_defaults` + `table.*` | `table`, `image_column`, `select_filter` |
+| `defer_table_loading` | Every table defers its row loading (`deferLoading()`): the page appears first and the rows follow. Standard, needs `table_defaults`. Not a project setting: it exists so test suites can set `FILAMENT_DEFER_TABLE_LOADING=false` in `phpunit.xml`, because a Livewire test of a deferred table must call `loadTable()` before asserting records |
 | `format_defaults` + `formats.*` | Currency (`zar`), date, datetime and time display formats, number locale |
 | `panel_defaults` + `panel.*` | `top_navigation` (`true`), `max_content_width` (`'container'`, `null` keeps Filament's `7xl`) |
 
@@ -997,8 +998,9 @@ Central, polymorphic tags with an optional colour, reusable on any model and not
 
 1. Add `Slakbal\TenancyFoundation\Models\Concerns\HasTags` to a model (`$course->tags()`, `->tags()->attach(...)`).
 2. `Models\Tag::taggedModels(Course::class)` returns the tagged models of a tag. Once a model using the trait has booted, `Tag` also has a relation named after it (`Course` gives `$tag->courses`); for code that may run before that, use `taggedModels()`.
-3. `Tag::query()->withUsageCount()` adds `uses_count` (all model types). `$tag->badgeColor()` returns a Filament colour for `->color()` on a badge (grey without a colour).
-4. The package ships no Filament resource; build the management screen in the application (name plus `ColorPicker`, and a `Select::make('tags')->relationship('tags', 'name')->multiple()` on the tagged model's form).
+3. `Tag::query()->withUsageCount()` adds `uses_count` (all model types). `$tag->badgeColor()` returns a Filament colour for `->color()` on a badge (the default colour without a colour); the `Models\Concerns\HasBadgeColor` trait behind it works on any model with a nullable `color` column.
+4. `Filament\Components\Forms\ColorInput::make('color', $helperText)` is the colour picker field (label `Colour`) and `Filament\Components\Tables\Columns\ColoredBadgeColumn::make('name', $defaultColor)` a badge column coloured by the record's `badgeColor()` (models with `HasBadgeColor`); with a relation name such as `ColoredBadgeColumn::make('tags.name')` each badge takes the colour of its own related record. A missing colour renders in `$defaultColor` (default `Enums\BadgeColor::DEFAULT`, Filament's `info`), and `ColorInput` pre-selects its hex (`BadgeColor::DEFAULT->getHex()`) and has a reset button next to the picker that sets it back to that hex.
+5. The package ships no Filament resource; build the management screen in the application (name plus `ColorPicker`, and a `Select::make('tags')->relationship('tags', 'name')->multiple()` on the tagged model's form).
 
 ## Money
 

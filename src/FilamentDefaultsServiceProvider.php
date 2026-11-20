@@ -317,6 +317,12 @@ class FilamentDefaultsServiceProvider extends ServiceProvider
             );
         }
 
+        Tables\Table::configureUsing(function (Tables\Table $table): void {
+            if (config('filament-defaults.defer_table_loading', true)) {
+                $table->deferLoading();
+            }
+        });
+
         if ($this->isItemEnabled('table', 'image_column')) {
             Tables\Columns\ImageColumn::configureUsing(fn (Tables\Columns\ImageColumn $column) => $column
                 ->extraImgAttributes(['loading' => 'lazy'])

@@ -11,6 +11,7 @@
         </exclude>
     </groups>
     <php>
+        <env name="FILAMENT_DEFER_TABLE_LOADING" value="false"/>
         <env name="TENANCY_RESOLUTION" value="domain" force="true"/>
     </php>
 </phpunit>

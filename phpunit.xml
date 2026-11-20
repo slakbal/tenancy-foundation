@@ -8,4 +8,7 @@
             <directory>tests/DomainMode</directory>
         </testsuite>
     </testsuites>
+    <php>
+        <env name="FILAMENT_DEFER_TABLE_LOADING" value="false"/>
+    </php>
 </phpunit>

@@ -44,6 +44,11 @@ return [
     // Table / ImageColumn / SelectFilter pagination & UX tweaks
     'table_defaults' => true,
 
+    // Every table loads its rows in a second request (Table::deferLoading()), so the page appears at once.
+    // On by default; it is only an environment switch for test suites, because a Livewire test of a deferred
+    // table must call loadTable() before it asserts records (set FILAMENT_DEFER_TABLE_LOADING=false in phpunit.xml).
+    'defer_table_loading' => env('FILAMENT_DEFER_TABLE_LOADING', true),
+
     // Schema & Table display-format defaults (driven by the values below)
     'format_defaults' => true,
 
