@@ -348,5 +348,7 @@
     "File": "Datei",
     "Free": "Kostenlos",
     "Colour": "Farbe",
-    "Reset to the default colour": "Auf die Standardfarbe zurücksetzen"
+    "Reset to the default colour": "Auf die Standardfarbe zurücksetzen",
+    "Everyone may sign in, except blocked domains and email addresses. An allow rule for an email address lets that person in even when their domain is blocked.": "Jeder darf sich anmelden, außer gesperrten Domains und E-Mail-Adressen. Eine Erlauben-Regel für eine E-Mail-Adresse lässt diese Person auch dann ein, wenn ihre Domain gesperrt ist.",
+    "Only allowed domains and email addresses may sign in, everyone else is refused. A block rule for an email address keeps that person out even when their domain is allowed.": "Nur erlaubte Domains und E-Mail-Adressen dürfen sich anmelden, alle anderen werden abgewiesen. Eine Sperr-Regel für eine E-Mail-Adresse hält diese Person auch dann fern, wenn ihre Domain erlaubt ist."
 }

@@ -348,5 +348,7 @@
     "File": "File",
     "Free": "Free",
     "Colour": "Colour",
-    "Reset to the default colour": "Reset to the default colour"
+    "Reset to the default colour": "Reset to the default colour",
+    "Everyone may sign in, except blocked domains and email addresses. An allow rule for an email address lets that person in even when their domain is blocked.": "Everyone may sign in, except blocked domains and email addresses. An allow rule for an email address lets that person in even when their domain is blocked.",
+    "Only allowed domains and email addresses may sign in, everyone else is refused. A block rule for an email address keeps that person out even when their domain is allowed.": "Only allowed domains and email addresses may sign in, everyone else is refused. A block rule for an email address keeps that person out even when their domain is allowed."
 }
