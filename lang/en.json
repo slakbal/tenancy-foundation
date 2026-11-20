@@ -345,5 +345,6 @@
     "Who may sign in to the tenant. The access rules below allow or block single domains and email addresses.": "Who may sign in to the tenant. The access rules below allow or block single domains and email addresses.",
     "Open: every email address may sign in, except blocked domains and addresses. Allowed domains only: only allowed domains and addresses may sign in. A rule for an email address wins over the rule for its domain.": "Open: every email address may sign in, except blocked domains and addresses. Allowed domains only: only allowed domains and addresses may sign in. A rule for an email address wins over the rule for its domain.",
     "Image": "Image",
+    "File": "File",
     "Free": "Free"
 }

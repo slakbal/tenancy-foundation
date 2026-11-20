@@ -9,12 +9,23 @@ class MediaTypeUpload
 {
     public static function make(string $name, MediaType $type): SpatieMediaLibraryFileUpload
     {
-        return SpatieMediaLibraryFileUpload::make($name)
-            ->label(__('Image'))
+        $isImage = collect($type->getMimeTypes())->every(fn (string $mime): bool => str_starts_with($mime, 'image/'));
+
+        $upload = SpatieMediaLibraryFileUpload::make($name)
+            ->label($isImage ? __('Image') : __('File'))
             ->collection($type->getCollection())
-            ->image()
-            ->acceptedFileTypes($type->getMimeTypes())
-            ->imageEditor()
             ->columnSpanFull();
+
+        if ($isImage) {
+            $upload->image()->acceptedFileTypes($type->getMimeTypes())->imageEditor();
+        } else {
+            $upload->acceptedFileTypes($type->getMimeTypes())->downloadable()->openable();
+        }
+
+        if (! $type->isSingleFile()) {
+            $upload->multiple()->reorderable();
+        }
+
+        return $upload;
     }
 }

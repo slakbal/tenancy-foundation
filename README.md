@@ -989,7 +989,16 @@ Off by default (`media.type_enum`). It keeps every kind of file (collection, dis
 1. Create a backed enum (string values) that implements `Slakbal\TenancyFoundation\Support\Media\MediaType`. The value of a case is its collection name. The interface asks for `getCollection()`, `getDisk()`, `getConversionsDisk()`, `getDiskPath()` (the folder), `getMimeTypes()`, `isSingleFile()`, `getConversionsFormat()` and `getConversions()`. `getConversions()` returns a list of `['name' => 'small', 'width' => 80, 'height' => 80, 'queued' => false]` (cropped); an empty list registers no conversions, as for a PDF.
 2. Set `media.type_enum` to the enum class. The service provider then registers `Support\Media\MediaPathGenerator` for every `HasMedia` model, so a file is stored as `{getDiskPath()}/{media id}/...`. Every collection of those models must be a case of the enum.
 3. On a model that implements `HasMedia` use `Models\Concerns\RegistersMediaTypes` and call `$this->registerMediaType(MediaTypes::TRAINER_PROFILE_IMAGE)` once per collection inside `registerMediaCollections()`.
-4. In Filament use `Filament\Components\Forms\MediaTypeUpload::make('image', MediaTypes::TRAINER_PROFILE_IMAGE)` for the upload (the type's collection and mime types, image editor, full width) and `Filament\Components\Tables\Columns\MediaTypeImageColumn::make('image', MediaTypes::TRAINER_PROFILE_IMAGE)` for the table thumbnail (40px, the first conversion of `getConversions()`, so list the smallest first). Both need `filament/spatie-laravel-media-library-plugin` and chain like any Filament component, for example `->label(...)`.
+4. In Filament use `Filament\Components\Forms\MediaTypeUpload::make('image', MediaTypes::TRAINER_PROFILE_IMAGE)` for the upload (the type's collection and mime types, full width; image editor for image types, a downloadable file field for other types, multiple and reorderable when `isSingleFile()` is false) and `Filament\Components\Tables\Columns\MediaTypeImageColumn::make('image', MediaTypes::TRAINER_PROFILE_IMAGE)` for the table thumbnail (40px, the first conversion of `getConversions()`, so list the smallest first). Both need `filament/spatie-laravel-media-library-plugin` and chain like any Filament component, for example `->label(...)`.
+
+## Tags
+
+Central, polymorphic tags with an optional colour, reusable on any model and not tied to a tenant. The migration `create_tags_tables` creates `tags` (unique `name`, `color` as `#rrggbb`) and the `taggables` pivot in every project; no config key.
+
+1. Add `Slakbal\TenancyFoundation\Models\Concerns\HasTags` to a model (`$course->tags()`, `->tags()->attach(...)`).
+2. `Models\Tag::taggedModels(Course::class)` returns the tagged models of a tag. Once a model using the trait has booted, `Tag` also has a relation named after it (`Course` gives `$tag->courses`); for code that may run before that, use `taggedModels()`.
+3. `Tag::query()->withUsageCount()` adds `uses_count` (all model types). `$tag->badgeColor()` returns a Filament colour for `->color()` on a badge (grey without a colour).
+4. The package ships no Filament resource; build the management screen in the application (name plus `ColorPicker`, and a `Select::make('tags')->relationship('tags', 'name')->multiple()` on the tagged model's form).
 
 ## Money
 
