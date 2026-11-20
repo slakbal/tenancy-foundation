@@ -9,7 +9,6 @@ use Filament\Tables\Columns\Column;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -98,12 +97,6 @@ class TenantUsersTable
                     ? $query->where('tenant_user.status', $data['value'])
                     : $query),
             VerifiedFilter::make(),
-            TernaryFilter::make('is_owner')
-                ->label(__('Owner'))
-                ->queries(
-                    true: fn (Builder $query): Builder => $query->where('tenant_user.is_owner', true),
-                    false: fn (Builder $query): Builder => $query->where('tenant_user.is_owner', false),
-                ),
         ];
     }
 
