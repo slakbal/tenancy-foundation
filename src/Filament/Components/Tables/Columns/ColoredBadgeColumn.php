@@ -18,7 +18,12 @@ class ColoredBadgeColumn
 
         [$relation, $attribute] = [str($name)->beforeLast('.')->toString(), str($name)->afterLast('.')->toString()];
 
-        return $column->color(fn (string $state, Model $record): array|string => static::colorOf($record->{$relation}->firstWhere($attribute, $state), $defaultColor));
+        return $column->color(fn (string $state, Model $record): array|string => static::colorOf(static::relatedModel($record->{$relation}, $attribute, $state), $defaultColor));
+    }
+
+    protected static function relatedModel(mixed $related, string $attribute, string $state): ?Model
+    {
+        return $related instanceof Model ? $related : $related?->firstWhere($attribute, $state);
     }
 
     protected static function colorOf(?Model $model, string $defaultColor): array|string
