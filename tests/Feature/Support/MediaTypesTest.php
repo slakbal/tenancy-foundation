@@ -7,6 +7,7 @@ use Slakbal\TenancyFoundation\Models\Concerns\RegistersMediaTypes;
 use Slakbal\TenancyFoundation\Support\Media\MediaPathGenerator;
 use Slakbal\TenancyFoundation\TenancyFoundationServiceProvider;
 use Slakbal\TenancyFoundation\Tests\Support\TestMediaTypes;
+use Slakbal\TenancyFoundation\Tests\Support\TestTableImageMediaTypes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -85,5 +86,13 @@ test('the image column shows the first conversion of the media type', function (
     $column = MediaTypeImageColumn::make('image', TestMediaTypes::AVATAR_IMAGE);
 
     expect($column->getCollection())->toBe(TestMediaTypes::AVATAR_IMAGE->getCollection())
-        ->and($column->getConversion())->toBe('small');
+        ->and($column->getConversion())->toBe('small')
+        ->and($column->getImageHeight())->toBe('40px');
+});
+
+test('the image column uses the table image size and conversion of a media type that provides them', function () {
+    $column = MediaTypeImageColumn::make('image', TestTableImageMediaTypes::BANNER_IMAGE);
+
+    expect($column->getConversion())->toBe('large')
+        ->and($column->getImageHeight())->toBe('88px');
 });
